@@ -7,7 +7,7 @@ import {
 import {
   adminProcedure,
   createTRPCRouter,
-  publicProcedure,
+  publicDbProcedure,
 } from "@/server/trpc";
 import {
   bookingInput,
@@ -27,7 +27,7 @@ export const bookingRouter = createTRPCRouter({
     .mutation(({ ctx, input }) =>
       createBookingWithCapacityCheck(ctx.db, input),
     ),
-  publicCreate: publicProcedure
+  publicCreate: publicDbProcedure
     .input(publicBookingInput)
     .mutation(async ({ ctx, input }) => {
       const customer = await createOrFindCustomer(ctx.db, {

@@ -17,6 +17,16 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
 export const createTRPCRouter = t.router;
 export const publicProcedure = t.procedure;
 
+export const publicDbProcedure = t.procedure.use(({ ctx, next }) => {
+  if (!ctx.db) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database is not configured.",
+    });
+  }
+  return next({ ctx: { ...ctx, db: ctx.db } });
+});
+
 export const adminProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.session) {
     throw new TRPCError({ code: "UNAUTHORIZED" });

@@ -9,7 +9,7 @@ import {
 import {
   adminProcedure,
   createTRPCRouter,
-  publicProcedure,
+  publicDbProcedure,
 } from "@/server/trpc";
 import {
   coachInput,
@@ -21,7 +21,7 @@ import {
 import { idSchema } from "@/server/validators/common";
 
 export const cmsRouter = createTRPCRouter({
-  publicContent: publicProcedure.query(async ({ ctx }) => ({
+  publicContent: publicDbProcedure.query(async ({ ctx }) => ({
     content: await ctx.db.query.landingPageContent.findFirst(),
     gallery: await ctx.db
       .select()

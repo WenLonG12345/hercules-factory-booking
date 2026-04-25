@@ -4,7 +4,7 @@ import { classSessions } from "@/db/schema";
 import {
   adminProcedure,
   createTRPCRouter,
-  publicProcedure,
+  publicDbProcedure,
 } from "@/server/trpc";
 import { idSchema } from "@/server/validators/common";
 import {
@@ -18,21 +18,23 @@ const rangeInput = z.object({
 });
 
 export const scheduleRouter = createTRPCRouter({
-  list: publicProcedure.input(rangeInput.optional()).query(({ ctx, input }) => {
-    const from = input?.from ?? new Date().toISOString().slice(0, 10);
-    const to = input?.to ?? "2099-12-31";
+  list: publicDbProcedure
+    .input(rangeInput.optional())
+    .query(({ ctx, input }) => {
+      const from = input?.from ?? new Date().toISOString().slice(0, 10);
+      const to = input?.to ?? "2099-12-31";
 
-    return ctx.db
-      .select()
-      .from(classSessions)
-      .where(
-        and(
-          gte(classSessions.sessionDate, from),
-          lte(classSessions.sessionDate, to),
-        ),
-      )
-      .orderBy(asc(classSessions.sessionDate), asc(classSessions.startTime));
-  }),
+      return ctx.db
+        .select()
+        .from(classSessions)
+        .where(
+          and(
+            gte(classSessions.sessionDate, from),
+            lte(classSessions.sessionDate, to),
+          ),
+        )
+        .orderBy(asc(classSessions.sessionDate), asc(classSessions.startTime));
+    }),
   create: adminProcedure
     .input(classSessionInput)
     .mutation(({ ctx, input }) =>
