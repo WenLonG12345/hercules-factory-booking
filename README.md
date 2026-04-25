@@ -1,36 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hercules Factory
+
+Production-ready MVP for a Muay Thai gym management platform. It includes a
+public landing and booking flow plus an authentication-protected admin portal
+for customers, memberships, schedules, bookings, attendance, invoices, WhatsApp
+links, reports, and CMS content.
+
+## Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- shadcn/ui-style local components
+- tRPC
+- Drizzle ORM
+- PostgreSQL
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create environment variables:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Set `DATABASE_URL` to a PostgreSQL database.
 
-## Learn More
+## Local PostgreSQL With Docker
 
-To learn more about Next.js, take a look at the following resources:
+Start PostgreSQL:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+docker compose up -d postgres
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Confirm the container is healthy:
 
-## Deploy on Vercel
+```bash
+docker compose ps
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The local database URL is:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```txt
+postgres://postgres:postgres@localhost:5432/hercules_factory
+```
+
+## Database Migration
+
+Generate a Drizzle migration from `src/db/schema.ts`:
+
+```bash
+bun run db:generate
+```
+
+Apply pending migrations:
+
+```bash
+bun run db:migrate
+```
+
+Seed sample data:
+
+```bash
+bun run db:seed
+```
+
+Start development:
+
+```bash
+bun run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Admin Login
+
+Default local credentials:
+
+```txt
+Email: admin@herculesfactory.local
+Password: password
+```
+
+Override with `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
+
+## Routes
+
+Public:
+
+- `/`
+- `/book`
+- `/schedule`
+- `/pricing`
+
+Admin:
+
+- `/admin`
+- `/admin/customers`
+- `/admin/customers/[id]`
+- `/admin/schedule`
+- `/admin/bookings`
+- `/admin/attendance`
+- `/admin/invoices`
+- `/admin/reports`
+- `/admin/cms`
+
+## Business Rules
+
+- 10-class packages start with 10 credits and expire after 1 month.
+- 10-class credits deduct only when attendance is marked attended.
+- Unlimited monthly packages expire after 1 month and do not deduct credits.
+- Single class memberships do not create remaining credits.
+- Bookings cannot exceed class capacity.
+- WhatsApp links use `wa.me` with normalized Malaysia phone numbers.
+
+The app renders demo data without `DATABASE_URL` so the UI can be previewed
+immediately. Database mutations require PostgreSQL to be configured.
