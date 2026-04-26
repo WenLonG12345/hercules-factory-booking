@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Dumbbell } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/form";
+import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,25 +34,34 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-stone-950 px-4 text-stone-50">
-      <Card className="w-full max-w-md border-white/10 bg-stone-900 p-8 text-stone-50">
-        <div className="mb-8">
-          <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-red-700 text-white">
-            <Dumbbell className="size-6" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300">
+    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-gradient-to-br from-stone-100 via-amber-50 to-orange-100 px-4">
+      {/* decorative blobs */}
+      <div className="pointer-events-none absolute -top-32 -left-32 size-96 rounded-full bg-amber-300/30 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-32 size-96 rounded-full bg-red-400/20 blur-3xl" />
+
+      <Card className="relative w-full max-w-md border-stone-200/80 bg-white/80 p-8 shadow-xl backdrop-blur-sm">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <Image
+            src="/logo.png"
+            alt="Hercules Factory"
+            width={80}
+            height={80}
+            className="mb-4 rounded-xl object-contain"
+            priority
+          />
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-600">
             Hercules Factory
           </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight">
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-stone-900">
             Admin sign in
           </h1>
-          <p className="mt-2 text-sm text-stone-400">
+          <p className="mt-2 text-sm text-stone-500">
             Manage members, bookings, attendance, invoices, and landing content.
           </p>
         </div>
         <form className="grid gap-4" onSubmit={handleSubmit}>
           {error ? (
-            <p className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 ring-1 ring-red-200">
               {error}
             </p>
           ) : null}
