@@ -1,14 +1,10 @@
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  gte,
-  isNull,
-  or,
-} from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, or } from "drizzle-orm";
 import Link from "next/link";
-import { RiCalendarLine, RiCheckboxCircleLine, RiQrCodeLine } from "react-icons/ri";
+import {
+  RiCalendarLine,
+  RiCheckboxCircleLine,
+  RiQrCodeLine,
+} from "react-icons/ri";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -89,20 +85,24 @@ export default async function MemberDashboard() {
                 <div className="mt-1 flex flex-wrap gap-2 text-xs text-stone-400">
                   {activeMembership.membership.expiryDate ? (
                     <span>
-                      Expires {formatDate(activeMembership.membership.expiryDate)}
+                      Expires{" "}
+                      {formatDate(activeMembership.membership.expiryDate)}
                     </span>
                   ) : (
                     <span>No expiry</span>
                   )}
                   {activeMembership.membership.remainingCredits !== null && (
                     <span className="font-medium text-amber-300">
-                      {activeMembership.membership.remainingCredits} classes left
+                      {activeMembership.membership.remainingCredits} classes
+                      left
                     </span>
                   )}
                 </div>
               </>
             ) : (
-              <p className="mt-1 text-sm text-stone-400">No active membership</p>
+              <p className="mt-1 text-sm text-stone-400">
+                No active membership
+              </p>
             )}
           </div>
           <Badge
@@ -151,7 +151,10 @@ export default async function MemberDashboard() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-bold text-stone-100">Upcoming classes</h2>
-          <Link href="/member/bookings" className="text-xs text-red-400 hover:underline">
+          <Link
+            href="/member/bookings"
+            className="text-xs text-red-400 hover:underline"
+          >
             View all
           </Link>
         </div>
@@ -182,8 +185,13 @@ export default async function MemberDashboard() {
       {recentAttendance.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-stone-100">Recent attendance</h2>
-            <Link href="/member/attendance" className="text-xs text-red-400 hover:underline">
+            <h2 className="text-sm font-bold text-stone-100">
+              Recent attendance
+            </h2>
+            <Link
+              href="/member/attendance"
+              className="text-xs text-red-400 hover:underline"
+            >
               View all
             </Link>
           </div>

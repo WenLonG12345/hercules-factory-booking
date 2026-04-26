@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Toaster } from "sonner";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { SignOutButton } from "@/components/admin/sign-out-button";
 
@@ -64,6 +65,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </header>
         <main className="px-4 py-6 md:px-8">{children}</main>
       </div>
+      <Toaster richColors />
     </div>
   );
 }

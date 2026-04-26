@@ -18,17 +18,13 @@ export default async function BookingsPage() {
     .orderBy(desc(classSessions.sessionDate), desc(classSessions.startTime));
 
   const upcoming = allBookings.filter(
-    (b) =>
-      b.session.sessionDate >= today && b.booking.status === "booked",
+    (b) => b.session.sessionDate >= today && b.booking.status === "booked",
   );
   const past = allBookings.filter(
-    (b) =>
-      b.session.sessionDate < today || b.booking.status !== "booked",
+    (b) => b.session.sessionDate < today || b.booking.status !== "booked",
   );
 
-  const statusTone = (
-    status: string,
-  ): "green" | "amber" | "gray" | "red" => {
+  const statusTone = (status: string): "green" | "amber" | "gray" | "red" => {
     if (status === "attended") return "green";
     if (status === "booked") return "amber";
     if (status === "cancelled") return "gray";
@@ -102,7 +98,10 @@ export default async function BookingsPage() {
                     {formatTime(session.startTime)}
                   </p>
                 </div>
-                <Badge tone={statusTone(booking.status)} className="shrink-0 capitalize">
+                <Badge
+                  tone={statusTone(booking.status)}
+                  className="shrink-0 capitalize"
+                >
                   {booking.status}
                 </Badge>
               </div>

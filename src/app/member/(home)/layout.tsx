@@ -26,7 +26,5 @@ export default async function MemberPortalLayout({
 
   if (!customer) redirect("/member/register/complete");
 
-  return (
-    <MemberShell userName={session.user.name}>{children}</MemberShell>
-  );
+  return <MemberShell userName={session.user.name}>{children}</MemberShell>;
 }

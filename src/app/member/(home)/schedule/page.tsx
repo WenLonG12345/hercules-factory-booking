@@ -73,8 +73,7 @@ export default async function SchedulePage() {
         <div className="grid gap-3">
           {sessions.map((session) => {
             const myBooking = myBookingMap.get(session.id);
-            const isBooked =
-              myBooking && myBooking.status !== "cancelled";
+            const isBooked = myBooking && myBooking.status !== "cancelled";
 
             return (
               <Card key={session.id} className="p-4 border-white/10 bg-white/4">

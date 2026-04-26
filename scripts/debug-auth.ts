@@ -4,7 +4,10 @@ async function main() {
   const DATABASE_URL = process.env.DATABASE_URL;
   if (!DATABASE_URL) throw new Error("DATABASE_URL required");
 
-  const client = postgres(DATABASE_URL, { max: 1, ssl: DATABASE_URL.includes("sslmode=require") ? "require" : false });
+  const client = postgres(DATABASE_URL, {
+    max: 1,
+    ssl: DATABASE_URL.includes("sslmode=require") ? "require" : false,
+  });
 
   const users = await client`
     SELECT id, email, email_verified, created_at FROM auth_user
@@ -24,4 +27,7 @@ async function main() {
   await client.end();
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

@@ -213,6 +213,38 @@ export async function updateLandingContentAction(formData: FormData) {
   revalidatePath("/admin/cms");
 }
 
+export async function deleteGalleryImageAction(formData: FormData) {
+  await getDb()
+    .delete(galleryImages)
+    .where(eq(galleryImages.id, String(formData.get("id"))));
+  revalidatePath("/admin/cms");
+  revalidatePath("/");
+}
+
+export async function deleteCoachAction(formData: FormData) {
+  await getDb()
+    .delete(coaches)
+    .where(eq(coaches.id, String(formData.get("id"))));
+  revalidatePath("/admin/cms");
+  revalidatePath("/");
+}
+
+export async function deleteTestimonialAction(formData: FormData) {
+  await getDb()
+    .delete(testimonials)
+    .where(eq(testimonials.id, String(formData.get("id"))));
+  revalidatePath("/admin/cms");
+  revalidatePath("/");
+}
+
+export async function deleteSocialLinkAction(formData: FormData) {
+  await getDb()
+    .delete(socialLinks)
+    .where(eq(socialLinks.id, String(formData.get("id"))));
+  revalidatePath("/admin/cms");
+  revalidatePath("/");
+}
+
 export async function createGalleryImageAction(formData: FormData) {
   await getDb()
     .insert(galleryImages)
@@ -223,6 +255,47 @@ export async function createGalleryImageAction(formData: FormData) {
       sortOrder: Number(formData.get("sortOrder") || 0),
     });
   revalidatePath("/admin/cms");
+  revalidatePath("/");
+}
+
+export async function uploadGalleryImageAction(formData: FormData) {
+  const { createSupabaseServerClient } = await import("@/lib/supabase");
+  const file = formData.get("imageFile") as File | null;
+  if (!file || file.size === 0) throw new Error("No file provided");
+
+  const supabase = createSupabaseServerClient();
+  await supabase.storage
+    .createBucket("gallery", { public: true })
+    .catch(() => {});
+
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const bytes = await file.arrayBuffer();
+
+  const { error } = await supabase.storage
+    .from("gallery")
+    .upload(filename, bytes, { contentType: file.type });
+  if (error) {
+    const hint =
+      error.message.includes("row-level security") ||
+      error.message.includes("policy")
+        ? " — add SUPABASE_SERVICE_ROLE_KEY to .env.local"
+        : "";
+    throw new Error(error.message + hint);
+  }
+
+  const { data } = supabase.storage.from("gallery").getPublicUrl(filename);
+
+  await getDb()
+    .insert(galleryImages)
+    .values({
+      imageUrl: data.publicUrl,
+      alt: String(formData.get("alt") || ""),
+      caption: value(formData, "caption"),
+      sortOrder: Number(formData.get("sortOrder") || 0),
+    });
+  revalidatePath("/admin/cms");
+  revalidatePath("/");
 }
 
 export async function createCoachAction(formData: FormData) {
@@ -382,19 +455,34 @@ export async function approvePortalMembershipAction(formData: FormData) {
   const db = getDb();
   const invoiceId = String(formData.get("invoiceId"));
   const packageId = String(formData.get("packageId"));
-  const method = String(formData.get("method")) as "cash" | "bank_transfer" | "tng" | "card" | "other";
+  const method = String(formData.get("method")) as
+    | "cash"
+    | "bank_transfer"
+    | "tng"
+    | "card"
+    | "other";
   const paidDate = String(formData.get("paidDate"));
   const reference = value(formData, "reference");
 
   const [invoice] = await db
-    .select({ id: invoices.id, customerId: invoices.customerId, totalCents: invoices.totalCents, status: invoices.status })
+    .select({
+      id: invoices.id,
+      customerId: invoices.customerId,
+      totalCents: invoices.totalCents,
+      status: invoices.status,
+    })
     .from(invoices)
     .where(eq(invoices.id, invoiceId))
     .limit(1);
 
-  if (!invoice || invoice.status !== "pending") throw new Error("Invoice not found or already processed.");
+  if (!invoice || invoice.status !== "pending")
+    throw new Error("Invoice not found or already processed.");
 
-  const [pkg] = await db.select().from(packages).where(eq(packages.id, packageId)).limit(1);
+  const [pkg] = await db
+    .select()
+    .from(packages)
+    .where(eq(packages.id, packageId))
+    .limit(1);
   if (!pkg) throw new Error("Package not found.");
 
   const startDate = paidDate;
@@ -409,11 +497,15 @@ export async function approvePortalMembershipAction(formData: FormData) {
       packageId,
       startDate,
       expiryDate,
-      remainingCredits: pkg.type === "ten_class" ? (pkg.classCredits ?? 10) : null,
+      remainingCredits:
+        pkg.type === "ten_class" ? (pkg.classCredits ?? 10) : null,
     })
     .returning();
 
-  await db.update(invoices).set({ membershipId: membership.id, updatedAt: new Date() }).where(eq(invoices.id, invoiceId));
+  await db
+    .update(invoices)
+    .set({ membershipId: membership.id, updatedAt: new Date() })
+    .where(eq(invoices.id, invoiceId));
 
   await recordPayment(db, {
     invoiceId,

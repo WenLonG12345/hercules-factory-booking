@@ -31,8 +31,7 @@ export default async function MembershipsPage() {
   const activeMembership = myMemberships.find(
     (m) =>
       m.membership.status === "active" &&
-      (m.membership.expiryDate === null ||
-        m.membership.expiryDate >= today),
+      (m.membership.expiryDate === null || m.membership.expiryDate >= today),
   );
 
   return (
@@ -57,7 +56,9 @@ export default async function MembershipsPage() {
           </p>
           <div className="mt-1 flex flex-wrap gap-3 text-sm text-stone-300">
             {activeMembership.membership.expiryDate && (
-              <span>Expires {formatDate(activeMembership.membership.expiryDate)}</span>
+              <span>
+                Expires {formatDate(activeMembership.membership.expiryDate)}
+              </span>
             )}
             {activeMembership.membership.remainingCredits !== null && (
               <span className="font-semibold text-amber-300">
@@ -140,7 +141,12 @@ export default async function MembershipsPage() {
                 <RequestMembershipForm
                   packageId={pkg.id}
                   action={requestMembershipAction}
-                  paymentInfo={{ bankName: BANK_NAME, bankAccount: BANK_ACCOUNT, accountName: ACCOUNT_NAME, tngNumber: TNG_NUMBER }}
+                  paymentInfo={{
+                    bankName: BANK_NAME,
+                    bankAccount: BANK_ACCOUNT,
+                    accountName: ACCOUNT_NAME,
+                    tngNumber: TNG_NUMBER,
+                  }}
                 />
               </div>
             </Card>

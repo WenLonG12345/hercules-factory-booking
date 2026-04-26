@@ -37,7 +37,9 @@ export default function MemberRegisterPage() {
 
     setPending(false);
     if (result.error) {
-      setError(result.error.message ?? "Registration failed. Try a different email.");
+      setError(
+        result.error.message ?? "Registration failed. Try a different email.",
+      );
     } else {
       router.push("/member/register/complete");
     }

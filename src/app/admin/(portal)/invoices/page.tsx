@@ -8,7 +8,11 @@ import { ApproveMembershipDialog } from "@/components/admin/approve-membership-d
 import { Badge } from "@/components/ui/badge";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
-import { getCustomers, getInvoices, getPackages } from "@/server/services/queries";
+import {
+  getCustomers,
+  getInvoices,
+  getPackages,
+} from "@/server/services/queries";
 
 const PORTAL_PREFIX = "Customer self-request via portal: ";
 
@@ -32,10 +36,12 @@ export default async function InvoicesPage() {
 
   const activePackages = packages.filter((p) => p.isActive);
   const pendingPortalRequests = invoices.filter(
-    (inv) => inv.status === "pending" && parsePortalPackageName(inv.notes ?? null),
+    (inv) =>
+      inv.status === "pending" && parsePortalPackageName(inv.notes ?? null),
   );
   const otherInvoices = invoices.filter(
-    (inv) => !(inv.status === "pending" && parsePortalPackageName(inv.notes ?? null)),
+    (inv) =>
+      !(inv.status === "pending" && parsePortalPackageName(inv.notes ?? null)),
   );
 
   return (
@@ -72,7 +78,8 @@ export default async function InvoicesPage() {
                       {inv.customer?.name}
                     </p>
                     <p className="mt-0.5 text-xs text-stone-500">
-                      {pkgName} · {formatCurrency(inv.totalCents)} · {inv.invoiceNumber}
+                      {pkgName} · {formatCurrency(inv.totalCents)} ·{" "}
+                      {inv.invoiceNumber}
                     </p>
                   </div>
                   <ApproveMembershipDialog
@@ -80,7 +87,10 @@ export default async function InvoicesPage() {
                     customerName={inv.customer?.name ?? ""}
                     totalCents={inv.totalCents}
                     requestedPackageName={pkgName}
-                    packages={activePackages.map((p) => ({ id: p.id, name: p.name }))}
+                    packages={activePackages.map((p) => ({
+                      id: p.id,
+                      name: p.name,
+                    }))}
                   />
                 </div>
               );
@@ -106,7 +116,9 @@ export default async function InvoicesPage() {
             {otherInvoices.map((invoice) => (
               <tr key={invoice.id}>
                 <td className={tdClass}>
-                  <span className="font-mono text-xs">{invoice.invoiceNumber}</span>
+                  <span className="font-mono text-xs">
+                    {invoice.invoiceNumber}
+                  </span>
                 </td>
                 <td className={tdClass}>{invoice.customer?.name ?? "—"}</td>
                 <td className={tdClass}>
@@ -114,14 +126,18 @@ export default async function InvoicesPage() {
                     {invoice.status}
                   </Badge>
                 </td>
-                <td className={tdClass}>{formatCurrency(invoice.totalCents)}</td>
+                <td className={tdClass}>
+                  {formatCurrency(invoice.totalCents)}
+                </td>
                 <td className={tdClass}>
                   <span className="block max-w-45 truncate text-xs text-stone-500">
                     {invoice.notes ?? "—"}
                   </span>
                 </td>
                 <td className={tdClass}>
-                  <span className="text-xs text-stone-500">{invoice.issueDate}</span>
+                  <span className="text-xs text-stone-500">
+                    {invoice.issueDate}
+                  </span>
                 </td>
                 <td className={tdClass}>
                   {invoice.customer ? (

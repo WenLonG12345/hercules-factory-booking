@@ -62,7 +62,9 @@ export async function completeRegistrationAction(
 
   if (byPhone) {
     if (byPhone.authUserId && byPhone.authUserId !== authUserId) {
-      return { error: "This phone number is already linked to another account." };
+      return {
+        error: "This phone number is already linked to another account.",
+      };
     }
     const [updated] = await db
       .update(customers)
@@ -92,7 +94,9 @@ export async function bookClassAction(
   try {
     const { customer, db } = await getCustomerFromSession();
     const classSessionId = String(formData.get("classSessionId"));
-    const notes = formData.get("notes") ? String(formData.get("notes")) : undefined;
+    const notes = formData.get("notes")
+      ? String(formData.get("notes"))
+      : undefined;
 
     const today = new Date().toISOString().split("T")[0];
     const [activeMembership] = await db
@@ -102,7 +106,10 @@ export async function bookClassAction(
         and(
           eq(memberships.customerId, customer.id),
           eq(memberships.status, "active"),
-          or(isNull(memberships.expiryDate), gte(memberships.expiryDate, today)),
+          or(
+            isNull(memberships.expiryDate),
+            gte(memberships.expiryDate, today),
+          ),
         ),
       )
       .limit(1);
@@ -140,7 +147,9 @@ export async function cancelBookingAction(
     const [booking] = await db
       .select()
       .from(bookings)
-      .where(and(eq(bookings.id, bookingId), eq(bookings.customerId, customer.id)))
+      .where(
+        and(eq(bookings.id, bookingId), eq(bookings.customerId, customer.id)),
+      )
       .limit(1);
 
     if (!booking) return { error: "Booking not found." };
@@ -156,7 +165,9 @@ export async function cancelBookingAction(
     revalidatePath("/member/(home)/schedule");
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Failed to cancel booking." };
+    return {
+      error: e instanceof Error ? e.message : "Failed to cancel booking.",
+    };
   }
 }
 

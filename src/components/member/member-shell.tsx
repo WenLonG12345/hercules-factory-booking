@@ -18,7 +18,11 @@ const tabs = [
   { href: "/member", label: "Home", icon: RiHome5Line, exact: true },
   { href: "/member/schedule", label: "Book", icon: RiCalendarLine },
   { href: "/member/check-in", label: "Check In", icon: RiQrCodeLine },
-  { href: "/member/memberships", label: "Membership", icon: RiCheckboxCircleLine },
+  {
+    href: "/member/memberships",
+    label: "Membership",
+    icon: RiCheckboxCircleLine,
+  },
   { href: "/member/attendance", label: "History", icon: RiHistoryLine },
 ];
 
@@ -86,7 +90,9 @@ export function MemberShell({
                 href={tab.href}
                 className={cn(
                   "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition",
-                  active ? "text-red-500" : "text-stone-500 hover:text-stone-200",
+                  active
+                    ? "text-red-500"
+                    : "text-stone-500 hover:text-stone-200",
                 )}
               >
                 <tab.icon

@@ -17,7 +17,12 @@ import { RiAddLine, RiMoneyDollarCircleLine } from "react-icons/ri";
 import { useState } from "react";
 
 type Customer = { id: string; name: string };
-type Invoice = { id: string; invoiceNumber: string; customerId: string; customer: { name: string } | null };
+type Invoice = {
+  id: string;
+  invoiceNumber: string;
+  customerId: string;
+  customer: { name: string } | null;
+};
 
 export function CreateInvoiceDialog({ customers }: { customers: Customer[] }) {
   const [open, setOpen] = useState(false);
@@ -80,7 +85,9 @@ export function CreateInvoiceDialog({ customers }: { customers: Customer[] }) {
 
 export function RecordPaymentDialog({ invoices }: { invoices: Invoice[] }) {
   const [open, setOpen] = useState(false);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState(invoices[0]?.id ?? "");
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(
+    invoices[0]?.id ?? "",
+  );
 
   const selectedInvoice = invoices.find((inv) => inv.id === selectedInvoiceId);
 

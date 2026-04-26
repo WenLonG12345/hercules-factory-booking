@@ -12,9 +12,7 @@ export default async function InvoicesPage() {
     .where(eq(invoices.customerId, customer.id))
     .orderBy(desc(invoices.issueDate));
 
-  const statusTone = (
-    status: string,
-  ): "green" | "amber" | "gray" => {
+  const statusTone = (status: string): "green" | "amber" | "gray" => {
     if (status === "paid") return "green";
     if (status === "pending") return "amber";
     return "gray";

@@ -17,7 +17,12 @@ export function QrCheckIn() {
 
   const handleScan = useCallback(
     (results: { rawValue: string }[]) => {
-      if (isPending || state.status === "success" || state.status === "checking") return;
+      if (
+        isPending ||
+        state.status === "success" ||
+        state.status === "checking"
+      )
+        return;
       const raw = results[0]?.rawValue;
       if (!raw) return;
 
@@ -25,7 +30,10 @@ export function QrCheckIn() {
       const uuidRegex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(raw)) {
-        setState({ status: "error", message: "Invalid QR code. Please scan the class QR." });
+        setState({
+          status: "error",
+          message: "Invalid QR code. Please scan the class QR.",
+        });
         return;
       }
 
@@ -35,7 +43,10 @@ export function QrCheckIn() {
         if (result.success) {
           setState({ status: "success" });
         } else {
-          setState({ status: "error", message: result.error ?? "Check-in failed." });
+          setState({
+            status: "error",
+            message: result.error ?? "Check-in failed.",
+          });
         }
       });
     },

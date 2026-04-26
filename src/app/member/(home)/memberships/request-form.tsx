@@ -33,7 +33,7 @@ export function RequestMembershipForm({
         <p className="mt-1 text-xs text-amber-400">
           Please transfer payment using one of the methods below:
         </p>
-        {(paymentInfo.bankAccount || paymentInfo.tngNumber) ? (
+        {paymentInfo.bankAccount || paymentInfo.tngNumber ? (
           <div className="mt-2 grid gap-1 text-xs text-amber-400">
             {paymentInfo.bankAccount && (
               <p>

@@ -25,7 +25,9 @@ export function BookClassForm({
     <form action={formAction}>
       <input type="hidden" name="classSessionId" value={classSessionId} />
       {state?.error && (
-        <p className="mb-1 text-xs text-red-600 text-right max-w-32">{state.error}</p>
+        <p className="mb-1 text-xs text-red-600 text-right max-w-32">
+          {state.error}
+        </p>
       )}
       <button
         type="submit"

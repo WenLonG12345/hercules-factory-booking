@@ -11,10 +11,7 @@ import { Field, Input } from "@/components/ui/form";
 export default function RegisterCompletePage() {
   const router = useRouter();
   const [state, action, pending] = useActionState(
-    async (
-      prev: { error?: string } | null,
-      formData: FormData,
-    ) => {
+    async (prev: { error?: string } | null, formData: FormData) => {
       const result = await completeRegistrationAction(prev, formData);
       if (result.customerId) {
         router.push("/member");

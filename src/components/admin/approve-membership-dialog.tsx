@@ -30,9 +30,10 @@ export function ApproveMembershipDialog({
 }) {
   const [open, setOpen] = useState(false);
 
-  const matchedPkg = packages.find((p) =>
-    p.name.toLowerCase() === requestedPackageName.toLowerCase()
-  ) ?? packages[0];
+  const matchedPkg =
+    packages.find(
+      (p) => p.name.toLowerCase() === requestedPackageName.toLowerCase(),
+    ) ?? packages[0];
 
   async function handleSubmit(formData: FormData) {
     await approvePortalMembershipAction(formData);
