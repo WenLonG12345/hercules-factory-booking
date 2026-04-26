@@ -3,6 +3,7 @@ import {
   updateBookingStatusAction,
 } from "@/app/admin/(portal)/actions";
 import { PageHeader } from "@/components/admin/admin-shell";
+import { SessionQrDialog } from "@/components/admin/session-qr-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -54,7 +55,7 @@ export default async function AttendancePage() {
             );
             return (
               <Card key={session.id}>
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">
                       {formatTime(session.startTime)}
@@ -62,9 +63,15 @@ export default async function AttendancePage() {
                     <span className="text-stone-400">·</span>
                     <span className="text-stone-700">{session.title}</span>
                   </div>
-                  <Badge tone="gray">
-                    {activeBookings.length}/{session.capacity} booked
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge tone="gray">
+                      {activeBookings.length}/{session.capacity} booked
+                    </Badge>
+                    <SessionQrDialog
+                      classSessionId={session.id}
+                      sessionLabel={`${session.title} · ${formatTime(session.startTime)}`}
+                    />
+                  </div>
                 </div>
                 {pendingBookings.length === 0 ? (
                   <p className="text-sm text-stone-400">

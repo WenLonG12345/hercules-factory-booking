@@ -30,7 +30,7 @@ export default async function SchedulePage() {
                   {session.startTime} - {session.endTime} - {session.coachName}
                 </p>
               </div>
-              <ButtonLink href="/book" variant="secondary">
+              <ButtonLink href="/member/login" variant="secondary">
                 Book
               </ButtonLink>
             </div>

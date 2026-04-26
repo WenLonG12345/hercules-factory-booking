@@ -71,6 +71,7 @@ export const authUser = pgTable("auth_user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull(),
   image: text("image"),
+  role: text("role").default("customer").notNull(),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });
@@ -124,11 +125,15 @@ export const customers = pgTable(
     email: text("email"),
     notes: text("notes"),
     emergencyContact: text("emergency_contact"),
+    authUserId: text("auth_user_id").references(() => authUser.id, {
+      onDelete: "set null",
+    }),
     ...timestamps,
   },
   (table) => ({
     phoneIdx: uniqueIndex("customers_phone_idx").on(table.phone),
     nameIdx: index("customers_name_idx").on(table.name),
+    authUserIdx: uniqueIndex("customers_auth_user_id_idx").on(table.authUserId),
   }),
 );
 
@@ -340,7 +345,18 @@ export const socialLinks = pgTable("social_links", {
   ...timestamps,
 });
 
-export const customersRelations = relations(customers, ({ many }) => ({
+export const authUserRelations = relations(authUser, ({ one }) => ({
+  customer: one(customers, {
+    fields: [authUser.id],
+    references: [customers.authUserId],
+  }),
+}));
+
+export const customersRelations = relations(customers, ({ one, many }) => ({
+  authUser: one(authUser, {
+    fields: [customers.authUserId],
+    references: [authUser.id],
+  }),
   memberships: many(memberships),
   bookings: many(bookings),
   invoices: many(invoices),

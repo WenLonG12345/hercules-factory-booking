@@ -4,11 +4,21 @@ import * as schema from "./schema";
 
 const connectionString = process.env.DATABASE_URL;
 
-const queryClient = connectionString
-  ? postgres(connectionString, { prepare: false, max: 10 })
-  : null;
+declare global {
+  var __db: ReturnType<typeof drizzle<typeof schema>> | null | undefined; // eslint-disable-line no-var
+}
 
-export const db = queryClient ? drizzle(queryClient, { schema }) : null;
+function createDb() {
+  if (!connectionString) return null;
+  const client = postgres(connectionString, { prepare: false, max: 3 });
+  return drizzle(client, { schema });
+}
+
+export const db = globalThis.__db ?? createDb();
+
+if (process.env.NODE_ENV !== "production") {
+  globalThis.__db = db;
+}
 
 export function getDb() {
   if (!db) {

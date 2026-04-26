@@ -54,7 +54,7 @@ export default async function Home() {
                 {content?.heroSubtitle}
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <ButtonLink href="/book">
+                <ButtonLink href="/member/login">
                   {content?.primaryCtaText ?? "Book Your First Class"}
                   <ArrowRight className="size-4" />
                 </ButtonLink>
@@ -154,7 +154,7 @@ export default async function Home() {
               </Link>
               <Link
                 className="rounded-lg bg-amber-300 px-5 py-4 font-black text-stone-950"
-                href="/book"
+                href="/member/login"
               >
                 <ArrowRight className="mb-2 size-5" />
                 Reserve a slot

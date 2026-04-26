@@ -81,8 +81,8 @@ export function PublicFooter() {
             <Link href="/#schedule" className="transition hover:text-stone-200">
               Schedule
             </Link>
-            <Link href="/book" className="transition hover:text-stone-200">
-              Book
+            <Link href="/member/login" className="transition hover:text-stone-200">
+              Member login
             </Link>
           </nav>
         </div>

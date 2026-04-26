@@ -6,6 +6,7 @@ import { customerRouter } from "./customer";
 import { invoiceRouter } from "./invoice";
 import { membershipRouter } from "./membership";
 import { paymentRouter } from "./payment";
+import { portalRouter } from "./portal";
 import { reportRouter } from "./report";
 import { scheduleRouter } from "./schedule";
 
@@ -19,6 +20,7 @@ export const appRouter = createTRPCRouter({
   payment: paymentRouter,
   report: reportRouter,
   cms: cmsRouter,
+  portal: portalRouter,
 });
 
 export type AppRouter = typeof appRouter;

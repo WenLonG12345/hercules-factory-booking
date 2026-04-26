@@ -28,8 +28,8 @@ export function PublicHeader() {
           <a href="/#schedule">Schedule</a>
           <a href="/#coaches">Coaches</a>
         </nav>
-        <ButtonLink href="/book" className="h-10">
-          Book
+        <ButtonLink href="/member/login" className="h-10">
+          Member login
         </ButtonLink>
       </div>
     </header>

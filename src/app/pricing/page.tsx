@@ -23,7 +23,7 @@ export default async function PricingPage() {
               <p className="mt-4 text-4xl font-black text-amber-300">
                 {formatCurrency(pkg.priceCents)}
               </p>
-              <ButtonLink className="mt-6 w-full" href="/book">
+              <ButtonLink className="mt-6 w-full" href="/member/login">
                 Book this package
               </ButtonLink>
             </div>

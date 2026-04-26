@@ -10,11 +10,14 @@ import {
   coaches,
   customers,
   galleryImages,
+  invoices,
   landingPageContent,
+  memberships,
   packages,
   socialLinks,
   testimonials,
 } from "@/db/schema";
+import { addDays, toDateInputValue } from "@/lib/utils";
 import {
   createBookingWithCapacityCheck,
   createInvoice,
@@ -373,4 +376,53 @@ export async function updatePackageAction(formData: FormData) {
     })
     .where(eq(packages.id, id));
   revalidatePath("/admin/memberships");
+}
+
+export async function approvePortalMembershipAction(formData: FormData) {
+  const db = getDb();
+  const invoiceId = String(formData.get("invoiceId"));
+  const packageId = String(formData.get("packageId"));
+  const method = String(formData.get("method")) as "cash" | "bank_transfer" | "tng" | "card" | "other";
+  const paidDate = String(formData.get("paidDate"));
+  const reference = value(formData, "reference");
+
+  const [invoice] = await db
+    .select({ id: invoices.id, customerId: invoices.customerId, totalCents: invoices.totalCents, status: invoices.status })
+    .from(invoices)
+    .where(eq(invoices.id, invoiceId))
+    .limit(1);
+
+  if (!invoice || invoice.status !== "pending") throw new Error("Invoice not found or already processed.");
+
+  const [pkg] = await db.select().from(packages).where(eq(packages.id, packageId)).limit(1);
+  if (!pkg) throw new Error("Package not found.");
+
+  const startDate = paidDate;
+  const expiryDate = pkg.validityDays
+    ? toDateInputValue(addDays(new Date(startDate), pkg.validityDays))
+    : null;
+
+  const [membership] = await db
+    .insert(memberships)
+    .values({
+      customerId: invoice.customerId,
+      packageId,
+      startDate,
+      expiryDate,
+      remainingCredits: pkg.type === "ten_class" ? (pkg.classCredits ?? 10) : null,
+    })
+    .returning();
+
+  await db.update(invoices).set({ membershipId: membership.id, updatedAt: new Date() }).where(eq(invoices.id, invoiceId));
+
+  await recordPayment(db, {
+    invoiceId,
+    customerId: invoice.customerId,
+    amountCents: invoice.totalCents,
+    method,
+    paidDate,
+    reference,
+  });
+
+  revalidatePath("/admin/invoices");
 }
