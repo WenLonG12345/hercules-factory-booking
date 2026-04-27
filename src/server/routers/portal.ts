@@ -24,6 +24,15 @@ import {
 const today = () => new Date().toISOString().split("T")[0];
 
 export const portalRouter = createTRPCRouter({
+  profileCheck: sessionProcedure.query(async ({ ctx }) => {
+    const [customer] = await ctx.db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.authUserId, ctx.session.user.id))
+      .limit(1);
+    return !!customer;
+  }),
+
   // Link or create customer record after sign-up / Google OAuth
   completeRegistration: sessionProcedure
     .input(

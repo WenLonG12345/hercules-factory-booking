@@ -21,12 +21,14 @@ export function ApproveMembershipDialog({
   totalCents,
   requestedPackageName,
   packages,
+  onSuccess,
 }: {
   invoiceId: string;
   customerName: string;
   totalCents: number;
   requestedPackageName: string;
   packages: Package[];
+  onSuccess?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -37,6 +39,7 @@ export function ApproveMembershipDialog({
 
   async function handleSubmit(formData: FormData) {
     await approvePortalMembershipAction(formData);
+    onSuccess?.();
     setOpen(false);
   }
 

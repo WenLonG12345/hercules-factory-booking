@@ -1,22 +1,31 @@
-import { desc, eq } from "drizzle-orm";
+"use client";
+
 import { Badge } from "@/components/ui/badge";
-import { invoices } from "@/db/schema";
-import { formatCents, formatDate, requireCustomer } from "../member-data";
+import { api } from "@/lib/trpc";
+import { formatCurrency } from "@/lib/utils";
+import { formatDate } from "../member-format";
 
-export default async function InvoicesPage() {
-  const { customer, db } = await requireCustomer();
-
-  const myInvoices = await db
-    .select()
-    .from(invoices)
-    .where(eq(invoices.customerId, customer.id))
-    .orderBy(desc(invoices.issueDate));
+export default function InvoicesPage() {
+  const { data: myInvoices = [], isLoading } = api.portal.myInvoices.useQuery();
 
   const statusTone = (status: string): "green" | "amber" | "gray" => {
     if (status === "paid") return "green";
     if (status === "pending") return "amber";
     return "gray";
   };
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse grid gap-5">
+        <div className="h-8 w-24 rounded bg-white/10" />
+        <div className="grid gap-2">
+          {["a", "b", "c"].map((k) => (
+            <div key={k} className="h-16 rounded-lg bg-white/10" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-5">
@@ -55,7 +64,7 @@ export default async function InvoicesPage() {
               </div>
               <div className="flex flex-col items-end gap-1">
                 <p className="font-bold text-stone-100">
-                  {formatCents(invoice.totalCents)}
+                  {formatCurrency(invoice.totalCents)}
                 </p>
                 <Badge tone={statusTone(invoice.status)}>
                   {invoice.status}

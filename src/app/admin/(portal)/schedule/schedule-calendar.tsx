@@ -44,7 +44,13 @@ function formatDate(dateStr: string) {
   });
 }
 
-export function ScheduleCalendar({ sessions }: { sessions: Session[] }) {
+export function ScheduleCalendar({
+  sessions,
+  onRefetch,
+}: {
+  sessions: Session[];
+  onRefetch?: () => void;
+}) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -150,12 +156,12 @@ export function ScheduleCalendar({ sessions }: { sessions: Session[] }) {
         </div>
 
         {/* Weeks */}
-        {weeks.map((week, wi) => (
+        {weeks.map((week) => (
           <div
-            key={wi}
+            key={week.map((c) => c?.dateStr ?? "x").join("-")}
             className={cn(
               "grid grid-cols-7",
-              wi < weeks.length - 1 && "border-b border-stone-200",
+              weeks.indexOf(week) < weeks.length - 1 && "border-b border-stone-200",
             )}
           >
             {week.map((cell, di) => {
@@ -164,7 +170,7 @@ export function ScheduleCalendar({ sessions }: { sessions: Session[] }) {
               if (!cell) {
                 return (
                   <div
-                    key={di}
+                    key={`empty-${DAY_LABELS[di]}`}
                     className={cn(
                       "min-h-28 bg-stone-50",
                       !isLastCol && "border-r border-stone-200",
@@ -177,7 +183,7 @@ export function ScheduleCalendar({ sessions }: { sessions: Session[] }) {
 
               return (
                 <div
-                  key={di}
+                  key={cell.dateStr}
                   className={cn(
                     "group min-h-28 p-1.5",
                     !isLastCol && "border-r border-stone-200",
@@ -240,6 +246,7 @@ export function ScheduleCalendar({ sessions }: { sessions: Session[] }) {
             className="grid gap-4"
             action={async (formData) => {
               await createClassSessionAction(formData);
+              onRefetch?.();
               setAddDate(null);
             }}
           >
@@ -289,6 +296,7 @@ export function ScheduleCalendar({ sessions }: { sessions: Session[] }) {
             className="grid gap-4"
             action={async (formData) => {
               await generateWeeklyScheduleAction(formData);
+              onRefetch?.();
               setGenerateOpen(false);
             }}
           >
@@ -337,6 +345,7 @@ export function ScheduleCalendar({ sessions }: { sessions: Session[] }) {
                 className="grid gap-4"
                 action={async (formData) => {
                   await updateClassSessionAction(formData);
+                  onRefetch?.();
                   setEditSession(null);
                 }}
               >
@@ -376,6 +385,7 @@ export function ScheduleCalendar({ sessions }: { sessions: Session[] }) {
                 <form
                   action={async (formData) => {
                     await deleteClassSessionAction(formData);
+                    onRefetch?.();
                     setEditSession(null);
                   }}
                 >

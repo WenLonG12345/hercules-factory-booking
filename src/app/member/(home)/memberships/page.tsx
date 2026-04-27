@@ -1,38 +1,57 @@
-import { asc, desc, eq } from "drizzle-orm";
-import { requestMembershipAction } from "@/app/member/actions";
+"use client";
+
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { memberships, packages } from "@/db/schema";
-import { formatCents, formatDate, requireCustomer } from "../member-data";
-import { RequestMembershipForm } from "./request-form";
+import { api } from "@/lib/trpc";
+import { formatCurrency } from "@/lib/utils";
+import { formatDate } from "../member-format";
 
 const BANK_NAME = process.env.NEXT_PUBLIC_PAYMENT_BANK_NAME ?? "";
 const BANK_ACCOUNT = process.env.NEXT_PUBLIC_PAYMENT_BANK_ACCOUNT ?? "";
 const ACCOUNT_NAME = process.env.NEXT_PUBLIC_PAYMENT_ACCOUNT_NAME ?? "";
 const TNG_NUMBER = process.env.NEXT_PUBLIC_PAYMENT_TNG_NUMBER ?? "";
 
-export default async function MembershipsPage() {
-  const { customer, db } = await requireCustomer();
+export default function MembershipsPage() {
+  const utils = api.useUtils();
+  const [requestingPackageId, setRequestingPackageId] = useState<string | null>(
+    null,
+  );
+  const [successData, setSuccessData] = useState<{
+    invoiceNumber: string;
+  } | null>(null);
+
+  const { data: myMemberships = [], isLoading: membershipsLoading } =
+    api.portal.myMemberships.useQuery();
+  const { data: availablePackages = [], isLoading: packagesLoading } =
+    api.portal.packages.useQuery();
+  const requestMembership = api.portal.requestMembership.useMutation({
+    onSuccess: (data) => {
+      setSuccessData({ invoiceNumber: data.invoice.invoiceNumber });
+      setRequestingPackageId(null);
+      utils.portal.myMemberships.invalidate();
+      utils.portal.myInvoices.invalidate();
+    },
+  });
+
+  const isLoading = membershipsLoading || packagesLoading;
+
   const today = new Date().toISOString().split("T")[0];
-
-  const myMemberships = await db
-    .select({ membership: memberships, package: packages })
-    .from(memberships)
-    .innerJoin(packages, eq(packages.id, memberships.packageId))
-    .where(eq(memberships.customerId, customer.id))
-    .orderBy(desc(memberships.createdAt));
-
-  const availablePackages = await db
-    .select()
-    .from(packages)
-    .where(eq(packages.isActive, true))
-    .orderBy(asc(packages.sortOrder));
-
   const activeMembership = myMemberships.find(
     (m) =>
       m.membership.status === "active" &&
       (m.membership.expiryDate === null || m.membership.expiryDate >= today),
   );
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse grid gap-5">
+        <div className="h-8 w-40 rounded bg-white/10" />
+        <div className="h-24 rounded-xl bg-white/10" />
+        <div className="h-32 rounded-xl bg-white/10" />
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-5">
@@ -109,6 +128,41 @@ export default async function MembershipsPage() {
         </section>
       )}
 
+      {/* Success message */}
+      {successData && (
+        <div className="rounded-lg bg-amber-900/30 p-3 ring-1 ring-amber-500/30">
+          <p className="text-sm font-semibold text-amber-300">
+            Request submitted! Invoice {successData.invoiceNumber}
+          </p>
+          <p className="mt-1 text-xs text-amber-400">
+            Please transfer payment using one of the methods below:
+          </p>
+          {BANK_ACCOUNT || TNG_NUMBER ? (
+            <div className="mt-2 grid gap-1 text-xs text-amber-400">
+              {BANK_ACCOUNT && (
+                <p>
+                  <span className="font-medium">Bank transfer:</span>{" "}
+                  {BANK_NAME} · {BANK_ACCOUNT}
+                  {ACCOUNT_NAME && ` (${ACCOUNT_NAME})`}
+                </p>
+              )}
+              {TNG_NUMBER && (
+                <p>
+                  <span className="font-medium">TNG:</span> {TNG_NUMBER}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-amber-400">
+              Please contact us on WhatsApp for payment details.
+            </p>
+          )}
+          <p className="mt-2 text-xs text-stone-400">
+            Admin will activate your membership once payment is confirmed.
+          </p>
+        </div>
+      )}
+
       {/* Request new package */}
       <section>
         <h2 className="mb-1 text-sm font-bold text-stone-100">
@@ -134,20 +188,26 @@ export default async function MembershipsPage() {
                   </p>
                 </div>
                 <p className="shrink-0 font-black text-amber-300">
-                  {formatCents(pkg.priceCents)}
+                  {formatCurrency(pkg.priceCents)}
                 </p>
               </div>
               <div className="mt-3">
-                <RequestMembershipForm
-                  packageId={pkg.id}
-                  action={requestMembershipAction}
-                  paymentInfo={{
-                    bankName: BANK_NAME,
-                    bankAccount: BANK_ACCOUNT,
-                    accountName: ACCOUNT_NAME,
-                    tngNumber: TNG_NUMBER,
+                <button
+                  type="button"
+                  disabled={
+                    requestMembership.isPending &&
+                    requestingPackageId === pkg.id
+                  }
+                  onClick={() => {
+                    setRequestingPackageId(pkg.id);
+                    requestMembership.mutate({ packageId: pkg.id });
                   }}
-                />
+                  className="rounded-md bg-stone-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-stone-700 disabled:opacity-60"
+                >
+                  {requestMembership.isPending && requestingPackageId === pkg.id
+                    ? "Submitting…"
+                    : "Request this package"}
+                </button>
               </div>
             </Card>
           ))}

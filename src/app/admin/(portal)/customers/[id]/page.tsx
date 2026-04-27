@@ -1,30 +1,56 @@
-import { notFound } from "next/navigation";
-import {
-  createMembershipAction,
-  deleteCustomerAction,
-} from "@/app/admin/(portal)/actions";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { use, useState } from "react";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/form";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
+import { api } from "@/lib/trpc";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
-import { getCustomerProfile, getPackages } from "@/server/services/queries";
 
-export default async function CustomerProfilePage({
+export default function CustomerProfilePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const [profile, packages] = await Promise.all([
-    getCustomerProfile(id),
-    getPackages(),
-  ]);
+  const { id } = use(params);
+  const router = useRouter();
+  const utils = api.useUtils();
+  const [startDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-  if (!profile.customer) {
-    notFound();
+  const { data: profile, isLoading: profileLoading } =
+    api.customer.profile.useQuery({ id });
+  const { data: packages = [], isLoading: pkgsLoading } =
+    api.membership.packages.useQuery();
+
+  const createMembership = api.membership.create.useMutation({
+    onSuccess: () => utils.customer.profile.invalidate({ id }),
+  });
+
+  const deleteCustomer = api.customer.delete.useMutation({
+    onSuccess: () => {
+      utils.customer.list.invalidate();
+      router.push("/admin/customers");
+    },
+  });
+
+  if (profileLoading || pkgsLoading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 w-56 rounded bg-stone-200" />
+        <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
+          <div className="h-64 rounded-xl bg-stone-200" />
+          <div className="h-64 rounded-xl bg-stone-200" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile?.customer) {
+    return <p className="text-sm text-stone-500">Customer not found.</p>;
   }
 
   const customer = profile.customer;
@@ -62,17 +88,30 @@ export default async function CustomerProfilePage({
                 <dd>{customer.notes}</dd>
               </div>
             </dl>
-            <form action={deleteCustomerAction} className="mt-5">
-              <input name="id" type="hidden" value={customer.id} />
-              <Button type="submit" variant="quiet">
-                Delete customer
-              </Button>
-            </form>
+            <Button
+              type="button"
+              variant="quiet"
+              className="mt-5"
+              disabled={deleteCustomer.isPending}
+              onClick={() => deleteCustomer.mutate({ id: customer.id })}
+            >
+              Delete customer
+            </Button>
           </Card>
           <Card>
             <h2 className="mb-4 text-lg font-black">Add membership</h2>
-            <form action={createMembershipAction} className="grid gap-4">
-              <input name="customerId" type="hidden" value={customer.id} />
+            <form
+              className="grid gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                createMembership.mutate({
+                  customerId: customer.id,
+                  packageId: String(fd.get("packageId") ?? ""),
+                  startDate: String(fd.get("startDate") ?? ""),
+                });
+              }}
+            >
               <Field label="Package">
                 <Select name="packageId">
                   {packages.map((pkg) => (
@@ -87,10 +126,12 @@ export default async function CustomerProfilePage({
                   className="h-11 rounded-md border border-stone-200 px-3"
                   name="startDate"
                   type="date"
-                  defaultValue={new Date().toISOString().slice(0, 10)}
+                  defaultValue={startDate}
                 />
               </Field>
-              <Button type="submit">Activate package</Button>
+              <Button type="submit" disabled={createMembership.isPending}>
+                Activate package
+              </Button>
             </form>
           </Card>
         </div>
@@ -134,9 +175,7 @@ export default async function CustomerProfilePage({
                   <tr key={invoice.id}>
                     <td className={tdClass}>{invoice.invoiceNumber}</td>
                     <td className={tdClass}>{invoice.status}</td>
-                    <td className={tdClass}>
-                      {formatCurrency(invoice.totalCents)}
-                    </td>
+                    <td className={tdClass}>{formatCurrency(invoice.totalCents)}</td>
                     <td className={tdClass}>{invoice.dueDate}</td>
                   </tr>
                 ))}

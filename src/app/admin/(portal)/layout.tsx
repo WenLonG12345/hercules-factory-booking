@@ -1,16 +1,17 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { AdminAuthGuard } from "@/components/admin/admin-auth-guard";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { auth } from "@/lib/auth";
+import { Providers } from "@/components/providers";
 
-export default async function AdminPortalLayout({
+export default function AdminPortalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/admin/login");
-  if (session.user.role !== "admin") redirect("/member");
-
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <Providers>
+      <AdminShell>
+        <AdminAuthGuard>{children}</AdminAuthGuard>
+      </AdminShell>
+    </Providers>
+  );
 }

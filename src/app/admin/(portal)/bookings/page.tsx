@@ -1,7 +1,6 @@
-import {
-  createBookingAction,
-  updateBookingStatusAction,
-} from "@/app/admin/(portal)/actions";
+"use client";
+
+import { useState } from "react";
 import { WhatsappCopyButton } from "@/app/admin/(portal)/bookings/whatsapp-copy-button";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Field, Select, Textarea } from "@/components/ui/form";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
+import { api } from "@/lib/trpc";
 import { addDays, toDateInputValue } from "@/lib/utils";
-import {
-  getBookings,
-  getCustomers,
-  getSessions,
-} from "@/server/services/queries";
 
 const statuses = ["booked", "no_show", "cancelled"];
 
@@ -32,12 +27,34 @@ function formatTime(t: string) {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-export default async function AdminBookingsPage() {
-  const [bookings, customers, sessions] = await Promise.all([
-    getBookings(),
-    getCustomers(),
-    getSessions(),
-  ]);
+export default function AdminBookingsPage() {
+  const utils = api.useUtils();
+  const [addOpen, setAddOpen] = useState(false);
+
+  const { data: bookings = [], isLoading: bookingsLoading } =
+    api.booking.list.useQuery();
+  const { data: customers = [] } = api.customer.list.useQuery();
+  const { data: sessions = [] } = api.schedule.list.useQuery();
+
+  const createBooking = api.booking.create.useMutation({
+    onSuccess: () => {
+      utils.booking.list.invalidate();
+      setAddOpen(false);
+    },
+  });
+
+  const updateStatus = api.booking.updateStatus.useMutation({
+    onSuccess: () => utils.booking.list.invalidate(),
+  });
+
+  if (bookingsLoading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 w-40 rounded bg-stone-200" />
+        <div className="h-64 rounded-xl bg-stone-200" />
+      </div>
+    );
+  }
 
   const today = toDateInputValue(new Date());
   const tomorrow = toDateInputValue(addDays(new Date(), 1));
@@ -80,9 +97,7 @@ export default async function AdminBookingsPage() {
       );
     }
   }
-  messageLines.push(
-    "\nReply with your name + timeslot to reserve your spot! 💪",
-  );
+  messageLines.push("\nReply with your name + timeslot to reserve your spot! 💪");
   const whatsappMessage = messageLines.join("\n");
 
   return (
@@ -90,7 +105,7 @@ export default async function AdminBookingsPage() {
       <PageHeader eyebrow="Reservations" title="Bookings">
         <div className="flex gap-2">
           <WhatsappCopyButton message={whatsappMessage} />
-          <Dialog>
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button type="button">Add booking</Button>
             </DialogTrigger>
@@ -101,7 +116,18 @@ export default async function AdminBookingsPage() {
                   Add an existing customer to an available class slot.
                 </DialogDescription>
               </DialogHeader>
-              <form action={createBookingAction} className="grid gap-4">
+              <form
+                className="grid gap-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  createBooking.mutate({
+                    customerId: String(fd.get("customerId") ?? ""),
+                    classSessionId: String(fd.get("classSessionId") ?? ""),
+                    notes: fd.get("notes") ? String(fd.get("notes")) : undefined,
+                  });
+                }}
+              >
                 <Field label="Customer">
                   <Select name="customerId">
                     {customers.map((customer) => (
@@ -123,7 +149,9 @@ export default async function AdminBookingsPage() {
                 <Field label="Notes">
                   <Textarea name="notes" />
                 </Field>
-                <Button type="submit">Add booking</Button>
+                <Button type="submit" disabled={createBooking.isPending}>
+                  Add booking
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -162,15 +190,16 @@ export default async function AdminBookingsPage() {
                   </Badge>
                 </td>
                 <td className={tdClass}>
-                  <form
-                    action={updateBookingStatusAction}
-                    className="flex gap-2"
-                  >
-                    <input name="id" type="hidden" value={booking.id} />
+                  <div className="flex gap-2">
                     <select
                       className="h-9 rounded border border-stone-200 px-2"
                       defaultValue={booking.status}
-                      name="status"
+                      onChange={(e) =>
+                        updateStatus.mutate({
+                          id: booking.id,
+                          status: e.target.value as "booked",
+                        })
+                      }
                     >
                       {statuses.map((status) => (
                         <option key={status} value={status}>
@@ -178,10 +207,7 @@ export default async function AdminBookingsPage() {
                         </option>
                       ))}
                     </select>
-                    <Button className="h-9" type="submit" variant="quiet">
-                      Save
-                    </Button>
-                  </form>
+                  </div>
                 </td>
               </tr>
             ))}

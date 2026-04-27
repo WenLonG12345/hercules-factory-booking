@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { customers, invoices, memberships, payments } from "@/db/schema";
+import { attendanceRecords, customers, invoices, memberships, payments } from "@/db/schema";
 import { adminProcedure, createTRPCRouter } from "@/server/trpc";
 import { idSchema } from "@/server/validators/common";
 import {
@@ -42,11 +42,18 @@ export const customerRouter = createTRPCRouter({
       .where(eq(payments.customerId, input.id))
       .orderBy(desc(payments.paidDate));
 
+    const attendanceHistory = await ctx.db.query.attendanceRecords.findMany({
+      where: eq(attendanceRecords.customerId, input.id),
+      with: { classSession: true },
+      orderBy: desc(attendanceRecords.checkedInAt),
+    });
+
     return {
       customer,
       memberships: customerMemberships,
       invoices: customerInvoices,
       payments: customerPayments,
+      attendanceHistory,
     };
   }),
   create: adminProcedure

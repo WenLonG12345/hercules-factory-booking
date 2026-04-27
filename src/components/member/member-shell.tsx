@@ -11,8 +11,8 @@ import {
   RiLogoutBoxLine,
   RiQrCodeLine,
 } from "react-icons/ri";
-import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/member", label: "Home", icon: RiHome5Line, exact: true },
@@ -26,14 +26,10 @@ const tabs = [
   { href: "/member/attendance", label: "History", icon: RiHistoryLine },
 ];
 
-export function MemberShell({
-  children,
-  userName,
-}: {
-  children: React.ReactNode;
-  userName?: string;
-}) {
+export function MemberShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { data: session } = authClient.useSession();
+  const userName = session?.user.name;
 
   function isActive(tab: (typeof tabs)[number]) {
     if (tab.exact) return pathname === tab.href;

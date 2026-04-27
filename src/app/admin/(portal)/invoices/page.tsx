@@ -1,3 +1,5 @@
+"use client";
+
 import { RiWhatsappLine } from "react-icons/ri";
 import {
   CreateInvoiceDialog,
@@ -7,12 +9,8 @@ import { PageHeader } from "@/components/admin/admin-shell";
 import { ApproveMembershipDialog } from "@/components/admin/approve-membership-dialog";
 import { Badge } from "@/components/ui/badge";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
+import { api } from "@/lib/trpc";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
-import {
-  getCustomers,
-  getInvoices,
-  getPackages,
-} from "@/server/services/queries";
 
 const PORTAL_PREFIX = "Customer self-request via portal: ";
 
@@ -27,12 +25,23 @@ const statusTone: Record<string, "green" | "amber" | "gray"> = {
   overdue: "gray",
 };
 
-export default async function InvoicesPage() {
-  const [invoices, customers, packages] = await Promise.all([
-    getInvoices(),
-    getCustomers(),
-    getPackages(),
-  ]);
+export default function InvoicesPage() {
+  const utils = api.useUtils();
+
+  const { data: invoices = [], isLoading } = api.invoice.list.useQuery();
+  const { data: customers = [] } = api.customer.list.useQuery();
+  const { data: packages = [] } = api.membership.packages.useQuery();
+
+  const refetchInvoices = () => utils.invoice.list.invalidate();
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 w-32 rounded bg-stone-200" />
+        <div className="h-64 rounded-xl bg-stone-200" />
+      </div>
+    );
+  }
 
   const activePackages = packages.filter((p) => p.isActive);
   const pendingPortalRequests = invoices.filter(
@@ -48,7 +57,7 @@ export default async function InvoicesPage() {
     <>
       <PageHeader eyebrow="Payments" title="Invoices">
         <div className="flex items-center gap-2">
-          <CreateInvoiceDialog customers={customers} />
+          <CreateInvoiceDialog customers={customers} onSuccess={refetchInvoices} />
           <RecordPaymentDialog
             invoices={invoices.map((inv) => ({
               id: inv.id,
@@ -56,6 +65,7 @@ export default async function InvoicesPage() {
               customerId: inv.customerId,
               customer: inv.customer ?? null,
             }))}
+            onSuccess={refetchInvoices}
           />
         </div>
       </PageHeader>
@@ -91,6 +101,7 @@ export default async function InvoicesPage() {
                       id: p.id,
                       name: p.name,
                     }))}
+                    onSuccess={refetchInvoices}
                   />
                 </div>
               );
@@ -116,9 +127,7 @@ export default async function InvoicesPage() {
             {otherInvoices.map((invoice) => (
               <tr key={invoice.id}>
                 <td className={tdClass}>
-                  <span className="font-mono text-xs">
-                    {invoice.invoiceNumber}
-                  </span>
+                  <span className="font-mono text-xs">{invoice.invoiceNumber}</span>
                 </td>
                 <td className={tdClass}>{invoice.customer?.name ?? "—"}</td>
                 <td className={tdClass}>
@@ -126,18 +135,14 @@ export default async function InvoicesPage() {
                     {invoice.status}
                   </Badge>
                 </td>
-                <td className={tdClass}>
-                  {formatCurrency(invoice.totalCents)}
-                </td>
+                <td className={tdClass}>{formatCurrency(invoice.totalCents)}</td>
                 <td className={tdClass}>
                   <span className="block max-w-45 truncate text-xs text-stone-500">
                     {invoice.notes ?? "—"}
                   </span>
                 </td>
                 <td className={tdClass}>
-                  <span className="text-xs text-stone-500">
-                    {invoice.issueDate}
-                  </span>
+                  <span className="text-xs text-stone-500">{invoice.issueDate}</span>
                 </td>
                 <td className={tdClass}>
                   {invoice.customer ? (

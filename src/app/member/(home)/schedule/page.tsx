@@ -1,53 +1,47 @@
-import { and, asc, eq, gte, inArray, isNull, or } from "drizzle-orm";
-import { bookClassAction } from "@/app/member/actions";
+"use client";
+
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { bookings, classSessions, memberships } from "@/db/schema";
-import { formatDate, formatTime, requireCustomer } from "../member-data";
-import { BookClassForm } from "./book-form";
+import { api } from "@/lib/trpc";
+import { formatDate, formatTime } from "../member-format";
 
-export default async function SchedulePage() {
-  const { customer, db } = await requireCustomer();
+export default function SchedulePage() {
+  const utils = api.useUtils();
+  const [bookingSessionId, setBookingSessionId] = useState<string | null>(null);
+
+  const { data: scheduleData = [], isLoading: scheduleLoading } =
+    api.portal.schedule.useQuery({});
+  const { data: myMemberships = [], isLoading: membershipsLoading } =
+    api.portal.myMemberships.useQuery();
+  const bookClass = api.portal.bookClass.useMutation({
+    onSuccess: () => {
+      setBookingSessionId(null);
+      utils.portal.schedule.invalidate();
+    },
+  });
+
+  const isLoading = scheduleLoading || membershipsLoading;
+
   const today = new Date().toISOString().split("T")[0];
+  const hasActiveMembership = myMemberships.some(
+    (m) =>
+      m.membership.status === "active" &&
+      (m.membership.expiryDate === null || m.membership.expiryDate >= today),
+  );
 
-  const sessions = await db
-    .select()
-    .from(classSessions)
-    .where(
-      and(
-        eq(classSessions.isCancelled, false),
-        gte(classSessions.sessionDate, today),
-      ),
-    )
-    .orderBy(asc(classSessions.sessionDate), asc(classSessions.startTime));
-
-  const [activeMembership] = await db
-    .select({ id: memberships.id })
-    .from(memberships)
-    .where(
-      and(
-        eq(memberships.customerId, customer.id),
-        eq(memberships.status, "active"),
-        or(isNull(memberships.expiryDate), gte(memberships.expiryDate, today)),
-      ),
-    )
-    .limit(1);
-
-  const sessionIds = sessions.map((s) => s.id);
-  const myBookings =
-    sessionIds.length > 0
-      ? await db
-          .select()
-          .from(bookings)
-          .where(
-            and(
-              eq(bookings.customerId, customer.id),
-              inArray(bookings.classSessionId, sessionIds),
-            ),
-          )
-      : [];
-
-  const myBookingMap = new Map(myBookings.map((b) => [b.classSessionId, b]));
+  if (isLoading) {
+    return (
+      <div className="animate-pulse grid gap-5">
+        <div className="h-8 w-32 rounded bg-white/10" />
+        <div className="grid gap-3">
+          {["a", "b", "c"].map((k) => (
+            <div key={k} className="h-24 rounded-xl bg-white/10" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-5">
@@ -58,22 +52,23 @@ export default async function SchedulePage() {
         <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-50">
           Book a class
         </h1>
-        {!activeMembership && (
+        {!hasActiveMembership && (
           <p className="mt-2 rounded-md bg-amber-900/30 px-3 py-2 text-xs text-amber-300 ring-1 ring-amber-500/30">
             Active membership required to book. Request one under Membership.
           </p>
         )}
       </div>
 
-      {sessions.length === 0 ? (
+      {scheduleData.length === 0 ? (
         <p className="text-center text-sm text-stone-500 py-8">
           No upcoming classes scheduled.
         </p>
       ) : (
         <div className="grid gap-3">
-          {sessions.map((session) => {
-            const myBooking = myBookingMap.get(session.id);
+          {scheduleData.map(({ session, myBooking }) => {
             const isBooked = myBooking && myBooking.status !== "cancelled";
+            const isPending =
+              bookClass.isPending && bookingSessionId === session.id;
 
             return (
               <Card key={session.id} className="p-4 border-white/10 bg-white/4">
@@ -97,11 +92,18 @@ export default async function SchedulePage() {
                   <div className="shrink-0">
                     {isBooked ? (
                       <Badge tone="amber">Booked</Badge>
-                    ) : activeMembership ? (
-                      <BookClassForm
-                        classSessionId={session.id}
-                        action={bookClassAction}
-                      />
+                    ) : hasActiveMembership ? (
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => {
+                          setBookingSessionId(session.id);
+                          bookClass.mutate({ classSessionId: session.id });
+                        }}
+                        className="rounded-md bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-600 disabled:opacity-60"
+                      >
+                        {isPending ? "Booking…" : "Book"}
+                      </button>
                     ) : (
                       <Badge tone="gray">Members only</Badge>
                     )}

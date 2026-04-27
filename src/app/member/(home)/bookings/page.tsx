@@ -1,22 +1,24 @@
-import { desc, eq } from "drizzle-orm";
-import { cancelBookingAction } from "@/app/member/actions";
+"use client";
+
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { bookings, classSessions } from "@/db/schema";
-import { formatDate, formatTime, requireCustomer } from "../member-data";
-import { CancelBookingForm } from "./cancel-form";
+import { api } from "@/lib/trpc";
+import { formatDate, formatTime } from "../member-format";
 
-export default async function BookingsPage() {
-  const { customer, db } = await requireCustomer();
+export default function BookingsPage() {
+  const utils = api.useUtils();
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const { data: allBookings = [], isLoading } = api.portal.myBookings.useQuery();
+  const cancelBooking = api.portal.cancelBooking.useMutation({
+    onSuccess: () => {
+      setCancellingId(null);
+      utils.portal.myBookings.invalidate();
+    },
+  });
+
   const today = new Date().toISOString().split("T")[0];
-
-  const allBookings = await db
-    .select({ booking: bookings, session: classSessions })
-    .from(bookings)
-    .innerJoin(classSessions, eq(classSessions.id, bookings.classSessionId))
-    .where(eq(bookings.customerId, customer.id))
-    .orderBy(desc(classSessions.sessionDate), desc(classSessions.startTime));
-
   const upcoming = allBookings.filter(
     (b) => b.session.sessionDate >= today && b.booking.status === "booked",
   );
@@ -30,6 +32,19 @@ export default async function BookingsPage() {
     if (status === "cancelled") return "gray";
     return "red";
   };
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse grid gap-5">
+        <div className="h-8 w-32 rounded bg-white/10" />
+        <div className="grid gap-3">
+          {["a", "b", "c"].map((k) => (
+            <div key={k} className="h-20 rounded-xl bg-white/10" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-5">
@@ -69,10 +84,21 @@ export default async function BookingsPage() {
                   </Badge>
                 </div>
                 <div className="mt-3">
-                  <CancelBookingForm
-                    bookingId={booking.id}
-                    action={cancelBookingAction}
-                  />
+                  <button
+                    type="button"
+                    disabled={
+                      cancelBooking.isPending && cancellingId === booking.id
+                    }
+                    onClick={() => {
+                      setCancellingId(booking.id);
+                      cancelBooking.mutate({ bookingId: booking.id });
+                    }}
+                    className="text-xs text-stone-400 hover:text-red-400 transition disabled:opacity-60"
+                  >
+                    {cancelBooking.isPending && cancellingId === booking.id
+                      ? "Cancelling…"
+                      : "Cancel booking"}
+                  </button>
                 </div>
               </Card>
             ))}

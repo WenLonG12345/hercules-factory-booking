@@ -1,30 +1,36 @@
+"use client";
+
 import { Banknote, CalendarCheck, Receipt, Users } from "lucide-react";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
+import { api } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
-import { getDashboardStats } from "@/server/services/queries";
 
-export default async function AdminDashboardPage() {
-  const stats = await getDashboardStats();
+function DashboardSkeleton() {
+  return (
+    <div className="animate-pulse space-y-6">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {["a", "b", "c", "d"].map((k) => (
+          <div key={k} className="h-28 rounded-xl bg-stone-200" />
+        ))}
+      </div>
+      <div className="h-48 rounded-xl bg-stone-200" />
+    </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  const { data: stats, isLoading } = api.report.dashboardStats.useQuery();
+
+  if (isLoading) return <DashboardSkeleton />;
+
   const cards = [
-    { label: "Total customers", value: stats.totalCustomers, icon: Users },
-    {
-      label: "Active memberships",
-      value: stats.activeMemberships,
-      icon: Receipt,
-    },
-    {
-      label: "Monthly revenue",
-      value: formatCurrency(stats.monthlyRevenueCents),
-      icon: Banknote,
-    },
-    {
-      label: "Today's bookings",
-      value: stats.todayBookings,
-      icon: CalendarCheck,
-    },
+    { label: "Total customers", value: stats?.totalCustomers ?? 0, icon: Users },
+    { label: "Active memberships", value: stats?.activeMemberships ?? 0, icon: Receipt },
+    { label: "Monthly revenue", value: formatCurrency(stats?.monthlyRevenueCents ?? 0), icon: Banknote },
+    { label: "Today's bookings", value: stats?.todayBookings ?? 0, icon: CalendarCheck },
   ];
 
   return (
@@ -37,9 +43,7 @@ export default async function AdminDashboardPage() {
               <p className="text-sm font-medium text-stone-500">{card.label}</p>
               <card.icon className="size-5 text-red-700" />
             </div>
-            <p className="mt-5 text-3xl font-black tracking-tight">
-              {card.value}
-            </p>
+            <p className="mt-5 text-3xl font-black tracking-tight">{card.value}</p>
           </Card>
         ))}
       </div>
@@ -57,16 +61,14 @@ export default async function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {stats.recentPayments.map((payment) => (
+              {stats?.recentPayments.map((payment) => (
                 <tr key={payment.id}>
                   <td className={tdClass}>{payment.customer?.name}</td>
                   <td className={tdClass}>{payment.invoice?.invoiceNumber}</td>
                   <td className={tdClass}>
                     <Badge tone="amber">{payment.method}</Badge>
                   </td>
-                  <td className={tdClass}>
-                    {formatCurrency(payment.amountCents)}
-                  </td>
+                  <td className={tdClass}>{formatCurrency(payment.amountCents)}</td>
                   <td className={tdClass}>{payment.paidDate}</td>
                 </tr>
               ))}

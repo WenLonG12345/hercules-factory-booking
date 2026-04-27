@@ -1,20 +1,24 @@
-import { desc, eq } from "drizzle-orm";
+"use client";
+
 import { Badge } from "@/components/ui/badge";
-import { attendanceRecords, classSessions } from "@/db/schema";
-import { formatDate, formatTime, requireCustomer } from "../member-data";
+import { api } from "@/lib/trpc";
+import { formatDate, formatTime } from "../member-format";
 
-export default async function AttendancePage() {
-  const { customer, db } = await requireCustomer();
+export default function AttendancePage() {
+  const { data: records = [], isLoading } = api.portal.myAttendance.useQuery();
 
-  const records = await db
-    .select({ record: attendanceRecords, session: classSessions })
-    .from(attendanceRecords)
-    .innerJoin(
-      classSessions,
-      eq(classSessions.id, attendanceRecords.classSessionId),
-    )
-    .where(eq(attendanceRecords.customerId, customer.id))
-    .orderBy(desc(attendanceRecords.checkedInAt));
+  if (isLoading) {
+    return (
+      <div className="animate-pulse grid gap-5">
+        <div className="h-8 w-40 rounded bg-white/10" />
+        <div className="grid gap-2">
+          {["a", "b", "c", "d"].map((k) => (
+            <div key={k} className="h-16 rounded-lg bg-white/10" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-5">

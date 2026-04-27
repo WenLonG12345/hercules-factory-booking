@@ -13,8 +13,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
-import { RiAddLine, RiMoneyDollarCircleLine } from "react-icons/ri";
 import { useState } from "react";
+import { RiAddLine, RiMoneyDollarCircleLine } from "react-icons/ri";
 
 type Customer = { id: string; name: string };
 type Invoice = {
@@ -24,7 +24,13 @@ type Invoice = {
   customer: { name: string } | null;
 };
 
-export function CreateInvoiceDialog({ customers }: { customers: Customer[] }) {
+export function CreateInvoiceDialog({
+  customers,
+  onSuccess,
+}: {
+  customers: Customer[];
+  onSuccess?: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   async function handleSubmit(formData: FormData) {
@@ -32,6 +38,7 @@ export function CreateInvoiceDialog({ customers }: { customers: Customer[] }) {
     formData.set("totalCents", String(Math.round(amount * 100)));
     formData.set("subtotalCents", String(Math.round(amount * 100)));
     await createInvoiceAction(formData);
+    onSuccess?.();
     setOpen(false);
   }
 
@@ -83,7 +90,13 @@ export function CreateInvoiceDialog({ customers }: { customers: Customer[] }) {
   );
 }
 
-export function RecordPaymentDialog({ invoices }: { invoices: Invoice[] }) {
+export function RecordPaymentDialog({
+  invoices,
+  onSuccess,
+}: {
+  invoices: Invoice[];
+  onSuccess?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(
     invoices[0]?.id ?? "",
@@ -96,6 +109,7 @@ export function RecordPaymentDialog({ invoices }: { invoices: Invoice[] }) {
       formData.set("customerId", selectedInvoice.customerId);
     }
     await recordPaymentAction(formData);
+    onSuccess?.();
     setOpen(false);
   }
 

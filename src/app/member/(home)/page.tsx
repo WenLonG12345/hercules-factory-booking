@@ -1,4 +1,5 @@
-import { and, asc, desc, eq, gte, isNull, or } from "drizzle-orm";
+"use client";
+
 import Link from "next/link";
 import {
   RiCalendarLine,
@@ -7,57 +8,33 @@ import {
 } from "react-icons/ri";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import {
-  attendanceRecords,
-  bookings,
-  classSessions,
-  memberships,
-  packages,
-} from "@/db/schema";
-import { formatDate, formatTime, requireCustomer } from "./member-data";
+import { api } from "@/lib/trpc";
+import { formatDate, formatTime } from "./member-format";
 
-export default async function MemberDashboard() {
-  const { customer, db } = await requireCustomer();
-  const today = new Date().toISOString().split("T")[0];
+export default function MemberDashboard() {
+  const { data, isLoading } = api.portal.dashboard.useQuery();
 
-  const [activeMembership] = await db
-    .select({ membership: memberships, package: packages })
-    .from(memberships)
-    .innerJoin(packages, eq(packages.id, memberships.packageId))
-    .where(
-      and(
-        eq(memberships.customerId, customer.id),
-        eq(memberships.status, "active"),
-        or(isNull(memberships.expiryDate), gte(memberships.expiryDate, today)),
-      ),
-    )
-    .orderBy(desc(memberships.createdAt))
-    .limit(1);
+  if (isLoading) {
+    return (
+      <div className="animate-pulse grid gap-5">
+        <div className="h-8 w-40 rounded bg-white/10" />
+        <div className="h-28 rounded-xl bg-white/10" />
+        <div className="grid grid-cols-3 gap-3">
+          {["a", "b", "c"].map((k) => (
+            <div key={k} className="h-20 rounded-xl bg-white/10" />
+          ))}
+        </div>
+        <div className="h-32 rounded-xl bg-white/10" />
+      </div>
+    );
+  }
 
-  const upcomingBookings = await db
-    .select({ booking: bookings, session: classSessions })
-    .from(bookings)
-    .innerJoin(classSessions, eq(classSessions.id, bookings.classSessionId))
-    .where(
-      and(
-        eq(bookings.customerId, customer.id),
-        eq(bookings.status, "booked"),
-        gte(classSessions.sessionDate, today),
-      ),
-    )
-    .orderBy(asc(classSessions.sessionDate), asc(classSessions.startTime))
-    .limit(5);
-
-  const recentAttendance = await db
-    .select({ record: attendanceRecords, session: classSessions })
-    .from(attendanceRecords)
-    .innerJoin(
-      classSessions,
-      eq(classSessions.id, attendanceRecords.classSessionId),
-    )
-    .where(eq(attendanceRecords.customerId, customer.id))
-    .orderBy(desc(attendanceRecords.checkedInAt))
-    .limit(3);
+  const {
+    customer,
+    activeMembership,
+    upcomingBookings = [],
+    recentAttendance = [],
+  } = data ?? {};
 
   return (
     <div className="grid gap-5">
@@ -66,7 +43,7 @@ export default async function MemberDashboard() {
           Member portal
         </p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-50">
-          Hey, {customer.name.split(" ")[0]}
+          Hey, {customer?.name.split(" ")[0]}
         </h1>
       </div>
 
