@@ -70,7 +70,9 @@ export default function ReportsPage() {
                   <td className={tdClass}>{payment.customer?.name}</td>
                   <td className={tdClass}>{payment.method}</td>
                   <td className={tdClass}>{payment.reference}</td>
-                  <td className={tdClass}>{formatCurrency(payment.amountCents)}</td>
+                  <td className={tdClass}>
+                    {formatCurrency(payment.amountCents)}
+                  </td>
                   <td className={tdClass}>{payment.paidDate}</td>
                 </tr>
               ))}

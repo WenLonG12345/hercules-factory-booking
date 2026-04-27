@@ -10,6 +10,7 @@ import { Field, Select } from "@/components/ui/form";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
 import { api } from "@/lib/trpc";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function CustomerProfilePage({
   params,
@@ -27,12 +28,16 @@ export default function CustomerProfilePage({
     api.membership.packages.useQuery();
 
   const createMembership = api.membership.create.useMutation({
-    onSuccess: () => utils.customer.profile.invalidate({ id }),
+    onSuccess: () => {
+      toast.success("Membership activated.");
+      utils.customer.profile.invalidate({ id });
+    },
   });
 
   const deleteCustomer = api.customer.delete.useMutation({
     onSuccess: () => {
       utils.customer.list.invalidate();
+      toast.success("Customer deleted.");
       router.push("/admin/customers");
     },
   });
@@ -175,7 +180,9 @@ export default function CustomerProfilePage({
                   <tr key={invoice.id}>
                     <td className={tdClass}>{invoice.invoiceNumber}</td>
                     <td className={tdClass}>{invoice.status}</td>
-                    <td className={tdClass}>{formatCurrency(invoice.totalCents)}</td>
+                    <td className={tdClass}>
+                      {formatCurrency(invoice.totalCents)}
+                    </td>
                     <td className={tdClass}>{invoice.dueDate}</td>
                   </tr>
                 ))}

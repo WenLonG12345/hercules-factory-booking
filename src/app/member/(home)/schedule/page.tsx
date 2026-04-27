@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/trpc";
@@ -16,8 +17,13 @@ export default function SchedulePage() {
     api.portal.myMemberships.useQuery();
   const bookClass = api.portal.bookClass.useMutation({
     onSuccess: () => {
+      toast.success("Class booked.");
       setBookingSessionId(null);
       utils.portal.schedule.invalidate();
+    },
+    onError: (error) => {
+      setBookingSessionId(null);
+      toast.error(error.message || "Unable to book this class.");
     },
   });
 
@@ -33,10 +39,10 @@ export default function SchedulePage() {
   if (isLoading) {
     return (
       <div className="animate-pulse grid gap-5">
-        <div className="h-8 w-32 rounded bg-white/10" />
+        <div className="h-8 w-32 rounded bg-stone-200" />
         <div className="grid gap-3">
           {["a", "b", "c"].map((k) => (
-            <div key={k} className="h-24 rounded-xl bg-white/10" />
+            <div key={k} className="h-24 rounded-xl bg-stone-200" />
           ))}
         </div>
       </div>
@@ -46,14 +52,14 @@ export default function SchedulePage() {
   return (
     <div className="grid gap-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-700">
           Schedule
         </p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-50">
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-950">
           Book a class
         </h1>
         {!hasActiveMembership && (
-          <p className="mt-2 rounded-md bg-amber-900/30 px-3 py-2 text-xs text-amber-300 ring-1 ring-amber-500/30">
+          <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
             Active membership required to book. Request one under Membership.
           </p>
         )}
@@ -71,11 +77,11 @@ export default function SchedulePage() {
               bookClass.isPending && bookingSessionId === session.id;
 
             return (
-              <Card key={session.id} className="p-4 border-white/10 bg-white/4">
+              <Card key={session.id} className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold text-stone-100">{session.title}</p>
-                    <p className="mt-0.5 text-sm text-stone-400">
+                    <p className="font-bold text-stone-950">{session.title}</p>
+                    <p className="mt-0.5 text-sm text-stone-500">
                       {formatDate(session.sessionDate)} ·{" "}
                       {formatTime(session.startTime)} –{" "}
                       {formatTime(session.endTime)}

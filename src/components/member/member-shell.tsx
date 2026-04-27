@@ -11,6 +11,7 @@ import {
   RiLogoutBoxLine,
   RiQrCodeLine,
 } from "react-icons/ri";
+import { Toaster } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
@@ -37,8 +38,8 @@ export function MemberShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 pb-20">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-stone-950/90 px-4 py-3 backdrop-blur">
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-amber-50 to-orange-100 pb-20 text-stone-950">
+      <header className="sticky top-0 z-20 border-b border-stone-200 bg-white/90 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-lg items-center justify-between">
           <Link href="/member" className="flex items-center gap-2">
             <Image
@@ -48,13 +49,13 @@ export function MemberShell({ children }: { children: React.ReactNode }) {
               height={32}
               className="rounded-md"
             />
-            <span className="text-sm font-black tracking-tight text-stone-50">
+            <span className="text-sm font-black tracking-tight text-stone-950">
               Hercules Factory
             </span>
           </Link>
           <div className="flex items-center gap-3">
             {userName ? (
-              <span className="text-xs text-stone-400 hidden sm:block">
+              <span className="hidden text-xs text-stone-500 sm:block">
                 {userName}
               </span>
             ) : null}
@@ -65,7 +66,7 @@ export function MemberShell({ children }: { children: React.ReactNode }) {
                   window.location.href = "/member/login";
                 })
               }
-              className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-stone-400 transition hover:bg-white/10 hover:text-stone-100"
+              className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-950"
             >
               <RiLogoutBoxLine className="size-3.5" />
               Sign out
@@ -76,7 +77,7 @@ export function MemberShell({ children }: { children: React.ReactNode }) {
 
       <main className="mx-auto max-w-lg px-4 py-5">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-stone-950/95 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-lg">
           {tabs.map((tab) => {
             const active = isActive(tab);
@@ -87,14 +88,14 @@ export function MemberShell({ children }: { children: React.ReactNode }) {
                 className={cn(
                   "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition",
                   active
-                    ? "text-red-500"
-                    : "text-stone-500 hover:text-stone-200",
+                    ? "text-red-700"
+                    : "text-stone-500 hover:text-stone-900",
                 )}
               >
                 <tab.icon
                   className={cn(
                     "size-5",
-                    active ? "text-red-500" : "text-stone-500",
+                    active ? "text-red-700" : "text-stone-500",
                   )}
                 />
                 {tab.label}
@@ -103,6 +104,7 @@ export function MemberShell({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </nav>
+      <Toaster richColors />
     </div>
   );
 }

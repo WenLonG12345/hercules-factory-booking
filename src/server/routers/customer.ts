@@ -1,5 +1,11 @@
 import { desc, eq } from "drizzle-orm";
-import { attendanceRecords, customers, invoices, memberships, payments } from "@/db/schema";
+import {
+  attendanceRecords,
+  customers,
+  invoices,
+  memberships,
+  payments,
+} from "@/db/schema";
 import { adminProcedure, createTRPCRouter } from "@/server/trpc";
 import { idSchema } from "@/server/validators/common";
 import {

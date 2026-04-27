@@ -10,10 +10,10 @@ export default function AttendancePage() {
   if (isLoading) {
     return (
       <div className="animate-pulse grid gap-5">
-        <div className="h-8 w-40 rounded bg-white/10" />
+        <div className="h-8 w-40 rounded bg-stone-200" />
         <div className="grid gap-2">
           {["a", "b", "c", "d"].map((k) => (
-            <div key={k} className="h-16 rounded-lg bg-white/10" />
+            <div key={k} className="h-16 rounded-lg bg-stone-200" />
           ))}
         </div>
       </div>
@@ -23,10 +23,10 @@ export default function AttendancePage() {
   return (
     <div className="grid gap-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-700">
           History
         </p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-50">
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-950">
           Attendance ({records.length})
         </h1>
       </div>
@@ -40,11 +40,11 @@ export default function AttendancePage() {
           {records.map(({ record, session }) => (
             <div
               key={record.id}
-              className="flex items-center justify-between rounded-lg border border-white/10 bg-white/4 px-3 py-3 text-sm"
+              className="flex items-center justify-between rounded-lg border border-stone-200 bg-white px-3 py-3 text-sm shadow-sm"
             >
               <div>
-                <p className="font-medium text-stone-100">{session.title}</p>
-                <p className="text-xs text-stone-400">
+                <p className="font-medium text-stone-950">{session.title}</p>
+                <p className="text-xs text-stone-500">
                   {formatDate(session.sessionDate)} ·{" "}
                   {formatTime(session.startTime)}
                 </p>
@@ -57,7 +57,7 @@ export default function AttendancePage() {
               <div className="flex flex-col items-end gap-1">
                 <Badge tone="green">Attended</Badge>
                 {record.creditDeducted && (
-                  <span className="text-xs text-amber-300">−1 credit</span>
+                  <span className="text-xs text-amber-700">−1 credit</span>
                 )}
               </div>
             </div>

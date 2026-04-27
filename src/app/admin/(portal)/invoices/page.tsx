@@ -57,7 +57,10 @@ export default function InvoicesPage() {
     <>
       <PageHeader eyebrow="Payments" title="Invoices">
         <div className="flex items-center gap-2">
-          <CreateInvoiceDialog customers={customers} onSuccess={refetchInvoices} />
+          <CreateInvoiceDialog
+            customers={customers}
+            onSuccess={refetchInvoices}
+          />
           <RecordPaymentDialog
             invoices={invoices.map((inv) => ({
               id: inv.id,
@@ -127,7 +130,9 @@ export default function InvoicesPage() {
             {otherInvoices.map((invoice) => (
               <tr key={invoice.id}>
                 <td className={tdClass}>
-                  <span className="font-mono text-xs">{invoice.invoiceNumber}</span>
+                  <span className="font-mono text-xs">
+                    {invoice.invoiceNumber}
+                  </span>
                 </td>
                 <td className={tdClass}>{invoice.customer?.name ?? "—"}</td>
                 <td className={tdClass}>
@@ -135,14 +140,18 @@ export default function InvoicesPage() {
                     {invoice.status}
                   </Badge>
                 </td>
-                <td className={tdClass}>{formatCurrency(invoice.totalCents)}</td>
+                <td className={tdClass}>
+                  {formatCurrency(invoice.totalCents)}
+                </td>
                 <td className={tdClass}>
                   <span className="block max-w-45 truncate text-xs text-stone-500">
                     {invoice.notes ?? "—"}
                   </span>
                 </td>
                 <td className={tdClass}>
-                  <span className="text-xs text-stone-500">{invoice.issueDate}</span>
+                  <span className="text-xs text-stone-500">
+                    {invoice.issueDate}
+                  </span>
                 </td>
                 <td className={tdClass}>
                   {invoice.customer ? (

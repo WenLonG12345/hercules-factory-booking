@@ -16,6 +16,7 @@ import {
 import { Field, Input, Textarea } from "@/components/ui/form";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
 import { api } from "@/lib/trpc";
+import { toast } from "sonner";
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function CustomersPage() {
     onSuccess: ([customer]) => {
       utils.customer.list.invalidate();
       setOpen(false);
+      toast.success("Customer created.");
       router.push(`/admin/customers/${customer.id}`);
     },
   });
@@ -71,11 +73,21 @@ export default function CustomersPage() {
                 });
               }}
             >
-              <Field label="Name"><Input name="name" required /></Field>
-              <Field label="WhatsApp phone"><Input name="phone" required /></Field>
-              <Field label="Email"><Input name="email" type="email" /></Field>
-              <Field label="Emergency contact"><Input name="emergencyContact" /></Field>
-              <Field label="Notes"><Textarea name="notes" /></Field>
+              <Field label="Name">
+                <Input name="name" required />
+              </Field>
+              <Field label="WhatsApp phone">
+                <Input name="phone" required />
+              </Field>
+              <Field label="Email">
+                <Input name="email" type="email" />
+              </Field>
+              <Field label="Emergency contact">
+                <Input name="emergencyContact" />
+              </Field>
+              <Field label="Notes">
+                <Textarea name="notes" />
+              </Field>
               <Button type="submit" disabled={createCustomer.isPending}>
                 Create customer
               </Button>

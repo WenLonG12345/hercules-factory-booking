@@ -33,7 +33,9 @@ export function ActionForm({
         if (resetOnSuccess) form.reset();
         onSuccess?.();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Something went wrong");
+        toast.error(
+          err instanceof Error ? err.message : "Something went wrong",
+        );
       }
     });
   }

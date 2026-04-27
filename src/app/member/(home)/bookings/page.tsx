@@ -5,14 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/trpc";
 import { formatDate, formatTime } from "../member-format";
+import { toast } from "sonner";
 
 export default function BookingsPage() {
   const utils = api.useUtils();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  const { data: allBookings = [], isLoading } = api.portal.myBookings.useQuery();
+  const { data: allBookings = [], isLoading } =
+    api.portal.myBookings.useQuery();
   const cancelBooking = api.portal.cancelBooking.useMutation({
     onSuccess: () => {
+      toast.success("Booking cancelled.");
       setCancellingId(null);
       utils.portal.myBookings.invalidate();
     },
@@ -36,10 +39,10 @@ export default function BookingsPage() {
   if (isLoading) {
     return (
       <div className="animate-pulse grid gap-5">
-        <div className="h-8 w-32 rounded bg-white/10" />
+        <div className="h-8 w-32 rounded bg-stone-200" />
         <div className="grid gap-3">
           {["a", "b", "c"].map((k) => (
-            <div key={k} className="h-20 rounded-xl bg-white/10" />
+            <div key={k} className="h-20 rounded-xl bg-stone-200" />
           ))}
         </div>
       </div>
@@ -49,26 +52,26 @@ export default function BookingsPage() {
   return (
     <div className="grid gap-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-700">
           My bookings
         </p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-50">
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-950">
           Classes
         </h1>
       </div>
 
       {upcoming.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-bold text-stone-300">Upcoming</h2>
+          <h2 className="mb-3 text-sm font-bold text-stone-950">Upcoming</h2>
           <div className="grid gap-3">
             {upcoming.map(({ booking, session }) => (
-              <Card key={booking.id} className="p-4 border-white/10 bg-white/4">
+              <Card key={booking.id} className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-bold text-stone-100 truncate">
+                    <p className="truncate font-bold text-stone-950">
                       {session.title}
                     </p>
-                    <p className="mt-0.5 text-sm text-stone-400">
+                    <p className="mt-0.5 text-sm text-stone-500">
                       {formatDate(session.sessionDate)} ·{" "}
                       {formatTime(session.startTime)} –{" "}
                       {formatTime(session.endTime)}
@@ -93,7 +96,7 @@ export default function BookingsPage() {
                       setCancellingId(booking.id);
                       cancelBooking.mutate({ bookingId: booking.id });
                     }}
-                    className="text-xs text-stone-400 hover:text-red-400 transition disabled:opacity-60"
+                    className="text-xs text-stone-500 transition hover:text-red-700 disabled:opacity-60"
                   >
                     {cancelBooking.isPending && cancellingId === booking.id
                       ? "Cancelling…"
@@ -108,18 +111,18 @@ export default function BookingsPage() {
 
       {past.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-bold text-stone-300">Past</h2>
+          <h2 className="mb-3 text-sm font-bold text-stone-950">Past</h2>
           <div className="grid gap-2">
             {past.map(({ booking, session }) => (
               <div
                 key={booking.id}
-                className="flex items-center justify-between rounded-lg border border-white/10 bg-white/4 px-3 py-2.5 text-sm"
+                className="flex items-center justify-between rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm shadow-sm"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-stone-100 truncate">
+                  <p className="truncate font-medium text-stone-950">
                     {session.title}
                   </p>
-                  <p className="text-xs text-stone-400">
+                  <p className="text-xs text-stone-500">
                     {formatDate(session.sessionDate)} ·{" "}
                     {formatTime(session.startTime)}
                   </p>

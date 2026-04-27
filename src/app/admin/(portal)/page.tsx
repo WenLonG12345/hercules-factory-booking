@@ -27,10 +27,26 @@ export default function AdminDashboardPage() {
   if (isLoading) return <DashboardSkeleton />;
 
   const cards = [
-    { label: "Total customers", value: stats?.totalCustomers ?? 0, icon: Users },
-    { label: "Active memberships", value: stats?.activeMemberships ?? 0, icon: Receipt },
-    { label: "Monthly revenue", value: formatCurrency(stats?.monthlyRevenueCents ?? 0), icon: Banknote },
-    { label: "Today's bookings", value: stats?.todayBookings ?? 0, icon: CalendarCheck },
+    {
+      label: "Total customers",
+      value: stats?.totalCustomers ?? 0,
+      icon: Users,
+    },
+    {
+      label: "Active memberships",
+      value: stats?.activeMemberships ?? 0,
+      icon: Receipt,
+    },
+    {
+      label: "Monthly revenue",
+      value: formatCurrency(stats?.monthlyRevenueCents ?? 0),
+      icon: Banknote,
+    },
+    {
+      label: "Today's bookings",
+      value: stats?.todayBookings ?? 0,
+      icon: CalendarCheck,
+    },
   ];
 
   return (
@@ -43,7 +59,9 @@ export default function AdminDashboardPage() {
               <p className="text-sm font-medium text-stone-500">{card.label}</p>
               <card.icon className="size-5 text-red-700" />
             </div>
-            <p className="mt-5 text-3xl font-black tracking-tight">{card.value}</p>
+            <p className="mt-5 text-3xl font-black tracking-tight">
+              {card.value}
+            </p>
           </Card>
         ))}
       </div>
@@ -68,7 +86,9 @@ export default function AdminDashboardPage() {
                   <td className={tdClass}>
                     <Badge tone="amber">{payment.method}</Badge>
                   </td>
-                  <td className={tdClass}>{formatCurrency(payment.amountCents)}</td>
+                  <td className={tdClass}>
+                    {formatCurrency(payment.amountCents)}
+                  </td>
                   <td className={tdClass}>{payment.paidDate}</td>
                 </tr>
               ))}

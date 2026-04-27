@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
 import { api } from "@/lib/trpc";
+import { toast } from "sonner";
 
 function formatTime(t: string) {
   const [h, m] = t.split(":").map(Number);
@@ -17,8 +18,10 @@ function formatTime(t: string) {
 
 function membershipBadge(packageType: string | undefined | null) {
   if (!packageType) return { label: "No pass", tone: "gray" as const };
-  if (packageType === "ten_class") return { label: "10-Class", tone: "amber" as const };
-  if (packageType === "unlimited") return { label: "Unlimited", tone: "green" as const };
+  if (packageType === "ten_class")
+    return { label: "10-Class", tone: "amber" as const };
+  if (packageType === "unlimited")
+    return { label: "Unlimited", tone: "green" as const };
   return { label: "Drop-in", tone: "gray" as const };
 }
 
@@ -33,12 +36,14 @@ export default function AttendancePage() {
     onSuccess: () => {
       utils.attendance.todayWithSessions.invalidate();
       utils.attendance.list.invalidate();
+      toast.success("Customer checked in.");
     },
   });
 
   const updateStatus = api.booking.updateStatus.useMutation({
     onSuccess: () => {
       utils.attendance.todayWithSessions.invalidate();
+      toast.success("Booking status updated.");
     },
   });
 
@@ -73,7 +78,9 @@ export default function AttendancePage() {
               <Card key={session.id}>
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">{formatTime(session.startTime)}</span>
+                    <span className="font-semibold">
+                      {formatTime(session.startTime)}
+                    </span>
                     <span className="text-stone-400">·</span>
                     <span className="text-stone-700">{session.title}</span>
                   </div>
@@ -88,19 +95,26 @@ export default function AttendancePage() {
                   </div>
                 </div>
                 {pendingBookings.length === 0 ? (
-                  <p className="text-sm text-stone-400">No pending check-ins.</p>
+                  <p className="text-sm text-stone-400">
+                    No pending check-ins.
+                  </p>
                 ) : (
                   <ul className="divide-y divide-stone-100">
                     {pendingBookings.map((booking) => {
-                      const activeMembership = booking.customer?.memberships?.[0];
-                      const badge = membershipBadge(activeMembership?.package?.type);
+                      const activeMembership =
+                        booking.customer?.memberships?.[0];
+                      const badge = membershipBadge(
+                        activeMembership?.package?.type,
+                      );
                       return (
                         <li
                           key={booking.id}
                           className="flex items-center justify-between py-2"
                         >
                           <div className="flex items-center gap-3">
-                            <span className="font-medium">{booking.customer?.name}</span>
+                            <span className="font-medium">
+                              {booking.customer?.name}
+                            </span>
                             <Badge tone={badge.tone}>{badge.label}</Badge>
                             {activeMembership?.remainingCredits != null && (
                               <span className="text-xs text-stone-400">

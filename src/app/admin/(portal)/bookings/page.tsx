@@ -17,6 +17,7 @@ import { Field, Select, Textarea } from "@/components/ui/form";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
 import { api } from "@/lib/trpc";
 import { addDays, toDateInputValue } from "@/lib/utils";
+import { toast } from "sonner";
 
 const statuses = ["booked", "no_show", "cancelled"];
 
@@ -40,11 +41,15 @@ export default function AdminBookingsPage() {
     onSuccess: () => {
       utils.booking.list.invalidate();
       setAddOpen(false);
+      toast.success("Booking added.");
     },
   });
 
   const updateStatus = api.booking.updateStatus.useMutation({
-    onSuccess: () => utils.booking.list.invalidate(),
+    onSuccess: () => {
+      utils.booking.list.invalidate();
+      toast.success("Booking status updated.");
+    },
   });
 
   if (bookingsLoading) {
@@ -97,7 +102,9 @@ export default function AdminBookingsPage() {
       );
     }
   }
-  messageLines.push("\nReply with your name + timeslot to reserve your spot! 💪");
+  messageLines.push(
+    "\nReply with your name + timeslot to reserve your spot! 💪",
+  );
   const whatsappMessage = messageLines.join("\n");
 
   return (
@@ -124,7 +131,9 @@ export default function AdminBookingsPage() {
                   createBooking.mutate({
                     customerId: String(fd.get("customerId") ?? ""),
                     classSessionId: String(fd.get("classSessionId") ?? ""),
-                    notes: fd.get("notes") ? String(fd.get("notes")) : undefined,
+                    notes: fd.get("notes")
+                      ? String(fd.get("notes"))
+                      : undefined,
                   });
                 }}
               >

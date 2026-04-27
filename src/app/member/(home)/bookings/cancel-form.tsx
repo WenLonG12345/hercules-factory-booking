@@ -28,7 +28,7 @@ export function CancelBookingForm({
       <button
         type="submit"
         disabled={pending}
-        className="text-xs font-medium text-stone-400 hover:text-red-600 transition disabled:opacity-50"
+        className="text-xs font-medium text-stone-500 transition hover:text-red-700 disabled:opacity-50"
       >
         {pending ? "Cancelling…" : "Cancel booking"}
       </button>

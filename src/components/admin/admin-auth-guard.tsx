@@ -15,9 +15,7 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   }, [session, isPending, router]);
 
   if (isPending || !session || session.user.role !== "admin") {
-    return (
-      <div className="p-8 text-sm text-stone-400">Loading…</div>
-    );
+    return <div className="p-8 text-sm text-stone-400">Loading…</div>;
   }
 
   return <>{children}</>;

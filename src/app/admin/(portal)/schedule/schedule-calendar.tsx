@@ -161,7 +161,8 @@ export function ScheduleCalendar({
             key={week.map((c) => c?.dateStr ?? "x").join("-")}
             className={cn(
               "grid grid-cols-7",
-              weeks.indexOf(week) < weeks.length - 1 && "border-b border-stone-200",
+              weeks.indexOf(week) < weeks.length - 1 &&
+                "border-b border-stone-200",
             )}
           >
             {week.map((cell, di) => {

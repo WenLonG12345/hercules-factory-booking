@@ -28,9 +28,7 @@ export function MemberAuthGuard({ children }: { children: React.ReactNode }) {
   }, [session, sessionPending, hasProfile, profilePending, router]);
 
   if (sessionPending || !session || profilePending || hasProfile === false) {
-    return (
-      <div className="p-8 text-sm text-stone-400">Loading…</div>
-    );
+    return <div className="p-8 text-sm text-stone-500">Loading…</div>;
   }
 
   return <>{children}</>;

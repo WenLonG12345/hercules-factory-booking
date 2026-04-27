@@ -73,7 +73,10 @@ import { api } from "@/lib/trpc";
 export default function MyPage() {
   const { data, isLoading } = api.router.procedure.useQuery();
   const mutation = api.router.action.useMutation({
-    onSuccess: () => utils.router.procedure.invalidate(),
+    onSuccess: () => {
+      toast.success("Action successful.");
+      utils.router.procedure.invalidate()
+    },
   });
 
   if (isLoading) return <div className="animate-pulse ...">/* skeleton */</div>;

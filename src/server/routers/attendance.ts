@@ -8,7 +8,11 @@ import { adminProcedure, createTRPCRouter } from "@/server/trpc";
 export const attendanceRouter = createTRPCRouter({
   list: adminProcedure.query(({ ctx }) =>
     ctx.db.query.attendanceRecords.findMany({
-      with: { customer: true, classSession: true, membership: { with: { package: true } } },
+      with: {
+        customer: true,
+        classSession: true,
+        membership: { with: { package: true } },
+      },
       orderBy: desc(attendanceRecords.checkedInAt),
     }),
   ),

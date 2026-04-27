@@ -17,14 +17,14 @@ export default function MemberDashboard() {
   if (isLoading) {
     return (
       <div className="animate-pulse grid gap-5">
-        <div className="h-8 w-40 rounded bg-white/10" />
-        <div className="h-28 rounded-xl bg-white/10" />
+        <div className="h-8 w-40 rounded bg-stone-200" />
+        <div className="h-28 rounded-xl bg-stone-200" />
         <div className="grid grid-cols-3 gap-3">
           {["a", "b", "c"].map((k) => (
-            <div key={k} className="h-20 rounded-xl bg-white/10" />
+            <div key={k} className="h-20 rounded-xl bg-stone-200" />
           ))}
         </div>
-        <div className="h-32 rounded-xl bg-white/10" />
+        <div className="h-32 rounded-xl bg-stone-200" />
       </div>
     );
   }
@@ -39,27 +39,27 @@ export default function MemberDashboard() {
   return (
     <div className="grid gap-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-700">
           Member portal
         </p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-50">
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-950">
           Hey, {customer?.name.split(" ")[0]}
         </h1>
       </div>
 
       {/* Membership card */}
-      <Card className="p-4 border-white/10 bg-white/4">
+      <Card className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
               Membership
             </p>
             {activeMembership ? (
               <>
-                <p className="mt-1 font-bold text-stone-100">
+                <p className="mt-1 font-bold text-stone-950">
                   {activeMembership.package.name}
                 </p>
-                <div className="mt-1 flex flex-wrap gap-2 text-xs text-stone-400">
+                <div className="mt-1 flex flex-wrap gap-2 text-xs text-stone-500">
                   {activeMembership.membership.expiryDate ? (
                     <span>
                       Expires{" "}
@@ -69,7 +69,7 @@ export default function MemberDashboard() {
                     <span>No expiry</span>
                   )}
                   {activeMembership.membership.remainingCredits !== null && (
-                    <span className="font-medium text-amber-300">
+                    <span className="font-medium text-amber-700">
                       {activeMembership.membership.remainingCredits} classes
                       left
                     </span>
@@ -77,7 +77,7 @@ export default function MemberDashboard() {
                 </div>
               </>
             ) : (
-              <p className="mt-1 text-sm text-stone-400">
+              <p className="mt-1 text-sm text-stone-500">
                 No active membership
               </p>
             )}
@@ -92,7 +92,7 @@ export default function MemberDashboard() {
         {!activeMembership && (
           <Link
             href="/member/memberships"
-            className="mt-3 block text-sm font-medium text-red-400 hover:underline"
+            className="mt-3 block text-sm font-medium text-red-700 hover:underline"
           >
             Request a membership →
           </Link>
@@ -103,23 +103,23 @@ export default function MemberDashboard() {
       <div className="grid grid-cols-3 gap-3">
         <Link
           href="/member/schedule"
-          className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/4 p-3 text-center text-xs font-medium text-stone-300 transition hover:border-red-500/30 hover:bg-red-900/20"
+          className="flex flex-col items-center gap-2 rounded-xl border border-stone-200 bg-white p-3 text-center text-xs font-medium text-stone-700 shadow-sm transition hover:border-red-200 hover:bg-red-50"
         >
-          <RiCalendarLine className="size-6 text-red-500" />
+          <RiCalendarLine className="size-6 text-red-700" />
           Book a class
         </Link>
         <Link
           href="/member/check-in"
-          className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/4 p-3 text-center text-xs font-medium text-stone-300 transition hover:border-red-500/30 hover:bg-red-900/20"
+          className="flex flex-col items-center gap-2 rounded-xl border border-stone-200 bg-white p-3 text-center text-xs font-medium text-stone-700 shadow-sm transition hover:border-red-200 hover:bg-red-50"
         >
-          <RiQrCodeLine className="size-6 text-red-500" />
+          <RiQrCodeLine className="size-6 text-red-700" />
           Check in
         </Link>
         <Link
           href="/member/memberships"
-          className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/4 p-3 text-center text-xs font-medium text-stone-300 transition hover:border-red-500/30 hover:bg-red-900/20"
+          className="flex flex-col items-center gap-2 rounded-xl border border-stone-200 bg-white p-3 text-center text-xs font-medium text-stone-700 shadow-sm transition hover:border-red-200 hover:bg-red-50"
         >
-          <RiCheckboxCircleLine className="size-6 text-red-500" />
+          <RiCheckboxCircleLine className="size-6 text-red-700" />
           Membership
         </Link>
       </div>
@@ -127,10 +127,10 @@ export default function MemberDashboard() {
       {/* Upcoming bookings */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-stone-100">Upcoming classes</h2>
+          <h2 className="text-sm font-bold text-stone-950">Upcoming classes</h2>
           <Link
             href="/member/bookings"
-            className="text-xs text-red-400 hover:underline"
+            className="text-xs text-red-700 hover:underline"
           >
             View all
           </Link>
@@ -142,11 +142,11 @@ export default function MemberDashboard() {
             {upcomingBookings.map(({ booking, session }) => (
               <div
                 key={booking.id}
-                className="flex items-center justify-between rounded-lg border border-white/10 bg-white/4 px-3 py-2.5 text-sm"
+                className="flex items-center justify-between rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm shadow-sm"
               >
                 <div>
-                  <p className="font-medium text-stone-100">{session.title}</p>
-                  <p className="text-xs text-stone-400">
+                  <p className="font-medium text-stone-950">{session.title}</p>
+                  <p className="text-xs text-stone-500">
                     {formatDate(session.sessionDate)} ·{" "}
                     {formatTime(session.startTime)}
                   </p>
@@ -162,12 +162,12 @@ export default function MemberDashboard() {
       {recentAttendance.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-stone-100">
+            <h2 className="text-sm font-bold text-stone-950">
               Recent attendance
             </h2>
             <Link
               href="/member/attendance"
-              className="text-xs text-red-400 hover:underline"
+              className="text-xs text-red-700 hover:underline"
             >
               View all
             </Link>
@@ -176,11 +176,11 @@ export default function MemberDashboard() {
             {recentAttendance.map(({ record, session }) => (
               <div
                 key={record.id}
-                className="flex items-center justify-between rounded-lg border border-white/10 bg-white/4 px-3 py-2.5 text-sm"
+                className="flex items-center justify-between rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm shadow-sm"
               >
                 <div>
-                  <p className="font-medium text-stone-100">{session.title}</p>
-                  <p className="text-xs text-stone-400">
+                  <p className="font-medium text-stone-950">{session.title}</p>
+                  <p className="text-xs text-stone-500">
                     {formatDate(session.sessionDate)} ·{" "}
                     {formatTime(session.startTime)}
                   </p>

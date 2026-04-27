@@ -67,8 +67,13 @@ export default function CmsPage() {
   const { data, isLoading } = api.cms.publicContent.useQuery();
   const refetch = () => utils.cms.publicContent.invalidate();
 
-  const { content, gallery = [], coaches = [], testimonials = [], socialLinks = [] } =
-    data ?? {};
+  const {
+    content,
+    gallery = [],
+    coaches = [],
+    testimonials = [],
+    socialLinks = [],
+  } = data ?? {};
 
   if (isLoading) {
     return (
@@ -241,8 +246,14 @@ export default function CmsPage() {
                   <Input name="alt" placeholder="Alt text" />
                   <Input name="caption" placeholder="Caption" />
                 </div>
-                <Input name="sortOrder" placeholder="Sort order (0, 1, 2…)" type="number" />
-                <Button type="submit" variant="quiet">Upload image</Button>
+                <Input
+                  name="sortOrder"
+                  placeholder="Sort order (0, 1, 2…)"
+                  type="number"
+                />
+                <Button type="submit" variant="quiet">
+                  Upload image
+                </Button>
               </ActionForm>
             </div>
           </Card>
@@ -273,10 +284,16 @@ export default function CmsPage() {
                         />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-black text-stone-950">{coach.name}</p>
+                        <p className="text-sm font-black text-stone-950">
+                          {coach.name}
+                        </p>
                         <p className="text-xs text-amber-700">{coach.title}</p>
                       </div>
-                      <ActionForm action={deleteCoachAction} successMessage="Coach deleted" onSuccess={refetch}>
+                      <ActionForm
+                        action={deleteCoachAction}
+                        successMessage="Coach deleted"
+                        onSuccess={refetch}
+                      >
                         <input name="id" type="hidden" value={coach.id} />
                         <button
                           className="grid size-7 place-items-center rounded text-stone-300 transition hover:bg-red-50 hover:text-red-600"
@@ -289,7 +306,11 @@ export default function CmsPage() {
                   ))}
                 </div>
               )}
-              <div className={coaches.length > 0 ? "border-t border-stone-100 pt-4" : ""}>
+              <div
+                className={
+                  coaches.length > 0 ? "border-t border-stone-100 pt-4" : ""
+                }
+              >
                 {coaches.length > 0 && <AddDivider label="Add coach" />}
                 <ActionForm
                   action={createCoachAction}
@@ -304,7 +325,9 @@ export default function CmsPage() {
                   </div>
                   <Textarea className="min-h-18" name="bio" placeholder="Bio" />
                   <Input name="imageUrl" placeholder="Image URL" />
-                  <Button type="submit" variant="quiet">Add coach</Button>
+                  <Button type="submit" variant="quiet">
+                    Add coach
+                  </Button>
                 </ActionForm>
               </div>
             </Card>
@@ -334,9 +357,15 @@ export default function CmsPage() {
                         <p className="line-clamp-2 text-xs text-stone-600">
                           &ldquo;{t.quote}&rdquo;
                         </p>
-                        <p className="mt-1 text-xs font-black text-stone-800">— {t.customerName}</p>
+                        <p className="mt-1 text-xs font-black text-stone-800">
+                          — {t.customerName}
+                        </p>
                       </div>
-                      <ActionForm action={deleteTestimonialAction} successMessage="Review deleted" onSuccess={refetch}>
+                      <ActionForm
+                        action={deleteTestimonialAction}
+                        successMessage="Review deleted"
+                        onSuccess={refetch}
+                      >
                         <input name="id" type="hidden" value={t.id} />
                         <button
                           className="mt-0.5 grid size-7 place-items-center rounded text-stone-300 transition hover:bg-red-50 hover:text-red-600"
@@ -349,7 +378,13 @@ export default function CmsPage() {
                   ))}
                 </div>
               )}
-              <div className={testimonials.length > 0 ? "border-t border-stone-100 pt-4" : ""}>
+              <div
+                className={
+                  testimonials.length > 0
+                    ? "border-t border-stone-100 pt-4"
+                    : ""
+                }
+              >
                 {testimonials.length > 0 && <AddDivider label="Add review" />}
                 <ActionForm
                   action={createTestimonialAction}
@@ -360,10 +395,23 @@ export default function CmsPage() {
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Input name="customerName" placeholder="Customer name" />
-                    <Input defaultValue="5" max="5" min="1" name="rating" placeholder="Rating 1–5" type="number" />
+                    <Input
+                      defaultValue="5"
+                      max="5"
+                      min="1"
+                      name="rating"
+                      placeholder="Rating 1–5"
+                      type="number"
+                    />
                   </div>
-                  <Textarea className="min-h-18" name="quote" placeholder="Quote" />
-                  <Button type="submit" variant="quiet">Add review</Button>
+                  <Textarea
+                    className="min-h-18"
+                    name="quote"
+                    placeholder="Quote"
+                  />
+                  <Button type="submit" variant="quiet">
+                    Add review
+                  </Button>
                 </ActionForm>
               </div>
             </Card>
@@ -384,10 +432,18 @@ export default function CmsPage() {
                       key={link.id}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-black capitalize text-stone-950">{link.platform}</p>
-                        <p className="truncate text-xs text-stone-400">{link.url}</p>
+                        <p className="text-sm font-black capitalize text-stone-950">
+                          {link.platform}
+                        </p>
+                        <p className="truncate text-xs text-stone-400">
+                          {link.url}
+                        </p>
                       </div>
-                      <ActionForm action={deleteSocialLinkAction} successMessage="Link deleted" onSuccess={refetch}>
+                      <ActionForm
+                        action={deleteSocialLinkAction}
+                        successMessage="Link deleted"
+                        onSuccess={refetch}
+                      >
                         <input name="id" type="hidden" value={link.id} />
                         <button
                           className="grid size-7 place-items-center rounded text-stone-300 transition hover:bg-red-50 hover:text-red-600"
@@ -400,7 +456,11 @@ export default function CmsPage() {
                   ))}
                 </div>
               )}
-              <div className={socialLinks.length > 0 ? "border-t border-stone-100 pt-4" : ""}>
+              <div
+                className={
+                  socialLinks.length > 0 ? "border-t border-stone-100 pt-4" : ""
+                }
+              >
                 {socialLinks.length > 0 && <AddDivider label="Add link" />}
                 <ActionForm
                   action={createSocialLinkAction}
@@ -410,11 +470,16 @@ export default function CmsPage() {
                   onSuccess={refetch}
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <Input name="platform" placeholder="Platform (instagram, whatsapp…)" />
+                    <Input
+                      name="platform"
+                      placeholder="Platform (instagram, whatsapp…)"
+                    />
                     <Input name="label" placeholder="Label" />
                   </div>
                   <Input name="url" placeholder="URL or phone number" />
-                  <Button type="submit" variant="quiet">Add link</Button>
+                  <Button type="submit" variant="quiet">
+                    Add link
+                  </Button>
                 </ActionForm>
               </div>
             </Card>

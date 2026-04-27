@@ -68,7 +68,9 @@ export default function MembershipsPage() {
                 setAddOpen(false);
               }}
             >
-              <Field label="Name"><Input name="name" required /></Field>
+              <Field label="Name">
+                <Input name="name" required />
+              </Field>
               <Field label="Type">
                 <Select name="type" required>
                   <option value="single">Single class</option>
@@ -77,7 +79,13 @@ export default function MembershipsPage() {
                 </Select>
               </Field>
               <Field label="Price (RM)">
-                <Input name="priceRinggit" type="number" min="0" step="0.01" required />
+                <Input
+                  name="priceRinggit"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                />
               </Field>
               <Field label="Class credits (blank = unlimited)">
                 <Input name="classCredits" type="number" min="1" />
@@ -108,11 +116,15 @@ export default function MembershipsPage() {
             <dl className="grid gap-2 text-sm mb-5">
               <div className="flex justify-between">
                 <dt className="text-stone-500">Price</dt>
-                <dd className="font-semibold">{formatCurrency(pkg.priceCents)}</dd>
+                <dd className="font-semibold">
+                  {formatCurrency(pkg.priceCents)}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-stone-500">Credits</dt>
-                <dd className="font-semibold">{pkg.classCredits ?? "Unlimited"}</dd>
+                <dd className="font-semibold">
+                  {pkg.classCredits ?? "Unlimited"}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-stone-500">Validity</dt>
@@ -126,7 +138,9 @@ export default function MembershipsPage() {
               onOpenChange={(open) => setEditId(open ? pkg.id : null)}
             >
               <DialogTrigger asChild>
-                <Button type="button" variant="quiet">Edit package</Button>
+                <Button type="button" variant="quiet">
+                  Edit package
+                </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -172,7 +186,10 @@ export default function MembershipsPage() {
                     />
                   </Field>
                   <Field label="Status">
-                    <Select name="isActive" defaultValue={pkg.isActive ? "true" : "false"}>
+                    <Select
+                      name="isActive"
+                      defaultValue={pkg.isActive ? "true" : "false"}
+                    >
                       <option value="true">Active</option>
                       <option value="false">Inactive</option>
                     </Select>

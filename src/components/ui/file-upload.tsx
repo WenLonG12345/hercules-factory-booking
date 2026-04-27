@@ -93,7 +93,10 @@ export function ImageFileUpload({
           <div className="text-center">
             <p className="text-sm font-semibold text-stone-700">
               Click to upload
-              <span className="font-normal text-stone-400"> or drag & drop</span>
+              <span className="font-normal text-stone-400">
+                {" "}
+                or drag & drop
+              </span>
             </p>
             <p className="mt-1 text-xs text-stone-400">PNG, JPG, WEBP</p>
           </div>

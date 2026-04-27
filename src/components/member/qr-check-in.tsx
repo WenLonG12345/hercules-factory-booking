@@ -62,15 +62,15 @@ export function QrCheckIn() {
       <div className="flex flex-col items-center gap-4 py-12 text-center">
         <RiCheckboxCircleFill className="size-16 text-green-500" />
         <div>
-          <p className="text-xl font-black text-stone-50">Checked in!</p>
-          <p className="mt-1 text-sm text-stone-400">
+          <p className="text-xl font-black text-stone-950">Checked in!</p>
+          <p className="mt-1 text-sm text-stone-500">
             Attendance recorded. Enjoy your class!
           </p>
         </div>
         <button
           type="button"
           onClick={reset}
-          className="mt-2 rounded-md bg-white/10 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:bg-white/20"
+          className="mt-2 rounded-md bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:bg-white"
         >
           Scan another
         </button>
@@ -81,15 +81,15 @@ export function QrCheckIn() {
   if (state.status === "error") {
     return (
       <div className="flex flex-col items-center gap-4 py-12 text-center">
-        <RiCloseCircleFill className="size-16 text-red-500" />
+        <RiCloseCircleFill className="size-16 text-red-700" />
         <div>
-          <p className="text-xl font-black text-stone-50">Check-in failed</p>
-          <p className="mt-1 text-sm text-stone-400">{state.message}</p>
+          <p className="text-xl font-black text-stone-950">Check-in failed</p>
+          <p className="mt-1 text-sm text-stone-500">{state.message}</p>
         </div>
         <button
           type="button"
           onClick={reset}
-          className="mt-2 rounded-md bg-white/10 px-4 py-2 text-sm font-semibold text-stone-100 transition hover:bg-white/20"
+          className="mt-2 rounded-md bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:bg-white"
         >
           Try again
         </button>
@@ -100,11 +100,11 @@ export function QrCheckIn() {
   return (
     <div className="grid gap-4">
       {state.status === "checking" && (
-        <p className="text-center text-sm font-medium text-amber-300">
+        <p className="text-center text-sm font-medium text-amber-700">
           Checking in…
         </p>
       )}
-      <div className="overflow-hidden rounded-2xl border border-white/10 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
         <Scanner
           onScan={handleScan}
           styles={{ container: { width: "100%", aspectRatio: "1 / 1" } }}
