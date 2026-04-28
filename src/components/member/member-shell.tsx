@@ -104,7 +104,7 @@ export function MemberShell({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </nav>
-      <Toaster richColors />
+      <Toaster richColors position="top-right"/>
     </div>
   );
 }

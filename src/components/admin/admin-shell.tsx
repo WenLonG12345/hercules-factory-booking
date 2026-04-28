@@ -65,7 +65,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </header>
         <main className="px-4 py-6 md:px-8">{children}</main>
       </div>
-      <Toaster richColors />
+      <Toaster richColors position="top-right" />
     </div>
   );
 }
