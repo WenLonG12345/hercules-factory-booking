@@ -25,6 +25,8 @@ export const customerRouter = createTRPCRouter({
     return customer;
   }),
   profile: adminProcedure.input(idSchema).query(async ({ ctx, input }) => {
+    const t0 = Date.now();
+
     const [
       [customer],
       customerMemberships,
@@ -32,27 +34,55 @@ export const customerRouter = createTRPCRouter({
       customerPayments,
       attendanceHistory,
     ] = await Promise.all([
-      ctx.db.select().from(customers).where(eq(customers.id, input.id)),
-      ctx.db.query.memberships.findMany({
-        where: eq(memberships.customerId, input.id),
-        with: { package: true },
-        orderBy: desc(memberships.createdAt),
-      }),
+      ctx.db
+        .select()
+        .from(customers)
+        .where(eq(customers.id, input.id))
+        .then((r) => {
+          console.log(`[profile] customers: ${Date.now() - t0}ms`);
+          return r;
+        }),
+      ctx.db.query.memberships
+        .findMany({
+          where: eq(memberships.customerId, input.id),
+          with: { package: true },
+          orderBy: desc(memberships.createdAt),
+        })
+        .then((r) => {
+          console.log(`[profile] memberships: ${Date.now() - t0}ms`);
+          return r;
+        }),
       ctx.db
         .select()
         .from(invoices)
         .where(eq(invoices.customerId, input.id))
-        .orderBy(desc(invoices.createdAt)),
+        .orderBy(desc(invoices.createdAt))
+        .then((r) => {
+          console.log(`[profile] invoices: ${Date.now() - t0}ms`);
+          return r;
+        }),
       ctx.db
         .select()
         .from(payments)
         .where(eq(payments.customerId, input.id))
-        .orderBy(desc(payments.paidDate)),
-      ctx.db.query.attendanceRecords.findMany({
-        where: eq(attendanceRecords.customerId, input.id),
-        with: { classSession: true },
-        orderBy: desc(attendanceRecords.checkedInAt),
-      }),
+        .orderBy(desc(payments.paidDate))
+        .then((r) => {
+          console.log(`[profile] payments: ${Date.now() - t0}ms`);
+          return r;
+        }),
+      ctx.db.query.attendanceRecords
+        .findMany({
+          where: eq(attendanceRecords.customerId, input.id),
+          with: { classSession: true },
+          orderBy: desc(attendanceRecords.checkedInAt),
+          limit: 50,
+        })
+        .then((r) => {
+          console.log(
+            `[profile] attendance (${r.length} rows): ${Date.now() - t0}ms`,
+          );
+          return r;
+        }),
     ]);
 
     return {

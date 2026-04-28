@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
 import { formatDate } from "../member-format";
-import { toast } from "sonner";
 
 const BANK_NAME = process.env.NEXT_PUBLIC_PAYMENT_BANK_NAME ?? "";
 const BANK_ACCOUNT = process.env.NEXT_PUBLIC_PAYMENT_BANK_ACCOUNT ?? "";
@@ -186,8 +186,14 @@ export default function MembershipsPage() {
                       : pkg.type === "unlimited"
                         ? "Unlimited classes"
                         : "Single class"}
+                    {pkg.durationMinutes ? ` · ${pkg.durationMinutes} min` : ""}
                     {pkg.validityDays ? ` · ${pkg.validityDays} days` : ""}
                   </p>
+                  {pkg.description && (
+                    <p className="mt-1 text-xs text-stone-500">
+                      {pkg.description}
+                    </p>
+                  )}
                 </div>
                 <p className="shrink-0 font-black text-amber-700">
                   {formatCurrency(pkg.priceCents)}

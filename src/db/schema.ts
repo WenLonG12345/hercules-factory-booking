@@ -144,6 +144,8 @@ export const packages = pgTable("packages", {
   priceCents: integer("price_cents").notNull(),
   classCredits: integer("class_credits"),
   validityDays: integer("validity_days"),
+  durationMinutes: integer("duration_minutes"),
+  description: text("description"),
   isActive: boolean("is_active").default(true).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
   ...timestamps,

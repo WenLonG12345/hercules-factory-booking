@@ -11,7 +11,11 @@ import {
 export const invoiceRouter = createTRPCRouter({
   list: adminProcedure.query(({ ctx }) =>
     ctx.db.query.invoices.findMany({
-      with: { customer: true, payments: true },
+      with: {
+        customer: true,
+        payments: true,
+        membership: { with: { package: true } },
+      },
       orderBy: desc(invoices.createdAt),
     }),
   ),

@@ -1,16 +1,26 @@
 "use client";
 
+import { FileDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
+import { RiWhatsappLine } from "react-icons/ri";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Field, Select } from "@/components/ui/form";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
+import { useModal } from "@/hooks/use-modal";
+import { exportInvoicePDF } from "@/lib/invoice-pdf";
 import { api } from "@/lib/trpc";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
-import { toast } from "sonner";
 
 export default function CustomerProfilePage({
   params,
@@ -22,6 +32,10 @@ export default function CustomerProfilePage({
   const utils = api.useUtils();
   const [startDate] = useState(() => new Date().toISOString().slice(0, 10));
 
+  const addMembershipModal = useModal();
+  const [extendingId, setExtendingId] = useState<string | null>(null);
+  const [newExpiry, setNewExpiry] = useState("");
+
   const { data: profile, isLoading: profileLoading } =
     api.customer.profile.useQuery({ id });
   const { data: packages = [], isLoading: pkgsLoading } =
@@ -31,6 +45,15 @@ export default function CustomerProfilePage({
     onSuccess: () => {
       toast.success("Membership activated.");
       utils.customer.profile.invalidate({ id });
+      addMembershipModal.onClose();
+    },
+  });
+
+  const updateMembership = api.membership.update.useMutation({
+    onSuccess: () => {
+      toast.success("Expiry date updated.");
+      utils.customer.profile.invalidate({ id });
+      setExtendingId(null);
     },
   });
 
@@ -75,6 +98,7 @@ export default function CustomerProfilePage({
           WhatsApp
         </a>
       </PageHeader>
+
       <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
         <div className="grid gap-6">
           <Card>
@@ -103,43 +127,10 @@ export default function CustomerProfilePage({
               Delete customer
             </Button>
           </Card>
-          <Card>
-            <h2 className="mb-4 text-lg font-black">Add membership</h2>
-            <form
-              className="grid gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const fd = new FormData(e.currentTarget);
-                createMembership.mutate({
-                  customerId: customer.id,
-                  packageId: String(fd.get("packageId") ?? ""),
-                  startDate: String(fd.get("startDate") ?? ""),
-                });
-              }}
-            >
-              <Field label="Package">
-                <Select name="packageId">
-                  {packages.map((pkg) => (
-                    <option key={pkg.id} value={pkg.id}>
-                      {pkg.name} - {formatCurrency(pkg.priceCents)}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Start date">
-                <input
-                  className="h-11 rounded-md border border-stone-200 px-3"
-                  name="startDate"
-                  type="date"
-                  defaultValue={startDate}
-                />
-              </Field>
-              <Button type="submit" disabled={createMembership.isPending}>
-                Activate package
-              </Button>
-            </form>
-          </Card>
+
+          <Button onClick={addMembershipModal.onOpen}>Add membership</Button>
         </div>
+
         <div className="grid gap-6">
           <Card>
             <h2 className="mb-4 text-lg font-black">Membership status</h2>
@@ -158,13 +149,25 @@ export default function CustomerProfilePage({
                     </Badge>
                   </div>
                   <p className="mt-2 text-sm text-stone-600">
-                    Expires {membership.expiryDate ?? "N/A"} - Credits{" "}
+                    Expires {membership.expiryDate ?? "N/A"} · Credits{" "}
                     {membership.remainingCredits ?? "Unlimited"}
                   </p>
+                  <Button
+                    type="button"
+                    variant="quiet"
+                    className="mt-3"
+                    onClick={() => {
+                      setExtendingId(membership.id);
+                      setNewExpiry(membership.expiryDate ?? "");
+                    }}
+                  >
+                    Extend expiry
+                  </Button>
                 </div>
               ))}
             </div>
           </Card>
+
           <TableWrap>
             <table className={tableClass}>
               <thead>
@@ -172,23 +175,90 @@ export default function CustomerProfilePage({
                   <th className={thClass}>Invoice</th>
                   <th className={thClass}>Status</th>
                   <th className={thClass}>Amount</th>
-                  <th className={thClass}>Due</th>
+                  <th className={thClass}>Date</th>
+                  <th className={thClass}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {profile.invoices.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td className={tdClass}>{invoice.invoiceNumber}</td>
-                    <td className={tdClass}>{invoice.status}</td>
-                    <td className={tdClass}>
-                      {formatCurrency(invoice.totalCents)}
-                    </td>
-                    <td className={tdClass}>{invoice.dueDate}</td>
-                  </tr>
-                ))}
+                {profile.invoices.map((invoice) => {
+                  const membership = profile.memberships.find(
+                    (m) => m.id === invoice.membershipId,
+                  );
+                  return (
+                    <tr key={invoice.id}>
+                      <td className={tdClass}>
+                        <span className="font-mono text-xs">
+                          {invoice.invoiceNumber}
+                        </span>
+                      </td>
+                      <td className={tdClass}>
+                        <Badge
+                          tone={
+                            invoice.status === "paid"
+                              ? "green"
+                              : invoice.status === "pending"
+                                ? "amber"
+                                : "gray"
+                          }
+                        >
+                          {invoice.status}
+                        </Badge>
+                      </td>
+                      <td className={tdClass}>
+                        {formatCurrency(invoice.totalCents)}
+                      </td>
+                      <td className={tdClass}>
+                        <span className="text-xs text-stone-500">
+                          {invoice.issueDate}
+                        </span>
+                      </td>
+                      <td className={tdClass}>
+                        <div className="flex items-center gap-3">
+                          <a
+                            href={whatsappLink(
+                              customer.phone,
+                              `Hi ${customer.name}, your Hercules Factory invoice ${invoice.invoiceNumber} is ${formatCurrency(invoice.totalCents)}.`,
+                            )}
+                            rel="noreferrer"
+                            target="_blank"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                          >
+                            <RiWhatsappLine className="size-3.5" />
+                            Send
+                          </a>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-stone-500 hover:text-stone-900 cursor-pointer"
+                            onClick={() =>
+                              exportInvoicePDF({
+                                customerName: customer.name,
+                                customerPhone: customer.phone,
+                                invoiceNumber: invoice.invoiceNumber,
+                                invoiceDate: invoice.issueDate,
+                                totalCents: invoice.totalCents,
+                                description:
+                                  invoice.notes ??
+                                  membership?.package?.name ??
+                                  "Membership",
+                                dateRange:
+                                  membership?.startDate && membership.expiryDate
+                                    ? `${membership.startDate} TO ${membership.expiryDate}`
+                                    : undefined,
+                              })
+                            }
+                          >
+                            <FileDown className="size-3.5" />
+                            PDF
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </TableWrap>
+
           <Card>
             <h2 className="mb-4 text-lg font-black">
               Attendance history ({profile.attendanceHistory.length})
@@ -221,6 +291,87 @@ export default function CustomerProfilePage({
           </Card>
         </div>
       </div>
+
+      {/* Add membership modal */}
+      <Dialog
+        open={addMembershipModal.open}
+        onOpenChange={(v) => !v && addMembershipModal.onClose()}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add membership</DialogTitle>
+          </DialogHeader>
+          <form
+            className="grid gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              createMembership.mutate({
+                customerId: customer.id,
+                packageId: String(fd.get("packageId") ?? ""),
+                startDate: String(fd.get("startDate") ?? ""),
+              });
+            }}
+          >
+            <Field label="Package">
+              <Select name="packageId">
+                {packages.map((pkg) => (
+                  <option key={pkg.id} value={pkg.id}>
+                    {pkg.name} - {formatCurrency(pkg.priceCents)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Start date">
+              <input
+                className="h-11 rounded-md border border-stone-200 px-3"
+                name="startDate"
+                type="date"
+                defaultValue={startDate}
+              />
+            </Field>
+            <Button type="submit" disabled={createMembership.isPending}>
+              Activate package
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Extend expiry modal */}
+      <Dialog
+        open={!!extendingId}
+        onOpenChange={(v) => !v && setExtendingId(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Extend expiry date</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <Field label="New expiry date">
+              <input
+                className="h-11 rounded-md border border-stone-200 px-3"
+                type="date"
+                value={newExpiry}
+                onChange={(e) => setNewExpiry(e.target.value)}
+              />
+            </Field>
+            <Button
+              type="button"
+              disabled={!newExpiry || updateMembership.isPending}
+              onClick={() => {
+                if (!extendingId || !newExpiry) return;
+                updateMembership.mutate({
+                  id: extendingId,
+                  expiryDate: newExpiry,
+                  status: "active",
+                });
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

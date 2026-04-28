@@ -1,5 +1,6 @@
 "use client";
 
+import { FileDown } from "lucide-react";
 import { RiWhatsappLine } from "react-icons/ri";
 import {
   CreateInvoiceDialog,
@@ -9,6 +10,7 @@ import { PageHeader } from "@/components/admin/admin-shell";
 import { ApproveMembershipDialog } from "@/components/admin/approve-membership-dialog";
 import { Badge } from "@/components/ui/badge";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
+import { exportInvoicePDF } from "@/lib/invoice-pdf";
 import { api } from "@/lib/trpc";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
 
@@ -123,7 +125,7 @@ export default function InvoicesPage() {
               <th className={thClass}>Amount</th>
               <th className={thClass}>Notes</th>
               <th className={thClass}>Date</th>
-              <th className={thClass} />
+              <th className={thClass}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -154,20 +156,47 @@ export default function InvoicesPage() {
                   </span>
                 </td>
                 <td className={tdClass}>
-                  {invoice.customer ? (
-                    <a
-                      href={whatsappLink(
-                        invoice.customer.phone,
-                        `Hi ${invoice.customer.name}, your Hercules Factory invoice ${invoice.invoiceNumber} is ${formatCurrency(invoice.totalCents)}.`,
-                      )}
-                      rel="noreferrer"
-                      target="_blank"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                  <div className="flex items-center gap-3">
+                    {invoice.customer ? (
+                      <a
+                        href={whatsappLink(
+                          invoice.customer.phone,
+                          `Hi ${invoice.customer.name}, your Hercules Factory invoice ${invoice.invoiceNumber} is ${formatCurrency(invoice.totalCents)}.`,
+                        )}
+                        rel="noreferrer"
+                        target="_blank"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                      >
+                        <RiWhatsappLine className="size-3.5" />
+                        Send
+                      </a>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-stone-500 hover:text-stone-900 cursor-pointer"
+                      onClick={() =>
+                        exportInvoicePDF({
+                          customerName: invoice.customer?.name ?? "—",
+                          customerPhone: invoice.customer?.phone ?? "—",
+                          invoiceNumber: invoice.invoiceNumber,
+                          invoiceDate: invoice.issueDate,
+                          totalCents: invoice.totalCents,
+                          description:
+                            invoice.notes ??
+                            invoice.membership?.package?.name ??
+                            "Membership",
+                          dateRange:
+                            invoice.membership?.startDate &&
+                            invoice.membership.expiryDate
+                              ? `${invoice.membership.startDate} TO ${invoice.membership.expiryDate}`
+                              : undefined,
+                        })
+                      }
                     >
-                      <RiWhatsappLine className="size-3.5" />
-                      Send
-                    </a>
-                  ) : null}
+                      <FileDown className="size-3.5" />
+                      PDF
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

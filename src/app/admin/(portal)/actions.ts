@@ -415,6 +415,8 @@ export async function createPackageAction(formData: FormData) {
   );
   const classCreditsRaw = formData.get("classCredits");
   const validityDaysRaw = formData.get("validityDays");
+  const durationMinutesRaw = formData.get("durationMinutes");
+  const descriptionRaw = formData.get("description");
 
   await getDb()
     .insert(packages)
@@ -424,6 +426,8 @@ export async function createPackageAction(formData: FormData) {
       priceCents,
       classCredits: classCreditsRaw ? Number(classCreditsRaw) : null,
       validityDays: validityDaysRaw ? Number(validityDaysRaw) : null,
+      durationMinutes: durationMinutesRaw ? Number(durationMinutesRaw) : null,
+      description: descriptionRaw ? String(descriptionRaw) : null,
       sortOrder: Number(formData.get("sortOrder") || 99),
     });
   revalidatePath("/admin/memberships");
@@ -436,6 +440,8 @@ export async function updatePackageAction(formData: FormData) {
   );
   const classCreditsRaw = formData.get("classCredits");
   const validityDaysRaw = formData.get("validityDays");
+  const durationMinutesRaw = formData.get("durationMinutes");
+  const descriptionRaw = formData.get("description");
 
   await getDb()
     .update(packages)
@@ -444,6 +450,8 @@ export async function updatePackageAction(formData: FormData) {
       priceCents,
       classCredits: classCreditsRaw ? Number(classCreditsRaw) : null,
       validityDays: validityDaysRaw ? Number(validityDaysRaw) : null,
+      durationMinutes: durationMinutesRaw ? Number(durationMinutesRaw) : null,
+      description: descriptionRaw ? String(descriptionRaw) : null,
       isActive: formData.get("isActive") === "true",
       updatedAt: new Date(),
     })

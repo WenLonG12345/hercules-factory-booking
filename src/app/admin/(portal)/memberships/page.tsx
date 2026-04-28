@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, Input, Select } from "@/components/ui/form";
+import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { api } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
 
@@ -93,6 +93,12 @@ export default function MembershipsPage() {
               <Field label="Validity days (blank = no expiry)">
                 <Input name="validityDays" type="number" min="1" />
               </Field>
+              <Field label="Duration (minutes, blank = not applicable)">
+                <Input name="durationMinutes" type="number" min="1" />
+              </Field>
+              <Field label="Description (optional)">
+                <Textarea name="description" rows={3} />
+              </Field>
               <Button type="submit">Create package</Button>
             </form>
           </DialogContent>
@@ -113,6 +119,9 @@ export default function MembershipsPage() {
                 {pkg.isActive ? "Active" : "Inactive"}
               </Badge>
             </div>
+            {pkg.description && (
+              <p className="mb-3 text-sm text-stone-600">{pkg.description}</p>
+            )}
             <dl className="grid gap-2 text-sm mb-5">
               <div className="flex justify-between">
                 <dt className="text-stone-500">Price</dt>
@@ -132,6 +141,12 @@ export default function MembershipsPage() {
                   {pkg.validityDays ? `${pkg.validityDays} days` : "No expiry"}
                 </dd>
               </div>
+              {pkg.durationMinutes && (
+                <div className="flex justify-between">
+                  <dt className="text-stone-500">Duration</dt>
+                  <dd className="font-semibold">{pkg.durationMinutes} min</dd>
+                </div>
+              )}
             </dl>
             <Dialog
               open={editId === pkg.id}
@@ -183,6 +198,21 @@ export default function MembershipsPage() {
                       type="number"
                       min="1"
                       defaultValue={pkg.validityDays ?? ""}
+                    />
+                  </Field>
+                  <Field label="Duration (minutes, blank = not applicable)">
+                    <Input
+                      name="durationMinutes"
+                      type="number"
+                      min="1"
+                      defaultValue={pkg.durationMinutes ?? ""}
+                    />
+                  </Field>
+                  <Field label="Description (optional)">
+                    <Textarea
+                      name="description"
+                      rows={3}
+                      defaultValue={pkg.description ?? ""}
                     />
                   </Field>
                   <Field label="Status">

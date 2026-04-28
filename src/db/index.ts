@@ -10,7 +10,7 @@ declare global {
 
 function createDb() {
   if (!connectionString) return null;
-  const client = postgres(connectionString, { prepare: false, max: 3 });
+  const client = postgres(connectionString, { prepare: false, max: 10 });
   return drizzle(client, { schema });
 }
 

@@ -100,7 +100,10 @@ export const portalRouter = createTRPCRouter({
             and(
               eq(memberships.customerId, ctx.customer.id),
               eq(memberships.status, "active"),
-              or(isNull(memberships.expiryDate), gte(memberships.expiryDate, t)),
+              or(
+                isNull(memberships.expiryDate),
+                gte(memberships.expiryDate, t),
+              ),
             ),
           )
           .orderBy(desc(memberships.createdAt))
@@ -108,7 +111,10 @@ export const portalRouter = createTRPCRouter({
         ctx.db
           .select({ booking: bookings, session: classSessions })
           .from(bookings)
-          .innerJoin(classSessions, eq(classSessions.id, bookings.classSessionId))
+          .innerJoin(
+            classSessions,
+            eq(classSessions.id, bookings.classSessionId),
+          )
           .where(
             and(
               eq(bookings.customerId, ctx.customer.id),
