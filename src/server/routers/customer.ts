@@ -25,34 +25,35 @@ export const customerRouter = createTRPCRouter({
     return customer;
   }),
   profile: adminProcedure.input(idSchema).query(async ({ ctx, input }) => {
-    const [customer] = await ctx.db
-      .select()
-      .from(customers)
-      .where(eq(customers.id, input.id));
-
-    const customerMemberships = await ctx.db.query.memberships.findMany({
-      where: eq(memberships.customerId, input.id),
-      with: { package: true },
-      orderBy: desc(memberships.createdAt),
-    });
-
-    const customerInvoices = await ctx.db
-      .select()
-      .from(invoices)
-      .where(eq(invoices.customerId, input.id))
-      .orderBy(desc(invoices.createdAt));
-
-    const customerPayments = await ctx.db
-      .select()
-      .from(payments)
-      .where(eq(payments.customerId, input.id))
-      .orderBy(desc(payments.paidDate));
-
-    const attendanceHistory = await ctx.db.query.attendanceRecords.findMany({
-      where: eq(attendanceRecords.customerId, input.id),
-      with: { classSession: true },
-      orderBy: desc(attendanceRecords.checkedInAt),
-    });
+    const [
+      [customer],
+      customerMemberships,
+      customerInvoices,
+      customerPayments,
+      attendanceHistory,
+    ] = await Promise.all([
+      ctx.db.select().from(customers).where(eq(customers.id, input.id)),
+      ctx.db.query.memberships.findMany({
+        where: eq(memberships.customerId, input.id),
+        with: { package: true },
+        orderBy: desc(memberships.createdAt),
+      }),
+      ctx.db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.customerId, input.id))
+        .orderBy(desc(invoices.createdAt)),
+      ctx.db
+        .select()
+        .from(payments)
+        .where(eq(payments.customerId, input.id))
+        .orderBy(desc(payments.paidDate)),
+      ctx.db.query.attendanceRecords.findMany({
+        where: eq(attendanceRecords.customerId, input.id),
+        with: { classSession: true },
+        orderBy: desc(attendanceRecords.checkedInAt),
+      }),
+    ]);
 
     return {
       customer,

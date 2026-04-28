@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import {
   attendanceRecords,
@@ -90,44 +90,45 @@ export const portalRouter = createTRPCRouter({
   dashboard: customerProcedure.query(async ({ ctx }) => {
     const t = today();
 
-    const [activeMembership] = await ctx.db
-      .select({ membership: memberships, package: packages })
-      .from(memberships)
-      .innerJoin(packages, eq(packages.id, memberships.packageId))
-      .where(
-        and(
-          eq(memberships.customerId, ctx.customer.id),
-          eq(memberships.status, "active"),
-          or(isNull(memberships.expiryDate), gte(memberships.expiryDate, t)),
-        ),
-      )
-      .orderBy(desc(memberships.createdAt))
-      .limit(1);
-
-    const upcomingBookings = await ctx.db
-      .select({ booking: bookings, session: classSessions })
-      .from(bookings)
-      .innerJoin(classSessions, eq(classSessions.id, bookings.classSessionId))
-      .where(
-        and(
-          eq(bookings.customerId, ctx.customer.id),
-          eq(bookings.status, "booked"),
-          gte(classSessions.sessionDate, t),
-        ),
-      )
-      .orderBy(asc(classSessions.sessionDate), asc(classSessions.startTime))
-      .limit(5);
-
-    const recentAttendance = await ctx.db
-      .select({ record: attendanceRecords, session: classSessions })
-      .from(attendanceRecords)
-      .innerJoin(
-        classSessions,
-        eq(classSessions.id, attendanceRecords.classSessionId),
-      )
-      .where(eq(attendanceRecords.customerId, ctx.customer.id))
-      .orderBy(desc(attendanceRecords.checkedInAt))
-      .limit(3);
+    const [[activeMembership], upcomingBookings, recentAttendance] =
+      await Promise.all([
+        ctx.db
+          .select({ membership: memberships, package: packages })
+          .from(memberships)
+          .innerJoin(packages, eq(packages.id, memberships.packageId))
+          .where(
+            and(
+              eq(memberships.customerId, ctx.customer.id),
+              eq(memberships.status, "active"),
+              or(isNull(memberships.expiryDate), gte(memberships.expiryDate, t)),
+            ),
+          )
+          .orderBy(desc(memberships.createdAt))
+          .limit(1),
+        ctx.db
+          .select({ booking: bookings, session: classSessions })
+          .from(bookings)
+          .innerJoin(classSessions, eq(classSessions.id, bookings.classSessionId))
+          .where(
+            and(
+              eq(bookings.customerId, ctx.customer.id),
+              eq(bookings.status, "booked"),
+              gte(classSessions.sessionDate, t),
+            ),
+          )
+          .orderBy(asc(classSessions.sessionDate), asc(classSessions.startTime))
+          .limit(5),
+        ctx.db
+          .select({ record: attendanceRecords, session: classSessions })
+          .from(attendanceRecords)
+          .innerJoin(
+            classSessions,
+            eq(classSessions.id, attendanceRecords.classSessionId),
+          )
+          .where(eq(attendanceRecords.customerId, ctx.customer.id))
+          .orderBy(desc(attendanceRecords.checkedInAt))
+          .limit(3),
+      ]);
 
     return {
       customer: ctx.customer,
@@ -148,9 +149,16 @@ export const portalRouter = createTRPCRouter({
       const from = input.from ?? today();
       const to = input.to ?? "2099-12-31";
 
-      const sessions = await ctx.db
-        .select()
+      const rows = await ctx.db
+        .select({ session: classSessions, myBooking: bookings })
         .from(classSessions)
+        .leftJoin(
+          bookings,
+          and(
+            eq(bookings.classSessionId, classSessions.id),
+            eq(bookings.customerId, ctx.customer.id),
+          ),
+        )
         .where(
           and(
             eq(classSessions.isCancelled, false),
@@ -160,27 +168,7 @@ export const portalRouter = createTRPCRouter({
         )
         .orderBy(asc(classSessions.sessionDate), asc(classSessions.startTime));
 
-      if (sessions.length === 0) return [];
-
-      const sessionIds = sessions.map((s) => s.id);
-      const myBookings = await ctx.db
-        .select()
-        .from(bookings)
-        .where(
-          and(
-            eq(bookings.customerId, ctx.customer.id),
-            inArray(bookings.classSessionId, sessionIds),
-          ),
-        );
-
-      const myBookingMap = new Map(
-        myBookings.map((b) => [b.classSessionId, b]),
-      );
-
-      return sessions.map((s) => ({
-        session: s,
-        myBooking: myBookingMap.get(s.id) ?? null,
-      }));
+      return rows.map((r) => ({ session: r.session, myBooking: r.myBooking }));
     }),
 
   bookClass: customerProcedure
