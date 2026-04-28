@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Field, Input, Select } from "@/components/ui/form";
 import { formatCurrency } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 type Package = { id: string; name: string };
 
@@ -31,16 +32,20 @@ export function ApproveMembershipDialog({
   onSuccess?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const matchedPkg =
     packages.find(
       (p) => p.name.toLowerCase() === requestedPackageName.toLowerCase(),
     ) ?? packages[0];
 
-  async function handleSubmit(formData: FormData) {
-    await approvePortalMembershipAction(formData);
-    onSuccess?.();
-    setOpen(false);
+  function handleSubmit(formData: FormData) {
+    startTransition(async () => {
+      await approvePortalMembershipAction(formData);
+      toast.success("Membership approved and activated.");
+      onSuccess?.();
+      setOpen(false);
+    });
   }
 
   return (
@@ -89,8 +94,8 @@ export function ApproveMembershipDialog({
               defaultValue={new Date().toISOString().slice(0, 10)}
             />
           </Field>
-          <Button type="submit" className="mt-1">
-            Approve &amp; activate membership
+          <Button type="submit" className="mt-1" disabled={isPending}>
+            {isPending ? "Approving…" : "Approve & activate membership"}
           </Button>
         </form>
       </DialogContent>
