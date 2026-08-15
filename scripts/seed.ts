@@ -1,357 +1,365 @@
-import { getDb } from "@/db";
+/**
+ * Seeds the landing-page CMS plus a small demo of the management system.
+ *   bun run db:seed
+ *
+ * The CMS half replaces its rows, so it is safe to re-run. `--cms-only` skips
+ * the demo management data.
+ */
+import { createClient } from "@libsql/client";
+import { eq, isNull } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/libsql";
 import {
-  attendanceRecords,
-  bookings,
-  classSessions,
+  classOfferings,
   coaches,
+  customerPackages,
   customers,
+  expenses,
+  faqItems,
   galleryImages,
   invoices,
   landingPageContent,
-  memberships,
-  packages,
-  payments,
+  sessionAttendees,
+  sessions,
   socialLinks,
   testimonials,
-  users,
+  whyItems,
 } from "@/db/schema";
-import { addDays, toDateInputValue } from "@/lib/utils";
+import {
+  CLASS_ITEMS,
+  GALLERY_ITEMS,
+  GOOGLE_MAP_EMBED,
+  WHY_ITEMS,
+} from "@/lib/demo-data";
 
-const db = getDb();
-const today = new Date();
+const url = process.env.TURSO_CONNECTION_URL ?? "file:./local.db";
+const db = drizzle(
+  createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN }),
+);
 
-function sessionDate(daysFromToday: number) {
-  return toDateInputValue(addDays(today, daysFromToday));
-}
+const iso = (date: Date) => date.toISOString().slice(0, 10);
+const shift = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return iso(date);
+};
 
-function dayOfWeek(date: string) {
-  const day = new Date(`${date}T00:00:00`).getDay();
-  return day === 0 ? 7 : day;
-}
+// Placeholder — replace with real gym photography through the CMS.
+const UNSPLASH = "https://images.unsplash.com/photo";
 
-async function seed() {
-  await db.delete(attendanceRecords);
-  await db.delete(payments);
-  await db.delete(invoices);
-  await db.delete(bookings);
-  await db.delete(classSessions);
-  await db.delete(memberships);
-  await db.delete(packages);
-  await db.delete(customers);
-  await db.delete(galleryImages);
-  await db.delete(coaches);
-  await db.delete(testimonials);
-  await db.delete(socialLinks);
-  await db.delete(landingPageContent);
-  await db.delete(users);
+/** `--cms-only` skips the demo management data — safe against a live database. */
+const cmsOnly = process.argv.includes("--cms-only");
 
-  await db.insert(users).values({
-    name: "Hercules Factory Admin",
-    email: "admin@herculesfactory.local",
-    passwordHash: "development-password",
-  });
+async function main() {
+  console.log("Seeding landing page content…");
 
-  const [singlePackage, tenClassPackage, unlimitedPackage] = await db
-    .insert(packages)
-    .values([
-      {
-        name: "Single Class",
-        type: "single",
-        priceCents: 2000,
-        classCredits: null,
-        validityDays: null,
-        sortOrder: 1,
-      },
-      {
-        name: "10-Class Package",
-        type: "ten_class",
-        priceCents: 15000,
-        classCredits: 10,
-        validityDays: 30,
-        sortOrder: 2,
-      },
-      {
-        name: "Unlimited Monthly",
-        type: "unlimited",
-        priceCents: 22000,
-        classCredits: null,
-        validityDays: 30,
-        sortOrder: 3,
-      },
-    ])
-    .returning();
+  const landing = {
+    heroKicker: "HERCULES FACTORY",
+    heroHeadline: "MUAY THAI FOR EVERYONE",
+    heroSubtitle: "Beginners. Fitness. Fighters.",
+    heroImageUrl: `${UNSPLASH}-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=2000&q=70`,
+    primaryCtaText: "BOOK A CLASS",
+    whatsappPhone: "60162723083",
+    whatsappMessage:
+      "Hi! I'd like to book a Muay Thai class at Hercules Factory. 😊",
+    whyTitle: "Why Hercules Factory",
+    classesTitle: "Classes",
+    galleryTitle: "Gallery",
+    testimonialsTitle: "What members say",
+    faqTitle: "FAQ",
+    locationTitle: "Find us",
+    locationAddress:
+      "Jalan Cerdas, Taman Connaught, 56000 Kuala Lumpur, Wilayah Persekutuan Kuala Lumpur",
+    mapEmbedUrl: GOOGLE_MAP_EMBED,
+  };
 
-  const [aiman, mei, daniel] = await db
-    .insert(customers)
-    .values([
-      {
-        name: "Aiman Rahman",
-        phone: "0123456789",
-        email: "aiman@example.com",
-        emergencyContact: "Siti 0129991111",
-        notes: "Prefers second slot.",
-      },
-      {
-        name: "Mei Lin",
-        phone: "0112223333",
-        email: "mei@example.com",
-        emergencyContact: "Tan 0118877665",
-        notes: "Beginner trial.",
-      },
-      {
-        name: "Daniel Chong",
-        phone: "0164445555",
-        email: "daniel@example.com",
-        emergencyContact: "Grace 0161231234",
-        notes: "Unlimited member.",
-      },
-      {
-        name: "Farah Aziz",
-        phone: "0198887777",
-        email: "farah@example.com",
-        emergencyContact: "Adam 0192221111",
-        notes: "Interested in sparring after basics.",
-      },
-    ])
-    .returning();
+  // The landing row is a singleton — update it in place so re-seeding a live
+  // database can't leave a second, shadowed row behind.
+  const existing = await db.select().from(landingPageContent).limit(1);
+  if (existing.length) {
+    await db
+      .update(landingPageContent)
+      .set({ ...landing, updatedAt: new Date() })
+      .where(eq(landingPageContent.id, existing[0].id));
+  } else {
+    await db.insert(landingPageContent).values(landing);
+  }
 
-  const [aimanMembership, danielMembership] = await db
-    .insert(memberships)
-    .values([
-      {
-        customerId: aiman.id,
-        packageId: tenClassPackage.id,
-        startDate: sessionDate(-8),
-        expiryDate: sessionDate(22),
-        remainingCredits: 7,
-      },
-      {
-        customerId: daniel.id,
-        packageId: unlimitedPackage.id,
-        startDate: sessionDate(-3),
-        expiryDate: sessionDate(27),
-        remainingCredits: null,
-      },
-      {
-        customerId: mei.id,
-        packageId: singlePackage.id,
-        startDate: sessionDate(0),
-        expiryDate: null,
-        remainingCredits: null,
-      },
-    ])
-    .returning();
-
-  const sessions = await db
-    .insert(classSessions)
-    .values(
-      Array.from({ length: 12 }, (_, index) => {
-        const date = sessionDate(index);
-        const firstSlot = index % 2 === 0;
-        return {
-          title: "Muay Thai Class",
-          sessionDate: date,
-          dayOfWeek: dayOfWeek(date),
-          startTime: firstSlot ? "19:00" : "20:30",
-          endTime: firstSlot ? "20:30" : "22:00",
-          capacity: 24,
-          coachName: index % 3 === 0 ? "Coach Hafiz" : "Coach Marcus",
-        };
-      }),
-    )
-    .returning();
-
-  const [bookingOne, bookingTwo, bookingThree] = await db
-    .insert(bookings)
-    .values([
-      {
-        customerId: aiman.id,
-        classSessionId: sessions[0].id,
-        source: "admin",
-        status: "booked",
-      },
-      {
-        customerId: mei.id,
-        classSessionId: sessions[0].id,
-        source: "public",
-        status: "booked",
-      },
-      {
-        customerId: daniel.id,
-        classSessionId: sessions[1].id,
-        source: "admin",
-        status: "attended",
-      },
-    ])
-    .returning();
-
-  await db.insert(attendanceRecords).values({
-    bookingId: bookingThree.id,
-    customerId: daniel.id,
-    classSessionId: sessions[1].id,
-    membershipId: danielMembership.id,
-    creditDeducted: false,
-  });
-
-  const [invoiceOne, invoiceTwo, invoiceThree] = await db
-    .insert(invoices)
-    .values([
-      {
-        invoiceNumber: "HF-2026-00001",
-        customerId: aiman.id,
-        membershipId: aimanMembership.id,
-        issueDate: sessionDate(-5),
-        dueDate: sessionDate(2),
-        subtotalCents: 15000,
-        totalCents: 15000,
-        status: "paid",
-        notes: "10-class package",
-      },
-      {
-        invoiceNumber: "HF-2026-00002",
-        customerId: daniel.id,
-        membershipId: danielMembership.id,
-        issueDate: sessionDate(-3),
-        dueDate: sessionDate(4),
-        subtotalCents: 22000,
-        totalCents: 22000,
-        status: "paid",
-        notes: "Unlimited monthly",
-      },
-      {
-        invoiceNumber: "HF-2026-00003",
-        customerId: mei.id,
-        issueDate: sessionDate(0),
-        dueDate: sessionDate(7),
-        subtotalCents: 2000,
-        totalCents: 2000,
-        status: "pending",
-        notes: "Single class trial",
-      },
-    ])
-    .returning();
-
-  await db.insert(payments).values([
-    {
-      invoiceId: invoiceOne.id,
-      customerId: aiman.id,
-      amountCents: 15000,
-      method: "bank_transfer",
-      paidDate: sessionDate(-5),
-      reference: "MBB-9210",
-    },
-    {
-      invoiceId: invoiceTwo.id,
-      customerId: daniel.id,
-      amountCents: 22000,
-      method: "tng",
-      paidDate: sessionDate(-3),
-      reference: "TNG-4812",
-    },
+  // The CMS lists are replaced, not appended to — re-seeding a live database
+  // used to leave a duplicate of every row behind. Visitor-submitted gallery
+  // photos are kept; only the seeded ones (submittedBy is null) are cleared.
+  await Promise.all([
+    db.delete(whyItems),
+    db.delete(classOfferings),
+    db.delete(faqItems),
+    db.delete(testimonials),
+    db.delete(socialLinks),
+    db.delete(galleryImages).where(isNull(galleryImages.submittedBy)),
   ]);
 
-  await db.insert(landingPageContent).values({
-    heroTitle: "Hercules Factory Muay Thai",
-    heroSubtitle:
-      "Hard rounds, sharp coaching, and a welcoming fight-family environment in Malaysia.",
-    primaryCtaText: "Book Your First Class",
-    secondaryCtaText: "WhatsApp Us",
-    aboutTitle: "Built for real progress",
-    aboutBody:
-      "We train beginners, returning fighters, and competitors through structured pad work, conditioning, clinch fundamentals, and controlled sparring.",
-    locationTitle: "Train with us",
-    locationAddress: "Hercules Factory, Kuala Lumpur, Malaysia",
-  });
+  await db
+    .insert(whyItems)
+    .values(WHY_ITEMS.map((item, index) => ({ ...item, sortOrder: index })));
 
-  await db.insert(galleryImages).values([
+  await db.insert(classOfferings).values(
+    CLASS_ITEMS.map(({ imageId, ...item }, index) => ({
+      ...item,
+      imageUrl: `${UNSPLASH}-${imageId}?auto=format&fit=crop&w=1200&q=70`,
+      sortOrder: index,
+    })),
+  );
+
+  await db.insert(faqItems).values([
     {
-      imageUrl:
-        "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=1200&q=80",
-      alt: "Muay Thai training gloves",
-      caption: "Pad rounds",
+      question: "I've never trained Muay Thai before. Can I join?",
+      answer: "Yes! Our classes are beginner-friendly.",
+      sortOrder: 0,
+    },
+    {
+      question: "Do I need my own gloves?",
+      answer: "No. Gloves are available for use during your trial/class.",
       sortOrder: 1,
     },
     {
-      imageUrl:
-        "https://images.unsplash.com/photo-1517438322307-e67111335449?auto=format&fit=crop&w=1200&q=80",
-      alt: "Boxing gym training area",
-      caption: "Conditioning",
+      question: "Can women join?",
+      answer: "Absolutely. We welcome beginners of all fitness levels.",
       sortOrder: 2,
     },
     {
-      imageUrl:
-        "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=80",
-      alt: "Athlete wrapping hands",
-      caption: "Fight prep",
+      question: "How do I book a trial class?",
+      answer: "Simply WhatsApp us and we'll help you choose a suitable class.",
       sortOrder: 3,
     },
-  ]);
-
-  await db.insert(coaches).values([
     {
-      name: "Coach Hafiz",
-      title: "Head Coach",
-      bio: "Technical pad holder focused on fundamentals, ring control, and smart pressure.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1594737625785-a6cbdabd333c?auto=format&fit=crop&w=900&q=80",
-      sortOrder: 1,
-    },
-    {
-      name: "Coach Marcus",
-      title: "Striking & Conditioning",
-      bio: "Builds sharp combinations, strong engines, and confident beginners.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=900&q=80",
-      sortOrder: 2,
+      // Opening hours from the Google Business Profile.
+      question: "What are your training hours?",
+      answer:
+        "Mon, Tue, Thu, Fri 7–10pm · Sun 1–2pm · Closed Wed and Sat. WhatsApp us to confirm before you come down.",
+      sortOrder: 4,
     },
   ]);
 
-  await db.insert(testimonials).values([
-    {
-      customerName: "Nadia",
-      quote:
-        "The coaches make hard training approachable. I felt stronger after the first month.",
+  await db
+    .insert(galleryImages)
+    .values(
+      GALLERY_ITEMS.map((item, index) => ({ ...item, sortOrder: index })),
+    );
+
+  // Imported from the Google Business Profile (5.0★ from 9 reviews). Only the
+  // five reviews Google exposes publicly came across.
+  await db.insert(testimonials).values(
+    [
+      [
+        "Inot Tamales",
+        "Been there few times, super beginner friendly. Clean and functional environment and very insightful coach.",
+        "Jun 2026",
+      ],
+      ["Maxwell Kee Ming Jie", "very friendly environment", "Sep 2025"],
+      [
+        "leeping tan",
+        "Will go again definitely, place is spacious and location is easy to find.",
+        "Aug 2025",
+      ],
+      ["Teo Wen Long", "Nice coach and friendly environment", "Aug 2025"],
+      [
+        "Bill Lim",
+        "Clean environment. Good class. Easy catch up skill.",
+        "Aug 2024",
+      ],
+    ].map(([author, quote, reviewedAt], index) => ({
+      author,
+      quote,
+      reviewedAt,
       rating: 5,
-      sortOrder: 1,
-    },
-    {
-      customerName: "Jason",
-      quote:
-        "Clear structure, good energy, and no ego. Exactly what I wanted from a Muay Thai gym.",
-      rating: 5,
-      sortOrder: 2,
-    },
-  ]);
+      source: "Google",
+      sortOrder: index,
+    })),
+  );
 
   await db.insert(socialLinks).values([
     {
-      platform: "facebook",
-      label: "Facebook",
-      url: "https://facebook.com",
-      sortOrder: 1,
-    },
-    {
       platform: "instagram",
       label: "Instagram",
-      url: "https://instagram.com",
-      sortOrder: 2,
+      url: "https://instagram.com/herculesfactory_",
+      sortOrder: 0,
     },
     {
       platform: "whatsapp",
       label: "WhatsApp",
-      url: "https://wa.me/60123456789",
-      sortOrder: 3,
+      url: "https://wa.me/60162723083",
+      sortOrder: 1,
     },
   ]);
 
-  console.log("Seeded Hercules Factory data.");
-  console.log(`Sample pending booking: ${bookingOne.id}, ${bookingTwo.id}`);
-  console.log(`Sample pending invoice: ${invoiceThree.invoiceNumber}`);
+  if (cmsOnly) {
+    console.log("Done (CMS only — demo management data skipped).");
+    return;
+  }
+
+  console.log("Seeding demo management data…");
+
+  const [coach] = await db
+    .insert(coaches)
+    .values({ name: "Kru Somchai", phone: "60123456780", sortOrder: 0 })
+    .returning();
+
+  const insertedCustomers = await db
+    .insert(customers)
+    .values([
+      {
+        name: "Aisyah Rahman",
+        phone: "60121112222",
+        age: 27,
+        gender: "female",
+        dateJoined: shift(-40),
+        source: "instagram",
+      },
+      {
+        name: "Wei Jie Tan",
+        phone: "60123334444",
+        age: 32,
+        gender: "male",
+        dateJoined: shift(-12),
+        source: "xiaohongshu",
+      },
+      {
+        name: "Priya Nair",
+        phone: "60125556666",
+        age: 24,
+        gender: "female",
+        dateJoined: shift(-2),
+        source: "whatsapp",
+      },
+    ])
+    .returning();
+
+  const [unlimited, credit] = await db
+    .insert(customerPackages)
+    .values([
+      {
+        customerId: insertedCustomers[0].id,
+        type: "unlimited",
+        startDate: shift(-40),
+        expiryDate: shift(-10),
+        totalCredits: null,
+        amountPaidCents: 35000,
+        paymentMethod: "bank_transfer",
+      },
+      {
+        customerId: insertedCustomers[1].id,
+        type: "credit",
+        startDate: shift(-12),
+        expiryDate: shift(78),
+        totalCredits: 10,
+        usedCredits: 6,
+        amountPaidCents: 30000,
+        paymentMethod: "cash",
+      },
+      {
+        customerId: insertedCustomers[0].id,
+        type: "pt",
+        startDate: shift(-30),
+        expiryDate: shift(60),
+        totalCredits: 10,
+        usedCredits: 7,
+        amountPaidCents: 90000,
+        paymentMethod: "tng",
+      },
+    ])
+    .returning();
+
+  const year = new Date().getFullYear();
+  await db.insert(invoices).values([
+    {
+      invoiceNumber: `HF-${year}-0001`,
+      customerId: insertedCustomers[0].id,
+      packageId: unlimited.id,
+      description: "Unlimited package",
+      subtotalCents: 35000,
+      discountCents: 0,
+      totalCents: 35000,
+      status: "paid",
+      paymentMethod: "bank_transfer",
+      issueDate: shift(-40),
+      paidDate: shift(-40),
+    },
+    {
+      invoiceNumber: `HF-${year}-0002`,
+      customerId: insertedCustomers[1].id,
+      packageId: credit.id,
+      description: "10 credit package",
+      subtotalCents: 32000,
+      discountCents: 2000,
+      totalCents: 30000,
+      status: "paid",
+      paymentMethod: "cash",
+      issueDate: shift(-12),
+      paidDate: shift(-12),
+    },
+    {
+      invoiceNumber: `HF-${year}-0003`,
+      customerId: insertedCustomers[2].id,
+      description: "Trial follow-up package",
+      subtotalCents: 30000,
+      discountCents: 0,
+      totalCents: 30000,
+      status: "pending",
+      issueDate: shift(-1),
+    },
+  ]);
+
+  await db.insert(expenses).values([
+    {
+      date: shift(-20),
+      category: "rent",
+      amountCents: 450000,
+      vendor: "Landlord",
+    },
+    { date: shift(-18), category: "utilities", amountCents: 42000 },
+    {
+      date: shift(-15),
+      category: "coach_salary",
+      amountCents: 280000,
+      coachId: coach.id,
+    },
+    { date: shift(-9), category: "marketing", amountCents: 60000 },
+  ]);
+
+  const [groupClass, trialSession] = await db
+    .insert(sessions)
+    .values([
+      {
+        type: "class",
+        title: "Muay Thai Class",
+        date: iso(new Date()),
+        startTime: "19:00",
+        endTime: "20:00",
+        capacity: 24,
+        coachId: coach.id,
+      },
+      {
+        type: "trial",
+        title: "Trial class",
+        date: shift(2),
+        startTime: "20:00",
+        endTime: "21:00",
+        capacity: 1,
+      },
+    ])
+    .returning();
+
+  await db.insert(sessionAttendees).values([
+    {
+      sessionId: groupClass.id,
+      customerId: insertedCustomers[1].id,
+      packageId: credit.id,
+    },
+    { sessionId: trialSession.id, customerId: insertedCustomers[2].id },
+  ]);
+
+  console.log("Seed complete.");
 }
 
-seed()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

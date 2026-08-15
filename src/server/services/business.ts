@@ -1,250 +1,205 @@
-import { and, count, desc, eq, gte, ne, sql } from "drizzle-orm";
+import { and, count, eq, ne, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
-  attendanceRecords,
-  bookings,
-  classSessions,
-  customers,
+  customerPackages,
   invoices,
-  memberships,
-  packages,
-  payments,
+  sessionAttendees,
+  sessions,
 } from "@/db/schema";
-import { addDays, toDateInputValue } from "@/lib/utils";
+import { toDateInputValue } from "@/lib/utils";
 
-export async function createMembershipForPackage(
-  db: Db,
-  input: { customerId: string; packageId: string; startDate: string },
-) {
-  const [pkg] = await db
-    .select()
-    .from(packages)
-    .where(eq(packages.id, input.packageId));
+export class BusinessRuleError extends Error {}
 
-  if (!pkg) {
-    throw new Error("Package not found.");
-  }
-
-  const start = new Date(input.startDate);
-  const expiryDate = pkg.validityDays
-    ? toDateInputValue(addDays(start, pkg.validityDays))
-    : null;
-
-  const [membership] = await db
-    .insert(memberships)
-    .values({
-      customerId: input.customerId,
-      packageId: input.packageId,
-      startDate: input.startDate,
-      expiryDate,
-      remainingCredits:
-        pkg.type === "ten_class" ? (pkg.classCredits ?? 10) : null,
-    })
-    .returning();
-
-  await createInvoice(db, {
-    customerId: input.customerId,
-    membershipId: membership.id,
-    subtotalCents: pkg.priceCents,
-    totalCents: pkg.priceCents,
-  });
-
-  return membership;
+/** Remaining credits. Never stored — always derived. */
+export function remainingCredits(pkg: {
+  totalCredits: number | null;
+  usedCredits: number;
+}) {
+  if (pkg.totalCredits === null) return null; // unlimited
+  return pkg.totalCredits - pkg.usedCredits;
 }
 
-export async function assertClassHasCapacity(db: Db, classSessionId: string) {
-  const [session] = await db
-    .select()
-    .from(classSessions)
-    .where(eq(classSessions.id, classSessionId));
+export function packageStatus(
+  pkg: { totalCredits: number | null; usedCredits: number; expiryDate: string },
+  today = toDateInputValue(new Date()),
+) {
+  if (pkg.expiryDate < today) return "expired" as const;
+  const left = remainingCredits(pkg);
+  if (left !== null && left <= 0) return "expired" as const;
+  return "active" as const;
+}
 
-  if (!session || session.isCancelled) {
-    throw new Error("Class is not available for booking.");
+/** Noon UTC — keeps the date arithmetic off DST and timezone edges. */
+function addDays(date: string, days: number) {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Dates a recurring session lands on. No `repeatDays` means "same weekday,
+ * every week"; with them, every matching weekday in the range (0 = Sunday).
+ */
+export function recurringDates(
+  date: string,
+  repeatUntil?: string,
+  repeatDays?: number[],
+) {
+  const days = repeatDays?.length ? new Set(repeatDays) : null;
+  const last = repeatUntil && repeatUntil > date ? repeatUntil : date;
+  const dates: string[] = [];
+
+  for (
+    let cursor = date;
+    cursor <= last;
+    cursor = addDays(cursor, days ? 1 : 7)
+  ) {
+    if (!days || days.has(new Date(`${cursor}T12:00:00Z`).getUTCDay())) {
+      dates.push(cursor);
+    }
   }
 
-  const [{ value }] = await db
-    .select({ value: count() })
-    .from(bookings)
+  if (dates.length === 0) {
+    throw new BusinessRuleError("No dates match those repeat days.");
+  }
+  return dates;
+}
+
+/** Class capacity is enforced before an attendee row is written. */
+export async function assertSessionHasCapacity(db: Db, sessionId: string) {
+  const [session] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .limit(1);
+
+  if (!session) throw new BusinessRuleError("Session not found.");
+  if (session.isCancelled)
+    throw new BusinessRuleError("This session is cancelled.");
+
+  const [{ taken }] = await db
+    .select({ taken: count() })
+    .from(sessionAttendees)
     .where(
       and(
-        eq(bookings.classSessionId, classSessionId),
-        ne(bookings.status, "cancelled"),
+        eq(sessionAttendees.sessionId, sessionId),
+        ne(sessionAttendees.status, "cancelled"),
       ),
     );
 
-  if (value >= session.capacity) {
-    throw new Error("This class is fully booked.");
-  }
-}
-
-export async function createBookingWithCapacityCheck(
-  db: Db,
-  input: {
-    customerId: string;
-    classSessionId: string;
-    source?: string;
-    notes?: string;
-  },
-) {
-  await assertClassHasCapacity(db, input.classSessionId);
-
-  const [booking] = await db
-    .insert(bookings)
-    .values({
-      customerId: input.customerId,
-      classSessionId: input.classSessionId,
-      source: input.source ?? "admin",
-      notes: input.notes,
-    })
-    .returning();
-
-  return booking;
-}
-
-export async function markAttendance(
-  db: Db,
-  input: { bookingId: string; signatureDataUrl?: string },
-) {
-  const [booking] = await db
-    .select()
-    .from(bookings)
-    .where(eq(bookings.id, input.bookingId));
-
-  if (!booking) {
-    throw new Error("Booking not found.");
+  if (taken >= session.capacity) {
+    throw new BusinessRuleError(
+      `Session is full (${taken}/${session.capacity}).`,
+    );
   }
 
-  const [session] = await db
-    .select()
-    .from(classSessions)
-    .where(eq(classSessions.id, booking.classSessionId));
+  return session;
+}
 
-  const [activeMembership] = await db
-    .select({
-      membership: memberships,
-      package: packages,
-    })
-    .from(memberships)
-    .innerJoin(packages, eq(packages.id, memberships.packageId))
-    .where(
-      and(
-        eq(memberships.customerId, booking.customerId),
-        eq(memberships.status, "active"),
-        session?.sessionDate
-          ? gte(memberships.expiryDate, session.sessionDate)
-          : sql`true`,
-      ),
-    )
-    .orderBy(desc(memberships.createdAt))
+/** The customer's package to burn a credit against, or null for a trial. */
+export async function activePackageFor(db: Db, customerId: string) {
+  const rows = await db
+    .select()
+    .from(customerPackages)
+    .where(eq(customerPackages.customerId, customerId));
+
+  const today = toDateInputValue(new Date());
+  return (
+    rows
+      .filter((pkg) => packageStatus(pkg, today) === "active")
+      .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate))[0] ?? null
+  );
+}
+
+/**
+ * Mark an attendee attended / no-show / booked.
+ *
+ * Credits are deducted here and nowhere else, and only once — `creditDeducted`
+ * is the flag that makes the reversal safe to run twice.
+ */
+export async function setAttendance(
+  db: Db,
+  attendeeId: string,
+  status: "booked" | "attended" | "no_show" | "cancelled",
+) {
+  const [attendee] = await db
+    .select()
+    .from(sessionAttendees)
+    .where(eq(sessionAttendees.id, attendeeId))
     .limit(1);
 
-  let creditDeducted = false;
+  if (!attendee) throw new BusinessRuleError("Attendee not found.");
 
-  if (activeMembership?.package.type === "ten_class") {
-    const remaining = activeMembership.membership.remainingCredits ?? 0;
-    if (remaining <= 0) {
-      throw new Error("Customer has no remaining 10-class credits.");
+  const pkg = attendee.packageId
+    ? (
+        await db
+          .select()
+          .from(customerPackages)
+          .where(eq(customerPackages.id, attendee.packageId))
+          .limit(1)
+      )[0]
+    : undefined;
+
+  const shouldDeduct =
+    status === "attended" && !!pkg && pkg.totalCredits !== null;
+
+  if (status === "attended" && pkg) {
+    if (packageStatus(pkg) === "expired") {
+      throw new BusinessRuleError(
+        pkg.expiryDate < toDateInputValue(new Date())
+          ? `Package expired on ${pkg.expiryDate}. Sell a renewal first.`
+          : "No credits left on this package. Sell a renewal first.",
+      );
     }
+  }
 
-    await db
-      .update(memberships)
+  await db.transaction(async (tx) => {
+    await tx
+      .update(sessionAttendees)
       .set({
-        remainingCredits: remaining - 1,
+        status,
+        checkedInAt: status === "attended" ? new Date() : null,
+        creditDeducted: shouldDeduct,
         updatedAt: new Date(),
       })
-      .where(eq(memberships.id, activeMembership.membership.id));
+      .where(eq(sessionAttendees.id, attendeeId));
 
-    creditDeducted = true;
-  }
+    if (!pkg) return;
 
-  await db
-    .update(bookings)
-    .set({ status: "attended", updatedAt: new Date() })
-    .where(eq(bookings.id, input.bookingId));
+    if (shouldDeduct && !attendee.creditDeducted) {
+      await tx
+        .update(customerPackages)
+        .set({
+          usedCredits: sql`${customerPackages.usedCredits} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(customerPackages.id, pkg.id));
+    }
 
-  const [attendance] = await db
-    .insert(attendanceRecords)
-    .values({
-      bookingId: booking.id,
-      customerId: booking.customerId,
-      classSessionId: booking.classSessionId,
-      membershipId: activeMembership?.membership.id,
-      signatureDataUrl: input.signatureDataUrl,
-      creditDeducted,
-    })
-    .onConflictDoNothing()
-    .returning();
-
-  return attendance;
+    // Giving the credit back only fires when one was actually taken, so a
+    // double un-mark cannot mint credits.
+    if (!shouldDeduct && attendee.creditDeducted) {
+      await tx
+        .update(customerPackages)
+        .set({
+          usedCredits: sql`max(${customerPackages.usedCredits} - 1, 0)`,
+          updatedAt: new Date(),
+        })
+        .where(eq(customerPackages.id, pkg.id));
+    }
+  });
 }
 
+/** HF-YYYY-NNNN, sequential within the year. */
 export async function nextInvoiceNumber(db: Db) {
-  const [{ value }] = await db.select({ value: count() }).from(invoices);
   const year = new Date().getFullYear();
-  return `HF-${year}-${String(value + 1).padStart(5, "0")}`;
-}
+  const prefix = `HF-${year}-`;
 
-export async function createInvoice(
-  db: Db,
-  input: {
-    customerId: string;
-    membershipId?: string | null;
-    subtotalCents: number;
-    totalCents: number;
-    dueDate?: string;
-    notes?: string;
-  },
-) {
-  const [invoice] = await db
-    .insert(invoices)
-    .values({
-      invoiceNumber: await nextInvoiceNumber(db),
-      customerId: input.customerId,
-      membershipId: input.membershipId || null,
-      subtotalCents: input.subtotalCents,
-      totalCents: input.totalCents,
-      dueDate: input.dueDate,
-      notes: input.notes,
-    })
-    .returning();
+  const [row] = await db
+    .select({ last: sql<string | null>`max(${invoices.invoiceNumber})` })
+    .from(invoices)
+    .where(sql`${invoices.invoiceNumber} like ${`${prefix}%`}`);
 
-  return invoice;
-}
-
-export async function recordPayment(
-  db: Db,
-  input: {
-    invoiceId: string;
-    customerId: string;
-    amountCents: number;
-    method: "cash" | "bank_transfer" | "tng" | "card" | "other";
-    paidDate: string;
-    reference?: string;
-  },
-) {
-  const [payment] = await db.insert(payments).values(input).returning();
-
-  await db
-    .update(invoices)
-    .set({ status: "paid", updatedAt: new Date() })
-    .where(eq(invoices.id, input.invoiceId));
-
-  return payment;
-}
-
-export async function createOrFindCustomer(
-  db: Db,
-  input: { name: string; phone: string; email?: string; notes?: string },
-) {
-  const [existing] = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.phone, input.phone));
-
-  if (existing) {
-    return existing;
-  }
-
-  const [customer] = await db.insert(customers).values(input).returning();
-  return customer;
+  const lastSeq = row?.last ? Number(row.last.slice(prefix.length)) : 0;
+  return `${prefix}${String(lastSeq + 1).padStart(4, "0")}`;
 }

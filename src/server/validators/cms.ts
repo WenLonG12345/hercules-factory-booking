@@ -1,40 +1,71 @@
 import { z } from "zod";
 
 export const landingPageContentInput = z.object({
-  heroTitle: z.string().min(4),
-  heroSubtitle: z.string().min(10),
+  heroKicker: z.string().min(2),
+  heroHeadline: z.string().min(4),
+  heroSubtitle: z.string().min(4),
+  heroImageUrl: z.string().optional(),
   primaryCtaText: z.string().min(2),
-  secondaryCtaText: z.string().min(2),
-  aboutTitle: z.string().min(2),
-  aboutBody: z.string().min(10),
+  whatsappPhone: z.string().min(8),
+  whatsappMessage: z.string().min(4),
+  whyTitle: z.string().min(2),
+  classesTitle: z.string().min(2),
+  galleryTitle: z.string().min(2),
+  testimonialsTitle: z.string().min(2),
+  faqTitle: z.string().min(2),
   locationTitle: z.string().min(2),
   locationAddress: z.string().min(5),
   mapEmbedUrl: z.string().optional(),
 });
 
+export const whyItemInput = z.object({
+  emoji: z.string().min(1).max(8),
+  title: z.string().min(2),
+  description: z.string().optional(),
+  sortOrder: z.coerce.number().int().default(0),
+  isActive: z.boolean().default(true),
+});
+
+export const classOfferingInput = z.object({
+  name: z.string().min(2),
+  description: z.string().min(2),
+  imageUrl: z.string().optional(),
+  whatsappMessage: z.string().optional(),
+  sortOrder: z.coerce.number().int().default(0),
+  isActive: z.boolean().default(true),
+});
+
+export const faqItemInput = z.object({
+  question: z.string().min(4),
+  answer: z.string().min(2),
+  sortOrder: z.coerce.number().int().default(0),
+  isActive: z.boolean().default(true),
+});
+
 export const galleryImageInput = z.object({
   imageUrl: z.string().min(4),
   alt: z.string().min(2),
+  category: z.string().optional(),
   caption: z.string().optional(),
+  submittedBy: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
-  isActive: z.coerce.boolean().default(true),
+  isActive: z.boolean().default(true),
 });
 
-export const coachInput = z.object({
-  name: z.string().min(2),
-  title: z.string().min(2),
-  bio: z.string().min(10),
-  imageUrl: z.string().optional(),
-  sortOrder: z.coerce.number().int().default(0),
-  isActive: z.coerce.boolean().default(true),
+/** Visitor photo submission — the name is the only thing they type. */
+export const photoSubmissionInput = z.object({
+  name: z.string().trim().min(2).max(40),
+  caption: z.string().trim().max(80).optional(),
 });
 
 export const testimonialInput = z.object({
-  customerName: z.string().min(2),
-  quote: z.string().min(10),
+  author: z.string().min(2),
   rating: z.coerce.number().int().min(1).max(5).default(5),
+  quote: z.string().min(2),
+  source: z.string().min(2).default("Google"),
+  reviewedAt: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
-  isActive: z.coerce.boolean().default(true),
+  isActive: z.boolean().default(true),
 });
 
 export const socialLinkInput = z.object({
@@ -42,5 +73,9 @@ export const socialLinkInput = z.object({
   label: z.string().min(2),
   url: z.string().min(4),
   sortOrder: z.coerce.number().int().default(0),
-  isActive: z.coerce.boolean().default(true),
+  isActive: z.boolean().default(true),
+});
+
+export const reorderInput = z.object({
+  ids: z.array(z.uuid()).min(1),
 });

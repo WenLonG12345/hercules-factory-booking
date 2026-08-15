@@ -1,26 +1,24 @@
 import { createTRPCRouter } from "@/server/trpc";
-import { attendanceRouter } from "./attendance";
-import { bookingRouter } from "./booking";
 import { cmsRouter } from "./cms";
+import { coachRouter } from "./coach";
 import { customerRouter } from "./customer";
+import { expenseRouter } from "./expense";
 import { invoiceRouter } from "./invoice";
-import { membershipRouter } from "./membership";
-import { paymentRouter } from "./payment";
-import { portalRouter } from "./portal";
+import { packageRouter } from "./package";
 import { reportRouter } from "./report";
 import { scheduleRouter } from "./schedule";
+import { trialRouter } from "./trial";
 
 export const appRouter = createTRPCRouter({
-  customer: customerRouter,
-  membership: membershipRouter,
-  schedule: scheduleRouter,
-  booking: bookingRouter,
-  attendance: attendanceRouter,
-  invoice: invoiceRouter,
-  payment: paymentRouter,
-  report: reportRouter,
   cms: cmsRouter,
-  portal: portalRouter,
+  coach: coachRouter,
+  customer: customerRouter,
+  expense: expenseRouter,
+  invoice: invoiceRouter,
+  package: packageRouter,
+  report: reportRouter,
+  schedule: scheduleRouter,
+  trial: trialRouter,
 });
 
 export type AppRouter = typeof appRouter;

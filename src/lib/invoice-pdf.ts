@@ -12,7 +12,7 @@ export type InvoicePDFData = {
 
 function fmtDate(dateStr: string): string {
   const [year, month, day] = dateStr.split("-");
-  return `${parseInt(day)}/${parseInt(month)}/${year}`;
+  return `${Number(day)}/${Number(month)}/${year}`;
 }
 
 function fmtRM(cents: number): string {

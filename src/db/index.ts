@@ -1,16 +1,17 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
-const connectionString = process.env.DATABASE_URL;
+const url = process.env.TURSO_CONNECTION_URL;
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
 declare global {
   var __db: ReturnType<typeof drizzle<typeof schema>> | null | undefined; // eslint-disable-line no-var
 }
 
 function createDb() {
-  if (!connectionString) return null;
-  const client = postgres(connectionString, { prepare: false, max: 10 });
+  if (!url) return null;
+  const client = createClient({ url, authToken });
   return drizzle(client, { schema });
 }
 
@@ -23,7 +24,7 @@ if (process.env.NODE_ENV !== "production") {
 export function getDb() {
   if (!db) {
     throw new Error(
-      "DATABASE_URL is not configured. Create .env.local from .env.example before using database actions.",
+      "TURSO_CONNECTION_URL is not configured. Create .env.local from .env.example before using database actions.",
     );
   }
 

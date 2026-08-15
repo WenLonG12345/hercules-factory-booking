@@ -1,21 +1,48 @@
 @import "tailwindcss";
 
+/* ---- Design tokens ------------------------------------------------------ */
 :root {
-  --background: #0f0c0a;
-  --foreground: #f7f0e4;
+  --color-paper: oklch(14% 0.01 40);
+  --color-paper-2: oklch(19% 0.012 40);
+  --color-ink: oklch(96% 0.01 85);
+  --color-ink-dim: oklch(72% 0.012 85);
+  --color-accent: oklch(58% 0.19 28);
+  --color-accent-2: oklch(80% 0.13 78);
+  --color-hairline: oklch(100% 0 0 / 12%);
+
+  --text-display: clamp(2.75rem, 11vw, 8rem);
+  --text-h2: clamp(1.75rem, 4.5vw, 3.25rem);
+  --text-h3: clamp(1.25rem, 2.4vw, 1.75rem);
+  --text-body: clamp(1rem, 1.1vw, 1.125rem);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 180ms;
+  --dur-base: 420ms;
+  --dur-slow: 900ms;
+
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --color-paper: var(--color-paper);
+  --color-paper-2: var(--color-paper-2);
+  --color-ink: var(--color-ink);
+  --color-ink-dim: var(--color-ink-dim);
+  --color-accent: var(--color-accent);
+  --color-accent-2: var(--color-accent-2);
+  --color-hairline: var(--color-hairline);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-display-face), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
@@ -23,6 +50,94 @@ html {
 }
 
 ::selection {
-  background: #b91c1c;
-  color: #fff7ed;
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+/* ---- Motion primitives -------------------------------------------------- */
+/* reveal-stagger: an IntersectionObserver flips data-reveal to "in". */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+
+[data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* hover-lift */
+.lift {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.lift:hover {
+  transform: translateY(-4px);
+}
+
+/* accordion-expand */
+.accordion-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-base) var(--ease-out);
+}
+
+.accordion-panel[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+
+.accordion-panel > div {
+  overflow: hidden;
+}
+
+/* Grain overlay — pure CSS, no image request. */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.ken-burns {
+  animation: ken-burns 24s var(--ease-out) infinite alternate;
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  [data-reveal] {
+    transform: none;
+    transition: opacity 150ms linear;
+    transition-delay: 0ms;
+  }
+
+  .lift:hover {
+    transform: none;
+  }
+
+  .ken-burns {
+    animation: none;
+  }
+
+  .accordion-panel {
+    transition: none;
+  }
 }

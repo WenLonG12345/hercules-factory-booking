@@ -6,10 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Hercules Factory Context
 
-Hercules Factory manages Muay Thai classes, members, attendance, invoices,
-payments, WhatsApp reminders, reports, and landing page CMS content. Favor a
-working MVP and keep implementation choices aligned with the existing Next.js
-App Router, tRPC, Drizzle, PostgreSQL, and Tailwind structure.
+The **Hercules Factory Management System** is an admin-only tool for a Muay Thai
+gym, plus a public landing page driven by a CMS. The admin runs every flow by
+hand — there is no member portal and no public booking form. Public enquiries
+arrive on WhatsApp.
+
+The flow the whole app is shaped around:
+
+```
+Customer → Package → Trial Conversion → Invoice → Income/Expense → Reports
+              ▲                            ▲
+              └── Schedule: sessions + attendance rosters
+                  (credits burn here, coach salary lands here)
+```
+
+Favor a working MVP and keep implementation choices aligned with the existing
+Next.js App Router, tRPC, Drizzle, Turso (SQLite), and Tailwind structure.
 
 ## Commands
 
@@ -21,50 +33,66 @@ bun format           # Biome formatter
 bun db:generate      # generate Drizzle migrations after schema changes
 bun db:migrate       # apply pending migrations
 bun db:studio        # open Drizzle Studio UI
-bun db:seed          # seed demo data
+bun db:seed          # seed CMS content + demo management data
+bun db:create-admin  # create the admin login (ADMIN_EMAIL / ADMIN_PASSWORD)
+bun db:import        # one-off Excel/CSV import (--dir ./import [--dry-run])
+bun test:business    # self-check: credits, capacity, expiry, invoice numbering
+bun test:import      # self-check: CSV/date/money parsers
 ```
 
-There are no unit tests. Verify features by running the dev server.
+No test framework. The two `test:*` scripts are plain `node:assert` files;
+verify features beyond them by running the dev server.
 
 ## Architecture
 
 ### Stack
 - **Next.js 16 App Router** with React 19 and React Compiler (`reactCompiler: true` in next.config.ts)
 - **tRPC 11** for type-safe API — all mutations and queries go through tRPC procedures defined in `src/server/routers/`
-- **Drizzle ORM** with `postgres-js` driver — schema in `src/db/schema.ts`, instance in `src/db/index.ts`
+- **Drizzle ORM** on **Turso / libSQL (SQLite)** — schema in `src/db/schema.ts`, instance in `src/db/index.ts`
+- **Cloudflare R2** for image storage — `src/lib/r2.ts`
 - **Zod 4** validators in `src/server/validators/` — used for tRPC input schemas
 - **Tailwind CSS v4** (`@tailwindcss/postcss`) — no `tailwind.config.js`; config lives in CSS via `@theme`
 - **Biome** (not ESLint/Prettier) for linting and formatting
 
 ### Request Flow
 
-Public pages → React Server Components fetch via `src/server/services/queries.ts` (direct DB reads).
+Public landing page → React Server Component fetching `getLandingData()` in
+`src/server/services/queries.ts` (direct DB read, no tRPC round-trip).
 
-Admin & member portal pages → **fully CSR**: layouts are synchronous RSC, pages are `"use client"` components that call tRPC hooks → `src/server/routers/` → `src/server/services/` for business logic. This gives instant shell render (no DB blocking the layout) with client-side skeleton loading states.
+Admin pages → **fully CSR**: the layout is a synchronous RSC, pages are
+`"use client"` components calling tRPC hooks → `src/server/routers/` →
+`src/server/services/business.ts` for the rules. Instant shell render with
+client-side skeletons.
 
-tRPC handler is at `src/app/api/trpc/[trpc]/route.ts`. All routers are combined in `src/server/routers/_app.ts`.
+tRPC handler is at `src/app/api/trpc/[trpc]/route.ts`. Routers are combined in
+`src/server/routers/_app.ts`.
 
-tRPC React client is at `src/lib/trpc.ts` (`createTRPCReact<AppRouter>()`). The `<Providers>` component (`src/components/providers.tsx`) wraps layouts with `QueryClientProvider` + `api.Provider`.
+tRPC React client is at `src/lib/trpc.ts` (`createTRPCReact<AppRouter>()`). The
+`<Providers>` component (`src/components/providers.tsx`) wraps the admin layout
+with `QueryClientProvider` + `api.Provider`.
 
 ### Auth
 
-Admin-only procedures use `adminProcedure` (defined in `src/server/trpc.ts`), which checks a session cookie. Member portal procedures use `customerProcedure` (verifies session + customer record) or `sessionProcedure` (session only).
+Admin-only procedures use `adminProcedure` (`src/server/trpc.ts`), which checks
+the session cookie and `role === "admin"`. `publicDbProcedure` is for the CMS
+read used by the public site.
 
-Layouts are **synchronous** — auth is enforced client-side by guard components, not by SSR awaits:
-- `src/components/admin/admin-auth-guard.tsx` — checks `authClient.useSession()`, redirects to `/admin/login` if no session or role ≠ `"admin"`
-- `src/components/member/member-auth-guard.tsx` — checks session + `api.portal.profileCheck`, redirects to `/member/login` or `/member/register/complete`
+`src/proxy.ts` (Next.js 16's renamed Middleware — it must live beside `app`, so
+inside `src/`) does a fast cookie check and bounces anonymous `/admin/*` traffic
+to `/admin/login`. Full validation happens in
+`src/components/admin/admin-auth-guard.tsx`.
 
-The `authClient` in `src/lib/auth-client.ts` uses `inferAdditionalFields<typeof auth>()` from `better-auth/client/plugins` so that `session.user.role` is typed.
-
-The entire admin portal is under `src/app/admin/(portal)/` — this route group wraps every page with `AdminShell`. Member portal is under `src/app/member/(home)/`.
+The entire admin portal is under `src/app/admin/(portal)/` — this route group
+wraps every page with `AdminShell`.
 
 ### Demo Mode
 
-When `DATABASE_URL` is not set, pages fall back to static demo data from `src/lib/demo-data.ts`. This lets the landing page and public routes render without a database.
+When `TURSO_CONNECTION_URL` is not set, the landing page falls back to
+`src/lib/demo-data.ts` so the public site renders without a database.
 
-### Adding New Admin/Member Pages
+### Adding New Admin Pages
 
-All new pages in `src/app/admin/(portal)/` and `src/app/member/(home)/` must be client components (`"use client"`). Pattern:
+All pages in `src/app/admin/(portal)/` are client components (`"use client"`):
 
 ```tsx
 "use client";
@@ -85,18 +113,32 @@ export default function MyPage() {
 ```
 
 - Skeleton keys must be string literals (`["a","b","c"].map(k => <div key={k}.../>)`), never array indices
-- Server actions are kept only for file uploads; all other mutations go through tRPC
+- Server actions are kept only for file uploads (`src/app/admin/(portal)/actions.ts`); all other mutations go through tRPC
 - For dialogs/child components that trigger mutations: pass an `onSuccess?: () => void` prop so the parent can invalidate the relevant query cache
-- Member portal helper formatters are in `src/app/member/(home)/member-format.ts` (pure functions, safe to import in client components). Do NOT import from `member-data.ts` in client components — it has server-only imports
+- Shared pure helpers live in `src/app/admin/(portal)/admin-format.ts` (labels, money conversion, package status, week maths, CSV export)
 
 ### Business Rules (preserve these)
-- Class capacity is enforced before booking (`assertClassHasCapacity` in `src/server/services/business.ts`)
-- 10-class membership credits are deducted **only on `attended` check-in**, not on booking
-- Membership expiry is checked before allowing bookings
+
+All enforced in `src/server/services/business.ts`, covered by `bun test:business`:
+
+- **Capacity** is checked before a roster row is written (`assertSessionHasCapacity`)
+- **Credits burn on `attended` only**, never on booking, and exactly once —
+  `session_attendees.creditDeducted` guards both the burn and the refund, so a
+  double-click can neither double-burn nor mint credits
+- **Expiry blocks check-in** for all three package types
+- **Remaining credits are derived** (`totalCredits - usedCredits`), never stored
+- **A paid invoice is the income entry** — there is no income table. Setting
+  `status = "paid"` requires a payment method and stamps `paidDate`
+- Reports are computed on read from `invoices` and `expenses`; nothing is stored
+- Money is integer **cents** everywhere
 - WhatsApp links are generated via `whatsappLink` in `src/lib/utils.ts` (Malaysian format)
 
 ### Database
-Uses Docker Compose for local Postgres (`docker compose up -d`). Default connection: `postgres://postgres:postgres@localhost:5432/hercules_factory`. Set `DATABASE_URL` in `.env.local` to override.
+
+Turso / libSQL. Local development uses a file database:
+`TURSO_CONNECTION_URL=file:./local.db` in `.env.local` (no auth token).
+Production uses `libsql://<db>.turso.io` plus `TURSO_AUTH_TOKEN`.
+See `.env.example`.
 
 ### Path Alias
 `@/*` maps to `./src/*`.
