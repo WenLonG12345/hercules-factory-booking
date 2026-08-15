@@ -1,5 +1,37 @@
 import { z } from "zod";
 
+/**
+ * Chinese overrides, keyed by the row's own English field names. Blank values
+ * are dropped so a half-filled translation falls back to English per field.
+ */
+const zhInput = z
+  .record(z.string(), z.string())
+  .transform((value) =>
+    Object.fromEntries(Object.entries(value).filter(([, text]) => text.trim())),
+  )
+  .optional();
+
+/** The fields the landing page actually renders in Chinese. */
+export const TRANSLATABLE = {
+  content: [
+    "heroKicker",
+    "heroHeadline",
+    "heroSubtitle",
+    "primaryCtaText",
+    "whatsappMessage",
+    "whyTitle",
+    "classesTitle",
+    "galleryTitle",
+    "testimonialsTitle",
+    "faqTitle",
+    "locationTitle",
+    "locationAddress",
+  ],
+  why: ["title", "description"],
+  classes: ["name", "description", "whatsappMessage"],
+  faq: ["question", "answer"],
+} as const;
+
 export const landingPageContentInput = z.object({
   heroKicker: z.string().min(2),
   heroHeadline: z.string().min(4),
@@ -16,14 +48,17 @@ export const landingPageContentInput = z.object({
   locationTitle: z.string().min(2),
   locationAddress: z.string().min(5),
   mapEmbedUrl: z.string().optional(),
+  zh: zhInput,
 });
 
 export const whyItemInput = z.object({
   emoji: z.string().min(1).max(8),
+  iconUrl: z.string().optional(),
   title: z.string().min(2),
   description: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
   isActive: z.boolean().default(true),
+  zh: zhInput,
 });
 
 export const classOfferingInput = z.object({
@@ -33,6 +68,7 @@ export const classOfferingInput = z.object({
   whatsappMessage: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
   isActive: z.boolean().default(true),
+  zh: zhInput,
 });
 
 export const faqItemInput = z.object({
@@ -40,6 +76,7 @@ export const faqItemInput = z.object({
   answer: z.string().min(2),
   sortOrder: z.coerce.number().int().default(0),
   isActive: z.boolean().default(true),
+  zh: zhInput,
 });
 
 export const galleryImageInput = z.object({

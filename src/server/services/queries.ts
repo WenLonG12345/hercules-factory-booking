@@ -1,13 +1,29 @@
 import { db } from "@/db";
+import type { Locale } from "@/i18n/routing";
 import { demoLanding } from "@/lib/demo-data";
+
+type Translatable = { zh?: Record<string, string> | null };
+
+/**
+ * Overlays the row's Chinese translations onto its English columns. Any field
+ * the admin has not translated keeps its English value, so a half-filled
+ * translation degrades field by field instead of blanking the page.
+ */
+function localize<T extends Translatable>(row: T, locale: Locale): T {
+  if (locale === "en" || !row.zh) return row;
+  return { ...row, ...row.zh };
+}
+
+const localizeAll = <T extends Translatable>(rows: T[], locale: Locale) =>
+  rows.map((row) => localize(row, locale));
 
 /**
  * The landing page is a Server Component and reads the DB directly — no tRPC
  * round-trip. Without a database it falls back to demo content so the public
  * site still renders.
  */
-export async function getLandingData() {
-  if (!db) return demoLanding;
+export async function getLandingData(locale: Locale = "en") {
+  if (!db) return localizeLanding(demoLanding, locale);
 
   const [content, why, classes, faq, gallery, reviews, social] =
     await Promise.all([
@@ -38,9 +54,32 @@ export async function getLandingData() {
       }),
     ]);
 
-  if (!content) return demoLanding;
+  if (!content) return localizeLanding(demoLanding, locale);
 
-  return { content, why, classes, faq, gallery, reviews, social };
+  // Reviews, gallery captions and social labels stay as written — they are
+  // real quotes and proper nouns, not copy the admin authors.
+  return localizeLanding(
+    { content, why, classes, faq, gallery, reviews, social },
+    locale,
+  );
+}
+
+function localizeLanding<
+  T extends {
+    content: Translatable;
+    why: Translatable[];
+    classes: Translatable[];
+    faq: Translatable[];
+  },
+>(data: T, locale: Locale): T {
+  if (locale === "en") return data;
+  return {
+    ...data,
+    content: localize(data.content, locale),
+    why: localizeAll(data.why, locale),
+    classes: localizeAll(data.classes, locale),
+    faq: localizeAll(data.faq, locale),
+  };
 }
 
 export type LandingData = Awaited<ReturnType<typeof getLandingData>>;

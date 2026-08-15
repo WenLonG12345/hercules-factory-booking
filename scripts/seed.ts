@@ -26,8 +26,9 @@ import {
 } from "@/db/schema";
 import {
   CLASS_ITEMS,
+  demoLanding,
+  FAQ_ITEMS,
   GALLERY_ITEMS,
-  GOOGLE_MAP_EMBED,
   WHY_ITEMS,
 } from "@/lib/demo-data";
 
@@ -52,25 +53,8 @@ const cmsOnly = process.argv.includes("--cms-only");
 async function main() {
   console.log("Seeding landing page content…");
 
-  const landing = {
-    heroKicker: "HERCULES FACTORY",
-    heroHeadline: "MUAY THAI FOR EVERYONE",
-    heroSubtitle: "Beginners. Fitness. Fighters.",
-    heroImageUrl: `${UNSPLASH}-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=2000&q=70`,
-    primaryCtaText: "BOOK A CLASS",
-    whatsappPhone: "60162723083",
-    whatsappMessage:
-      "Hi! I'd like to book a Muay Thai class at Hercules Factory. 😊",
-    whyTitle: "Why Hercules Factory",
-    classesTitle: "Classes",
-    galleryTitle: "Gallery",
-    testimonialsTitle: "What members say",
-    faqTitle: "FAQ",
-    locationTitle: "Find us",
-    locationAddress:
-      "Jalan Cerdas, Taman Connaught, 56000 Kuala Lumpur, Wilayah Persekutuan Kuala Lumpur",
-    mapEmbedUrl: GOOGLE_MAP_EMBED,
-  };
+  // Same copy the no-database fallback renders, minus its placeholder id.
+  const { id: _demoId, ...landing } = demoLanding.content;
 
   // The landing row is a singleton — update it in place so re-seeding a live
   // database can't leave a second, shadowed row behind.
@@ -108,35 +92,10 @@ async function main() {
     })),
   );
 
-  await db.insert(faqItems).values([
-    {
-      question: "I've never trained Muay Thai before. Can I join?",
-      answer: "Yes! Our classes are beginner-friendly.",
-      sortOrder: 0,
-    },
-    {
-      question: "Do I need my own gloves?",
-      answer: "No. Gloves are available for use during your trial/class.",
-      sortOrder: 1,
-    },
-    {
-      question: "Can women join?",
-      answer: "Absolutely. We welcome beginners of all fitness levels.",
-      sortOrder: 2,
-    },
-    {
-      question: "How do I book a trial class?",
-      answer: "Simply WhatsApp us and we'll help you choose a suitable class.",
-      sortOrder: 3,
-    },
-    {
-      // Opening hours from the Google Business Profile.
-      question: "What are your training hours?",
-      answer:
-        "Mon, Tue, Thu, Fri 7–10pm · Sun 1–2pm · Closed Wed and Sat. WhatsApp us to confirm before you come down.",
-      sortOrder: 4,
-    },
-  ]);
+  // Opening hours in the last entry come from the Google Business Profile.
+  await db
+    .insert(faqItems)
+    .values(FAQ_ITEMS.map((item, index) => ({ ...item, sortOrder: index })));
 
   await db
     .insert(galleryImages)

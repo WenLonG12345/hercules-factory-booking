@@ -1,0 +1,49 @@
+{
+  "Metadata": {
+    "title": "Hercules Factory | 马来西亚泰拳课程",
+    "description": "马来西亚泰拳，人人可练——新手、健身、拳手都适合。团体课、儿童课与私人教练。WhatsApp 直接报名。",
+    "ogTitle": "Hercules Factory 泰拳馆",
+    "ogDescription": "人人都能练泰拳。新手。健身。拳手。WhatsApp 报名上课。"
+  },
+  "Nav": {
+    "why": "关于我们",
+    "classes": "课程",
+    "gallery": "相册",
+    "reviews": "评价",
+    "faq": "常见问题"
+  },
+  "LocaleSwitcher": {
+    "label": "语言",
+    "en": "EN",
+    "zh": "中文"
+  },
+  "Home": {
+    "enquire": "咨询",
+    "galleryBlurb": "在我们这里训练过？用右下角的按钮把照片发给我们，我们会放上来。",
+    "sharedBy": "由 {name} 分享",
+    "reviewsSummary": "{rating} ★ · {count} 则评价",
+    "starsLabel": "5 分中的 {rating} 分",
+    "closingKicker": "随时欢迎你",
+    "closingTitle": "全力训练。<br></br><accent>每个人</accent>都从零开始。",
+    "closingBody": "告诉我们你的目标——新手入门、健身塑形，还是备战比赛。我们会替你安排合适的课程。",
+    "seeClasses": "查看课程",
+    "mapTitle": "Hercules Factory 位置"
+  },
+  "Fab": {
+    "sharePhoto": "分享你的照片",
+    "whatsapp": "WhatsApp 联系我们",
+    "open": "打开快捷操作",
+    "close": "关闭快捷操作",
+    "dialogTitle": "分享你的泰拳照片",
+    "dialogDescription": "在我们这里训练过？发张照片给我们——审核通过后就会出现在本页相册里。",
+    "sentTitle": "已收到，谢谢！",
+    "sentBody": "我们会先审核你的照片，之后才会显示在相册里。",
+    "closeButton": "关闭",
+    "yourName": "你的名字",
+    "caption": "说明（选填）",
+    "captionPlaceholder": "第一堂课完成！",
+    "sending": "发送中…",
+    "send": "发送照片",
+    "consent": "发送照片即表示你同意 Hercules Factory 在本网站展示该照片。支持 JPG、PNG 或 WEBP，最大 8 MB。"
+  }
+}

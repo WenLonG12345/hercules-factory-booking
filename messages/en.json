@@ -1,0 +1,49 @@
+{
+  "Metadata": {
+    "title": "Hercules Factory | Muay Thai Classes in Malaysia",
+    "description": "Muay Thai for everyone in Malaysia — beginners, fitness, and fighters. Group classes, kids classes, and personal training. Book on WhatsApp.",
+    "ogTitle": "Hercules Factory Muay Thai",
+    "ogDescription": "Muay Thai for everyone. Beginners. Fitness. Fighters. Book a class on WhatsApp."
+  },
+  "Nav": {
+    "why": "Why",
+    "classes": "Classes",
+    "gallery": "Gallery",
+    "reviews": "Reviews",
+    "faq": "FAQ"
+  },
+  "LocaleSwitcher": {
+    "label": "Language",
+    "en": "EN",
+    "zh": "中文"
+  },
+  "Home": {
+    "enquire": "Enquire",
+    "galleryBlurb": "Trained with us? Send us your photo with the button in the corner — we'll put it up here.",
+    "sharedBy": "Shared by {name}",
+    "reviewsSummary": "{rating} ★ · {count} reviews",
+    "starsLabel": "{rating} out of 5 stars",
+    "closingKicker": "Ready when you are",
+    "closingTitle": "Train hard.<br></br><accent>Everyone starts</accent> somewhere.",
+    "closingBody": "Tell us what you're after — beginners, fitness, or fighting. We'll put you in the right class.",
+    "seeClasses": "See the classes",
+    "mapTitle": "Hercules Factory location"
+  },
+  "Fab": {
+    "sharePhoto": "Share your photo",
+    "whatsapp": "WhatsApp us",
+    "open": "Open quick actions",
+    "close": "Close quick actions",
+    "dialogTitle": "Share your Muay Thai photo",
+    "dialogDescription": "Trained with us? Send a photo — once we approve it, it goes up in the gallery on this page.",
+    "sentTitle": "Got it — thank you!",
+    "sentBody": "We'll review your photo before it appears in the gallery.",
+    "closeButton": "Close",
+    "yourName": "Your name",
+    "caption": "Caption (optional)",
+    "captionPlaceholder": "First class done!",
+    "sending": "Sending…",
+    "send": "Send photo",
+    "consent": "By sending a photo you let Hercules Factory show it on this website. JPG, PNG or WEBP up to 8 MB."
+  }
+}

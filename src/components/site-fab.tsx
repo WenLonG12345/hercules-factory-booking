@@ -1,6 +1,7 @@
 "use client";
 
 import { Camera, Check, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import { submitPhotoAction } from "@/app/actions";
@@ -17,6 +18,7 @@ import { Field, Input } from "@/components/ui/form";
 
 /** Speed-dial FAB: WhatsApp the gym, or send in a training photo. */
 export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
+  const t = useTranslations("Fab");
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pending, startSubmit] = useTransition();
@@ -43,8 +45,8 @@ export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
             }}
             type="button"
           >
-            Share your photo
-            <span className="grid size-10 place-items-center rounded-full bg-accent-2 text-stone-950">
+            {t("sharePhoto")}
+            <span className="grid size-10 place-items-center rounded-full bg-accent text-accent-ink">
               <Camera className="size-5" />
             </span>
           </button>
@@ -55,7 +57,7 @@ export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
             rel="noreferrer"
             target="_blank"
           >
-            WhatsApp us
+            {t("whatsapp")}
             <span className="grid size-10 place-items-center rounded-full bg-[#25D366] text-stone-950">
               <FaWhatsapp className="size-5" />
             </span>
@@ -64,8 +66,8 @@ export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
 
         <button
           aria-expanded={open}
-          aria-label={open ? "Close quick actions" : "Open quick actions"}
-          className="grid size-14 place-items-center rounded-full bg-accent shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition hover:brightness-110"
+          aria-label={open ? t("close") : t("open")}
+          className="grid size-14 place-items-center rounded-full bg-accent text-accent-ink shadow-fab transition hover:brightness-110"
           onClick={() => setOpen((value) => !value)}
           type="button"
         >
@@ -80,11 +82,8 @@ export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
       <Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Share your Muay Thai photo</DialogTitle>
-            <DialogDescription>
-              Trained with us? Send a photo — once we approve it, it goes up in
-              the gallery on this page.
-            </DialogDescription>
+            <DialogTitle>{t("dialogTitle")}</DialogTitle>
+            <DialogDescription>{t("dialogDescription")}</DialogDescription>
           </DialogHeader>
 
           {sent ? (
@@ -92,16 +91,14 @@ export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
               <span className="grid size-12 place-items-center rounded-full bg-green-100 text-green-700">
                 <Check className="size-6" />
               </span>
-              <p className="font-semibold">Got it — thank you!</p>
-              <p className="text-sm text-stone-600">
-                We&apos;ll review your photo before it appears in the gallery.
-              </p>
+              <p className="font-semibold">{t("sentTitle")}</p>
+              <p className="text-sm text-stone-600">{t("sentBody")}</p>
               <Button
                 className="mt-2"
                 onClick={() => setDialogOpen(false)}
                 variant="quiet"
               >
-                Close
+                {t("closeButton")}
               </Button>
             </div>
           ) : (
@@ -120,14 +117,14 @@ export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
             >
               <ImageFileUpload name="photo" />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Your name">
+                <Field label={t("yourName")}>
                   <Input maxLength={40} name="name" required />
                 </Field>
-                <Field label="Caption (optional)">
+                <Field label={t("caption")}>
                   <Input
                     maxLength={80}
                     name="caption"
-                    placeholder="First class done!"
+                    placeholder={t("captionPlaceholder")}
                   />
                 </Field>
               </div>
@@ -135,12 +132,9 @@ export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
                 <p className="text-sm font-semibold text-red-700">{error}</p>
               ) : null}
               <Button disabled={pending} type="submit">
-                {pending ? "Sending…" : "Send photo"}
+                {pending ? t("sending") : t("send")}
               </Button>
-              <p className="text-xs text-stone-500">
-                By sending a photo you let Hercules Factory show it on this
-                website. JPG, PNG or WEBP up to 8 MB.
-              </p>
+              <p className="text-xs text-stone-500">{t("consent")}</p>
             </form>
           )}
         </DialogContent>

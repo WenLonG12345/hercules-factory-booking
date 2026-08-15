@@ -116,6 +116,8 @@ export default function MyPage() {
 - Server actions are kept only for file uploads (`src/app/admin/(portal)/actions.ts`); all other mutations go through tRPC
 - For dialogs/child components that trigger mutations: pass an `onSuccess?: () => void` prop so the parent can invalidate the relevant query cache
 - Shared pure helpers live in `src/app/admin/(portal)/admin-format.ts` (labels, money conversion, package status, week maths, CSV export)
+- **Create actions are dialogs, never inline forms.** A list page shows the rows plus one "Add …" trigger; the create form lives in a `<Dialog>` that closes on success. Radix unmounts the dialog content, so the form resets itself — no `form.reset()`
+- The CMS page follows this: every create form is a self-contained component in `src/app/admin/(portal)/cms/add-dialogs.tsx` (`AddWhyDialog`, `AddClassDialog`, `AddGalleryDialog`, `AddReviewDialog`, `AddFaqDialog`, `AddSocialDialog`), each owning its own open state and create mutation. `page.tsx` renders `<AddXDialog sortOrder={data.x.length} />` and keeps only the list/edit/delete UI. Editing an existing row stays inline in the collapsible `EditRow`
 
 ### Business Rules (preserve these)
 

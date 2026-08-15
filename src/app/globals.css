@@ -1,19 +1,37 @@
+/* Hallmark · genre: editorial · macrostructure: Marquee Hero (banded) · theme: Sport
+ * paper band: light · display: display-condensed (roman) · accent hue: warm red
+ * nav: N5 floating pill (dark, persistent) · footer: Ft5 statement
+ * enrichment: none — hero photograph is user-owned
+ * pre-emit critique: P4 H5 E4 S4 R4 V4
+ */
 @import "tailwindcss";
 
 /* ---- Design tokens ------------------------------------------------------ */
 :root {
-  --color-paper: oklch(14% 0.01 40);
-  --color-paper-2: oklch(19% 0.012 40);
-  --color-ink: oklch(96% 0.01 85);
-  --color-ink-dim: oklch(72% 0.012 85);
-  --color-accent: oklch(58% 0.19 28);
-  --color-accent-2: oklch(80% 0.13 78);
-  --color-hairline: oklch(100% 0 0 / 12%);
+  /* Light "bone" paper — warm, never pure white. */
+  --color-paper: oklch(96.5% 0.008 75);
+  --color-paper-2: oklch(99% 0.004 85);
+  --color-paper-3: oklch(93% 0.013 70);
+  --color-ink: oklch(22% 0.02 45);
+  --color-ink-dim: oklch(46% 0.02 50);
+  /* Deep ring red — 5.0:1 on paper, 5.0:1 under white button text. */
+  --color-accent: oklch(47% 0.2 27);
+  --color-accent-ink: oklch(98% 0.008 85);
+  --color-accent-2: oklch(56% 0.13 62);
+  --color-hairline: oklch(22% 0.02 45 / 14%);
+  /* Scrim over photography — captions sit on this, not on a raw black. */
+  --color-scrim: oklch(14% 0.014 40 / 88%);
+
+  --shadow-card: 0 1px 2px oklch(22% 0.02 45 / 6%);
+  --shadow-pill: 0 8px 30px oklch(22% 0.02 45 / 18%);
+  --shadow-fab: 0 10px 30px oklch(22% 0.02 45 / 26%);
 
   --text-display: clamp(2.75rem, 11vw, 8rem);
-  --text-h2: clamp(1.75rem, 4.5vw, 3.25rem);
+  --text-h2: clamp(2rem, 5vw, 3.75rem);
   --text-h3: clamp(1.25rem, 2.4vw, 1.75rem);
+  --text-lead: clamp(1.0625rem, 1.8vw, 1.375rem);
   --text-body: clamp(1rem, 1.1vw, 1.125rem);
+  --text-cta: clamp(0.9375rem, 1.2vw, 1.0625rem);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-fast: 180ms;
@@ -24,16 +42,37 @@
   --foreground: var(--color-ink);
 }
 
+/* Any section that sits on a dark ground (hero photo, CTA band) re-points the
+   same tokens, so every child utility inverts without a second class. */
+.on-dark {
+  --color-paper: oklch(17% 0.018 40);
+  --color-paper-2: oklch(22% 0.02 40);
+  --color-paper-3: oklch(26% 0.02 40);
+  --color-ink: oklch(97% 0.008 85);
+  --color-ink-dim: oklch(80% 0.012 85);
+  --color-accent: oklch(60% 0.21 27);
+  --color-accent-ink: oklch(99% 0.005 85);
+  --color-accent-2: oklch(84% 0.13 78);
+  --color-hairline: oklch(100% 0 0 / 15%);
+  color: var(--color-ink);
+}
+
 @theme inline {
   --color-background: var(--color-paper);
   --color-foreground: var(--color-ink);
   --color-paper: var(--color-paper);
   --color-paper-2: var(--color-paper-2);
+  --color-paper-3: var(--color-paper-3);
   --color-ink: var(--color-ink);
   --color-ink-dim: var(--color-ink-dim);
   --color-accent: var(--color-accent);
+  --color-accent-ink: var(--color-accent-ink);
   --color-accent-2: var(--color-accent-2);
   --color-hairline: var(--color-hairline);
+  --color-scrim: var(--color-scrim);
+  --shadow-card: var(--shadow-card);
+  --shadow-pill: var(--shadow-pill);
+  --shadow-fab: var(--shadow-fab);
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   --font-display:
     var(--font-display-face), ui-sans-serif, system-ui, sans-serif;
@@ -49,9 +88,99 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  overflow-x: clip;
+}
+
 ::selection {
   background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+:where(a, button):focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---- Type ---------------------------------------------------------------- */
+.display {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* Section head: accent rule above the heading, stacked (never tag-left). */
+.section-head::before {
+  content: "";
+  display: block;
+  width: 3.5rem;
+  height: 4px;
+  margin-bottom: 1.25rem;
+  background: var(--color-accent);
+}
+
+/* ---- CTA voice ----------------------------------------------------------- */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  white-space: nowrap;
+  border-radius: 9999px;
+  padding: 1.0625rem 2.25rem;
+  font-family: var(--font-display);
+  font-size: var(--text-cta);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.cta:hover {
+  transform: translateY(-2px);
+  background: color-mix(in oklab, var(--color-accent) 88%, black);
+}
+
+.cta-quiet {
+  background: transparent;
   color: var(--color-ink);
+  box-shadow: inset 0 0 0 2px var(--color-ink);
+}
+
+.cta-quiet:hover {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.cta-sm {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+}
+
+/* Phones: the header pill has to fit logo + locale switcher + CTA on one line,
+   so the CTA gives up padding and a little tracking first. */
+@media (width < 640px) {
+  .cta {
+    padding: 0.5rem 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .cta-sm {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+  }
 }
 
 /* ---- Motion primitives -------------------------------------------------- */
@@ -105,6 +234,49 @@ html {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
+/* 3D icon disc — a lit, floating puck that reads as depth without any WebGL.
+   Holds an uploaded 3D icon PNG, or the emoji fallback when the CMS has none.
+   Each card offsets the float by its --i so the row does not bob in lockstep. */
+.icon-3d {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 9999px;
+  transform-style: preserve-3d;
+  background:
+    radial-gradient(
+      circle at 32% 26%,
+      color-mix(in oklab, white 55%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in oklab, var(--color-accent) 26%, transparent),
+      color-mix(in oklab, var(--color-accent-2) 16%, transparent)
+    );
+  box-shadow:
+    inset 0 1px 1px color-mix(in oklab, white 60%, transparent),
+    inset 0 -2px 4px color-mix(in oklab, black 22%, transparent),
+    0 8px 18px -6px color-mix(in oklab, var(--color-accent) 45%, transparent);
+  animation: icon-float 6s var(--ease-out) infinite alternate;
+  animation-delay: calc(var(--i, 0) * -0.9s);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.group:hover .icon-3d {
+  transform: perspective(320px) rotateX(-12deg) rotateY(16deg) scale(1.1);
+}
+
+@keyframes icon-float {
+  from {
+    translate: 0 -3px;
+  }
+  to {
+    translate: 0 3px;
+  }
+}
+
 .ken-burns {
   animation: ken-burns 24s var(--ease-out) infinite alternate;
 }
@@ -129,12 +301,18 @@ html {
     transition-delay: 0ms;
   }
 
-  .lift:hover {
+  .lift:hover,
+  .cta:hover {
     transform: none;
   }
 
-  .ken-burns {
+  .ken-burns,
+  .icon-3d {
     animation: none;
+  }
+
+  .group:hover .icon-3d {
+    transform: none;
   }
 
   .accordion-panel {

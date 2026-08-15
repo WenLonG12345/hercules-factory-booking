@@ -1,16 +1,25 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { uploadImageAction } from "@/app/admin/(portal)/actions";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ImageFileUpload } from "@/components/ui/file-upload";
 import { Field, Input, Textarea } from "@/components/ui/form";
 import { api } from "@/lib/trpc";
+import { TRANSLATABLE } from "@/server/validators/cms";
+import {
+  AddClassDialog,
+  AddFaqDialog,
+  AddGalleryDialog,
+  AddReviewDialog,
+  AddSocialDialog,
+  AddWhyDialog,
+  IconField,
+  useIconUpload,
+} from "./add-dialogs";
+import { readZh, ZhFields } from "./zh-fields";
 
 const SECTIONS = [
   ["hero", "Hero"],
@@ -24,6 +33,55 @@ const SECTIONS = [
   ["social", "Social"],
 ] as const;
 
+/**
+ * An existing CMS row, collapsed behind a native `<details>`. Before this the
+ * lists were delete-only, so a typo — or a missing translation — meant deleting
+ * the row and typing it again.
+ */
+function EditRow({
+  summary,
+  subtitle,
+  onSubmit,
+  onDelete,
+  pending,
+  children,
+}: {
+  summary: string;
+  subtitle?: string | null;
+  onSubmit: (formData: FormData) => void;
+  onDelete: () => void;
+  pending: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <li className="rounded-md border border-stone-100">
+      <details>
+        <summary className="cursor-pointer px-3 py-2">
+          <span className="font-semibold">{summary}</span>
+          <span className="block text-stone-500">{subtitle ?? "—"}</span>
+        </summary>
+        <form
+          className="grid gap-4 border-t border-stone-100 px-3 py-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(new FormData(e.currentTarget));
+          }}
+        >
+          {children}
+          <div className="flex gap-2">
+            <Button disabled={pending} type="submit">
+              Save
+            </Button>
+            <Button onClick={onDelete} type="button" variant="quiet">
+              <Trash2 className="size-4 text-red-700" />
+            </Button>
+          </div>
+        </form>
+      </details>
+    </li>
+  );
+}
+
 function SectionHeader({ id, title }: { id: string; title: string }) {
   return (
     <h2 className="mb-3 scroll-mt-24 text-xl font-black" id={id}>
@@ -34,55 +92,43 @@ function SectionHeader({ id, title }: { id: string; title: string }) {
 
 export default function CmsPage() {
   const utils = api.useUtils();
-  const [uploading, startUpload] = useTransition();
-  const [galleryUrl, setGalleryUrl] = useState("");
+  const { uploading, withIcon } = useIconUpload();
 
   const { data, isLoading } = api.cms.allContent.useQuery();
 
-  const invalidate = () => {
-    utils.cms.allContent.invalidate();
-    utils.cms.publicContent.invalidate();
-  };
   const onError = (error: { message: string }) => toast.error(error.message);
   const onSuccess = (message: string) => () => {
     toast.success(message);
-    invalidate();
+    utils.cms.allContent.invalidate();
+    utils.cms.publicContent.invalidate();
   };
 
   const saveContent = api.cms.updateLandingContent.useMutation({
     onSuccess: onSuccess("Landing content saved."),
     onError,
   });
-  const createWhy = api.cms.why.create.useMutation({
-    onSuccess: onSuccess("Pillar added."),
+  const updateWhy = api.cms.why.update.useMutation({
+    onSuccess: onSuccess("Pillar saved."),
     onError,
   });
   const deleteWhy = api.cms.why.delete.useMutation({
     onSuccess: onSuccess("Pillar removed."),
     onError,
   });
-  const createClass = api.cms.classes.create.useMutation({
-    onSuccess: onSuccess("Class added."),
+  const updateClass = api.cms.classes.update.useMutation({
+    onSuccess: onSuccess("Class saved."),
     onError,
   });
   const deleteClass = api.cms.classes.delete.useMutation({
     onSuccess: onSuccess("Class removed."),
     onError,
   });
-  const createFaq = api.cms.faq.create.useMutation({
-    onSuccess: onSuccess("FAQ added."),
+  const updateFaq = api.cms.faq.update.useMutation({
+    onSuccess: onSuccess("FAQ saved."),
     onError,
   });
   const deleteFaq = api.cms.faq.delete.useMutation({
     onSuccess: onSuccess("FAQ removed."),
-    onError,
-  });
-  const createGallery = api.cms.gallery.create.useMutation({
-    onSuccess: () => {
-      setGalleryUrl("");
-      toast.success("Image added.");
-      invalidate();
-    },
     onError,
   });
   const deleteGallery = api.cms.gallery.delete.useMutation({
@@ -93,16 +139,8 @@ export default function CmsPage() {
     onSuccess: onSuccess("Photo published to the gallery."),
     onError,
   });
-  const createReview = api.cms.reviews.create.useMutation({
-    onSuccess: onSuccess("Review added."),
-    onError,
-  });
   const deleteReview = api.cms.reviews.delete.useMutation({
     onSuccess: onSuccess("Review removed."),
-    onError,
-  });
-  const createSocial = api.cms.social.create.useMutation({
-    onSuccess: onSuccess("Link added."),
     onError,
   });
   const deleteSocial = api.cms.social.delete.useMutation({
@@ -122,6 +160,7 @@ export default function CmsPage() {
   }
 
   const content = data.content;
+
   // Visitor submissions arrive inactive; approving one just activates it.
   const pendingPhotos = data.gallery.filter(
     (image) => image.submittedBy && !image.isActive,
@@ -169,6 +208,7 @@ export default function CmsPage() {
               locationTitle: String(fd.get("locationTitle")),
               locationAddress: String(fd.get("locationAddress")),
               mapEmbedUrl: String(fd.get("mapEmbedUrl") ?? "") || undefined,
+              zh: readZh(fd),
             });
           }}
         >
@@ -287,6 +327,11 @@ export default function CmsPage() {
               name="mapEmbedUrl"
             />
           </Field>
+          <ZhFields
+            fields={TRANSLATABLE.content}
+            multiline={["whatsappMessage", "locationAddress"]}
+            value={content?.zh}
+          />
           <Button disabled={saveContent.isPending} type="submit">
             {saveContent.isPending ? "Saving…" : "Save landing content"}
           </Button>
@@ -296,119 +341,111 @@ export default function CmsPage() {
       <SectionHeader id="why" title="Why Hercules Factory" />
       <Card className="mb-8">
         <ul className="mb-4 grid gap-2">
-          {data.why.map((item) => (
-            <li
+          {data.why.map((item, index) => (
+            <EditRow
               key={item.id}
-              className="flex items-start justify-between gap-3 rounded-md border border-stone-100 px-3 py-2"
+              onDelete={() => deleteWhy.mutate({ id: item.id })}
+              onSubmit={(fd) =>
+                withIcon(fd, (iconUrl) =>
+                  updateWhy.mutate({
+                    id: item.id,
+                    emoji: String(fd.get("emoji")),
+                    iconUrl,
+                    title: String(fd.get("title")),
+                    description:
+                      String(fd.get("description") ?? "") || undefined,
+                    sortOrder: index,
+                    isActive: item.isActive,
+                    zh: readZh(fd),
+                  }),
+                )
+              }
+              pending={uploading || updateWhy.isPending}
+              subtitle={item.description}
+              summary={`${item.emoji} ${item.title}`}
             >
-              <span>
-                <span className="font-semibold">
-                  {item.emoji} {item.title}
-                </span>
-                <span className="block text-stone-500">
-                  {item.description ?? "—"}
-                </span>
-              </span>
-              <button
-                onClick={() => deleteWhy.mutate({ id: item.id })}
-                type="button"
-              >
-                <Trash2 className="size-4 text-red-700" />
-              </button>
-            </li>
+              <div className="grid gap-4 sm:grid-cols-[100px_1fr]">
+                <Field label="Emoji">
+                  <Input defaultValue={item.emoji} name="emoji" required />
+                </Field>
+                <Field label="Title">
+                  <Input defaultValue={item.title} name="title" required />
+                </Field>
+              </div>
+              <Field label="Description">
+                <Textarea
+                  defaultValue={item.description ?? ""}
+                  name="description"
+                />
+              </Field>
+              <IconField iconUrl={item.iconUrl} />
+              <ZhFields
+                fields={TRANSLATABLE.why}
+                multiline={["description"]}
+                value={item.zh}
+              />
+            </EditRow>
           ))}
         </ul>
-        <form
-          className="grid gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const form = e.currentTarget;
-            const fd = new FormData(form);
-            createWhy.mutate({
-              emoji: String(fd.get("emoji")),
-              title: String(fd.get("title")),
-              description: String(fd.get("description") ?? "") || undefined,
-              sortOrder: data.why.length,
-              isActive: true,
-            });
-            form.reset();
-          }}
-        >
-          <div className="grid gap-4 sm:grid-cols-[100px_1fr]">
-            <Field label="Emoji">
-              <Input name="emoji" required />
-            </Field>
-            <Field label="Title">
-              <Input name="title" required />
-            </Field>
-          </div>
-          <Field label="Description">
-            <Textarea
-              name="description"
-              placeholder="One or two sentences — shown under the title on the landing page."
-            />
-          </Field>
-          <Button type="submit">Add</Button>
-        </form>
+        <AddWhyDialog sortOrder={data.why.length} />
       </Card>
 
       <SectionHeader id="classes" title="Classes" />
       <Card className="mb-8">
         <ul className="mb-4 grid gap-2">
-          {data.classes.map((item) => (
-            <li
+          {data.classes.map((item, index) => (
+            <EditRow
               key={item.id}
-              className="flex items-center justify-between rounded-md border border-stone-100 px-3 py-2"
+              onDelete={() => deleteClass.mutate({ id: item.id })}
+              onSubmit={(fd) =>
+                updateClass.mutate({
+                  id: item.id,
+                  name: String(fd.get("name")),
+                  description: String(fd.get("description")),
+                  imageUrl: String(fd.get("imageUrl") ?? "") || undefined,
+                  whatsappMessage:
+                    String(fd.get("whatsappMessage") ?? "") || undefined,
+                  sortOrder: index,
+                  isActive: item.isActive,
+                  zh: readZh(fd),
+                })
+              }
+              pending={updateClass.isPending}
+              subtitle={item.description}
+              summary={item.name}
             >
-              <span>
-                <span className="font-semibold">{item.name}</span>{" "}
-                <span className="text-stone-500">{item.description}</span>
-              </span>
-              <button
-                onClick={() => deleteClass.mutate({ id: item.id })}
-                type="button"
-              >
-                <Trash2 className="size-4 text-red-700" />
-              </button>
-            </li>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Name">
+                  <Input defaultValue={item.name} name="name" required />
+                </Field>
+                <Field label="Description">
+                  <Input
+                    defaultValue={item.description}
+                    name="description"
+                    required
+                  />
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Image URL">
+                  <Input defaultValue={item.imageUrl ?? ""} name="imageUrl" />
+                </Field>
+                <Field label="WhatsApp message">
+                  <Input
+                    defaultValue={item.whatsappMessage ?? ""}
+                    name="whatsappMessage"
+                  />
+                </Field>
+              </div>
+              <ZhFields
+                fields={TRANSLATABLE.classes}
+                multiline={["description", "whatsappMessage"]}
+                value={item.zh}
+              />
+            </EditRow>
           ))}
         </ul>
-        <form
-          className="grid gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const form = e.currentTarget;
-            const fd = new FormData(form);
-            createClass.mutate({
-              name: String(fd.get("name")),
-              description: String(fd.get("description")),
-              imageUrl: String(fd.get("imageUrl") ?? "") || undefined,
-              whatsappMessage:
-                String(fd.get("whatsappMessage") ?? "") || undefined,
-              sortOrder: data.classes.length,
-              isActive: true,
-            });
-            form.reset();
-          }}
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name">
-              <Input name="name" placeholder="GROUP CLASS" required />
-            </Field>
-            <Field label="Description">
-              <Input name="description" required />
-            </Field>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Image URL">
-              <Input name="imageUrl" />
-            </Field>
-            <Field label="WhatsApp message">
-              <Input name="whatsappMessage" />
-            </Field>
-          </div>
-          <Button type="submit">Add class</Button>
-        </form>
+        <AddClassDialog sortOrder={data.classes.length} />
       </Card>
 
       <SectionHeader
@@ -498,70 +535,7 @@ export default function CmsPage() {
           ))}
         </div>
 
-        <form
-          className="grid gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const form = e.currentTarget;
-            const fd = new FormData(form);
-            const file = fd.get("imageFile") as File | null;
-
-            const add = (imageUrl: string) => {
-              createGallery.mutate({
-                imageUrl,
-                alt: String(fd.get("alt")),
-                category: String(fd.get("category") ?? "") || undefined,
-                sortOrder: data.gallery.length,
-                isActive: true,
-              });
-              form.reset();
-            };
-
-            if (file && file.size > 0) {
-              const uploadData = new FormData();
-              uploadData.set("imageFile", file);
-              uploadData.set("prefix", "gallery");
-              startUpload(async () => {
-                try {
-                  add(await uploadImageAction(uploadData));
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error ? error.message : "Upload failed",
-                  );
-                }
-              });
-              return;
-            }
-
-            if (!galleryUrl) {
-              toast.error("Upload a file or paste an image URL.");
-              return;
-            }
-            add(galleryUrl);
-          }}
-        >
-          <ImageFileUpload name="imageFile" />
-          <Field label="…or paste an image URL">
-            <Input
-              onChange={(e) => setGalleryUrl(e.target.value)}
-              value={galleryUrl}
-            />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Alt text">
-              <Input name="alt" required />
-            </Field>
-            <Field label="Category">
-              <Input
-                name="category"
-                placeholder="Group class / PT / Sparring"
-              />
-            </Field>
-          </div>
-          <Button disabled={uploading || createGallery.isPending} type="submit">
-            {uploading ? "Uploading…" : "Add image"}
-          </Button>
-        </form>
+        <AddGalleryDialog sortOrder={data.gallery.length} />
       </Card>
 
       <SectionHeader id="reviews" title="Reviews" />
@@ -589,96 +563,45 @@ export default function CmsPage() {
             </li>
           ))}
         </ul>
-        <form
-          className="grid gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const form = e.currentTarget;
-            const fd = new FormData(form);
-            createReview.mutate({
-              author: String(fd.get("author")),
-              rating: Number(fd.get("rating")),
-              quote: String(fd.get("quote")),
-              source: String(fd.get("source")) || "Google",
-              reviewedAt: String(fd.get("reviewedAt") ?? "") || undefined,
-              sortOrder: data.reviews.length,
-              isActive: true,
-            });
-            form.reset();
-          }}
-        >
-          <div className="grid gap-4 sm:grid-cols-[2fr_1fr_1fr_1fr]">
-            <Field label="Author">
-              <Input name="author" required />
-            </Field>
-            <Field label="Rating">
-              <Input
-                defaultValue={5}
-                max={5}
-                min={1}
-                name="rating"
-                required
-                type="number"
-              />
-            </Field>
-            <Field label="Source">
-              <Input defaultValue="Google" name="source" required />
-            </Field>
-            <Field label="Reviewed">
-              <Input name="reviewedAt" placeholder="Jun 2026" />
-            </Field>
-          </div>
-          <Field label="Quote">
-            <Textarea name="quote" required />
-          </Field>
-          <Button type="submit">Add review</Button>
-        </form>
+        <AddReviewDialog sortOrder={data.reviews.length} />
       </Card>
 
       <SectionHeader id="faq" title="FAQ" />
       <Card className="mb-8">
         <ul className="mb-4 grid gap-2">
-          {data.faq.map((item) => (
-            <li
+          {data.faq.map((item, index) => (
+            <EditRow
               key={item.id}
-              className="flex items-start justify-between gap-3 rounded-md border border-stone-100 px-3 py-2"
+              onDelete={() => deleteFaq.mutate({ id: item.id })}
+              onSubmit={(fd) =>
+                updateFaq.mutate({
+                  id: item.id,
+                  question: String(fd.get("question")),
+                  answer: String(fd.get("answer")),
+                  sortOrder: index,
+                  isActive: item.isActive,
+                  zh: readZh(fd),
+                })
+              }
+              pending={updateFaq.isPending}
+              subtitle={item.answer}
+              summary={item.question}
             >
-              <span>
-                <span className="font-semibold">{item.question}</span>
-                <span className="block text-stone-500">{item.answer}</span>
-              </span>
-              <button
-                onClick={() => deleteFaq.mutate({ id: item.id })}
-                type="button"
-              >
-                <Trash2 className="size-4 text-red-700" />
-              </button>
-            </li>
+              <Field label="Question">
+                <Input defaultValue={item.question} name="question" required />
+              </Field>
+              <Field label="Answer">
+                <Textarea defaultValue={item.answer} name="answer" required />
+              </Field>
+              <ZhFields
+                fields={TRANSLATABLE.faq}
+                multiline={["answer"]}
+                value={item.zh}
+              />
+            </EditRow>
           ))}
         </ul>
-        <form
-          className="grid gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const form = e.currentTarget;
-            const fd = new FormData(form);
-            createFaq.mutate({
-              question: String(fd.get("question")),
-              answer: String(fd.get("answer")),
-              sortOrder: data.faq.length,
-              isActive: true,
-            });
-            form.reset();
-          }}
-        >
-          <Field label="Question">
-            <Input name="question" required />
-          </Field>
-          <Field label="Answer">
-            <Textarea name="answer" required />
-          </Field>
-          <Button type="submit">Add FAQ</Button>
-        </form>
+        <AddFaqDialog sortOrder={data.faq.length} />
       </Card>
 
       <SectionHeader id="social" title="Social links" />
@@ -702,33 +625,7 @@ export default function CmsPage() {
             </li>
           ))}
         </ul>
-        <form
-          className="grid gap-4 sm:grid-cols-[1fr_1fr_2fr_auto] sm:items-end"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const form = e.currentTarget;
-            const fd = new FormData(form);
-            createSocial.mutate({
-              platform: String(fd.get("platform")),
-              label: String(fd.get("label")),
-              url: String(fd.get("url")),
-              sortOrder: data.social.length,
-              isActive: true,
-            });
-            form.reset();
-          }}
-        >
-          <Field label="Platform">
-            <Input name="platform" placeholder="instagram" required />
-          </Field>
-          <Field label="Label">
-            <Input name="label" placeholder="Instagram" required />
-          </Field>
-          <Field label="URL">
-            <Input name="url" required />
-          </Field>
-          <Button type="submit">Add</Button>
-        </form>
+        <AddSocialDialog sortOrder={data.social.length} />
       </Card>
     </>
   );

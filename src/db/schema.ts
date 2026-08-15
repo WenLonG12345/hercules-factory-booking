@@ -58,6 +58,18 @@ const timestamps = {
     .notNull(),
 };
 
+/**
+ * Chinese overrides for a CMS row, keyed by the row's own English column names.
+ * A missing or blank key falls back to English — see `localize` in
+ * `src/server/services/queries.ts`.
+ *
+ * One JSON column beats one `*_zh` column per field: adding a third language is
+ * a key, not a migration.
+ * ponytail: no per-key type safety. Split into real columns only if the CMS
+ * ever needs to query or index a translation.
+ */
+const zh = () => text("zh", { mode: "json" }).$type<Record<string, string>>();
+
 // better-auth tables ---------------------------------------------------------
 
 export const authUser = sqliteTable("auth_user", {
@@ -314,16 +326,20 @@ export const landingPageContent = sqliteTable("landing_page_content", {
   locationTitle: text("location_title").notNull(),
   locationAddress: text("location_address").notNull(),
   mapEmbedUrl: text("map_embed_url"),
+  zh: zh(),
   ...timestamps,
 });
 
 export const whyItems = sqliteTable("why_items", {
   id: id(),
+  // Emoji is the fallback when no 3D icon has been uploaded yet.
   emoji: text("emoji").notNull(),
+  iconUrl: text("icon_url"),
   title: text("title").notNull(),
   description: text("description"),
   sortOrder: integer("sort_order").default(0).notNull(),
   isActive: integer("is_active", { mode: "boolean" }).default(true).notNull(),
+  zh: zh(),
   ...timestamps,
 });
 
@@ -335,6 +351,7 @@ export const classOfferings = sqliteTable("class_offerings", {
   whatsappMessage: text("whatsapp_message"),
   sortOrder: integer("sort_order").default(0).notNull(),
   isActive: integer("is_active", { mode: "boolean" }).default(true).notNull(),
+  zh: zh(),
   ...timestamps,
 });
 
@@ -344,6 +361,7 @@ export const faqItems = sqliteTable("faq_items", {
   answer: text("answer").notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
   isActive: integer("is_active", { mode: "boolean" }).default(true).notNull(),
+  zh: zh(),
   ...timestamps,
 });
 
