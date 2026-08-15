@@ -1,6 +1,26 @@
 [
   {
     "date": "2026-08-15",
+    "macrostructure": "component-scope — Why section marks",
+    "theme": "Sport",
+    "theme_axes": "light / display-condensed / warm-red",
+    "enrichment": "Game Icons silhouettes (react-icons/gi), emoji-keyed, accent-filled",
+    "nav": "n/a (component-scope)",
+    "footer": "n/a (component-scope)",
+    "brief": "Why section: Game Icons marks keyed off the CMS emoji column, then flat ruled rows → hard-edged plate cards (square corners, 2px ink, accent top slab) to stay distinct from the rounded Classes grid"
+  },
+  {
+    "date": "2026-08-15",
+    "macrostructure": "Marquee Hero (banded) — section-scope redesign",
+    "theme": "Sport",
+    "theme_axes": "light / display-condensed / warm-red",
+    "enrichment": "none",
+    "nav": "unchanged (N5)",
+    "footer": "unchanged (Ft5)",
+    "brief": "Why section: emoji-disc card grid → F-index-rows ruled ordinal ledger; also fixed text-(--text-*) → text-(length:--text-*) page-wide"
+  },
+  {
+    "date": "2026-08-15",
     "macrostructure": "Marquee Hero (banded)",
     "theme": "Sport",
     "theme_axes": "light / display-condensed / warm-red",

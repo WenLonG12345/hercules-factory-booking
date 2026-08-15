@@ -29,6 +29,13 @@
       "when": 1786771352504,
       "tag": "0003_tense_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786793347452,
+      "tag": "0004_illegal_excalibur",
+      "breakpoints": true
     }
   ]
 }

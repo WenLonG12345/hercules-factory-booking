@@ -27,7 +27,7 @@ export function FaqAccordion({
               onClick={() => setOpenId(open ? null : item.id)}
               type="button"
             >
-              <span className="font-display text-(--text-h3) font-bold uppercase tracking-tight">
+              <span className="font-display text-(length:--text-h3) font-bold uppercase tracking-tight">
                 {item.question}
               </span>
               <Plus

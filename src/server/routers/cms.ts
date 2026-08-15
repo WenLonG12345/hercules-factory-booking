@@ -1,10 +1,11 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import {
   classOfferings,
   faqItems,
   galleryImages,
   landingPageContent,
+  promotions,
   socialLinks,
   testimonials,
   whyItems,
@@ -20,6 +21,7 @@ import {
   faqItemInput,
   galleryImageInput,
   landingPageContentInput,
+  promotionInput,
   reorderInput,
   socialLinkInput,
   testimonialInput,
@@ -29,7 +31,7 @@ import { idSchema } from "@/server/validators/common";
 
 export const cmsRouter = createTRPCRouter({
   publicContent: publicDbProcedure.query(async ({ ctx }) => {
-    const [content, why, classes, faq, gallery, reviews, social] =
+    const [content, why, classes, faq, gallery, promos, reviews, social] =
       await Promise.all([
         ctx.db.query.landingPageContent.findFirst(),
         ctx.db
@@ -54,6 +56,11 @@ export const cmsRouter = createTRPCRouter({
           .orderBy(asc(galleryImages.sortOrder)),
         ctx.db
           .select()
+          .from(promotions)
+          .where(eq(promotions.isActive, true))
+          .orderBy(desc(promotions.createdAt)),
+        ctx.db
+          .select()
           .from(testimonials)
           .where(eq(testimonials.isActive, true))
           .orderBy(asc(testimonials.sortOrder)),
@@ -64,12 +71,12 @@ export const cmsRouter = createTRPCRouter({
           .orderBy(asc(socialLinks.sortOrder)),
       ]);
 
-    return { content, why, classes, faq, gallery, reviews, social };
+    return { content, why, classes, faq, gallery, promos, reviews, social };
   }),
 
   /** Admin view — inactive rows included. */
   allContent: adminProcedure.query(async ({ ctx }) => {
-    const [content, why, classes, faq, gallery, reviews, social] =
+    const [content, why, classes, faq, gallery, promos, reviews, social] =
       await Promise.all([
         ctx.db.query.landingPageContent.findFirst(),
         ctx.db.select().from(whyItems).orderBy(asc(whyItems.sortOrder)),
@@ -82,11 +89,17 @@ export const cmsRouter = createTRPCRouter({
           .select()
           .from(galleryImages)
           .orderBy(asc(galleryImages.sortOrder)),
+        // Newest first — the landing page runs the newest active one, so the
+        // top row of this list is the one currently live.
+        ctx.db
+          .select()
+          .from(promotions)
+          .orderBy(desc(promotions.createdAt)),
         ctx.db.select().from(testimonials).orderBy(asc(testimonials.sortOrder)),
         ctx.db.select().from(socialLinks).orderBy(asc(socialLinks.sortOrder)),
       ]);
 
-    return { content, why, classes, faq, gallery, reviews, social };
+    return { content, why, classes, faq, gallery, promos, reviews, social };
   }),
 
   updateLandingContent: adminProcedure
@@ -272,6 +285,31 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(socialLinks.id, input.id))
           .returning(),
       ),
+  }),
+
+  promos: createTRPCRouter({
+    create: adminProcedure
+      .input(promotionInput)
+      .mutation(({ ctx, input }) =>
+        ctx.db.insert(promotions).values(input).returning(),
+      ),
+    update: adminProcedure
+      .input(promotionInput.extend({ id: z.uuid() }))
+      .mutation(({ ctx, input: { id, ...values } }) =>
+        ctx.db
+          .update(promotions)
+          .set({ ...values, updatedAt: new Date() })
+          .where(eq(promotions.id, id))
+          .returning(),
+      ),
+    delete: adminProcedure.input(idSchema).mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .delete(promotions)
+        .where(eq(promotions.id, input.id))
+        .returning();
+      if (row?.imageUrl) await deleteImage(row.imageUrl).catch(() => {});
+      return row;
+    }),
   }),
 
   gallery: createTRPCRouter({

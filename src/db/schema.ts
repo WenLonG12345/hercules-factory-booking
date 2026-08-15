@@ -319,6 +319,7 @@ export const landingPageContent = sqliteTable("landing_page_content", {
   whyTitle: text("why_title").default("Why Hercules Factory").notNull(),
   classesTitle: text("classes_title").default("Classes").notNull(),
   galleryTitle: text("gallery_title").default("Gallery / Training").notNull(),
+  promotionsTitle: text("promotions_title").default("Promotions").notNull(),
   testimonialsTitle: text("testimonials_title")
     .default("What members say")
     .notNull(),
@@ -377,6 +378,18 @@ export const galleryImages = sqliteTable("gallery_images", {
   category: text("category"),
   caption: text("caption"),
   submittedBy: text("submitted_by"),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).default(true).notNull(),
+  ...timestamps,
+});
+
+// Promotion banners — portrait 9:16 artwork the gym already produces for
+// Instagram stories, reused as-is on the landing page.
+export const promotions = sqliteTable("promotions", {
+  id: id(),
+  imageUrl: text("image_url").notNull(),
+  title: text("title").notNull(),
+  whatsappMessage: text("whatsapp_message"),
   sortOrder: integer("sort_order").default(0).notNull(),
   isActive: integer("is_active", { mode: "boolean" }).default(true).notNull(),
   ...timestamps,

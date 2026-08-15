@@ -2,7 +2,11 @@
  * paper band: light · display: display-condensed (roman) · accent hue: warm red
  * nav: N5 floating pill (dark, persistent) · footer: Ft5 statement
  * enrichment: none — hero photograph is user-owned
- * pre-emit critique: P4 H5 E4 S4 R4 V4
+ * why section: hard-edged plate cards (square corners · 2px ink · accent top
+ *   slab), deliberately unlike the soft rounded Classes grid — 2026-08-15
+ * why marks: Game Icons silhouettes (react-icons/gi) keyed off the row emoji,
+ *   accent-filled, ordinal opposite it in the card head — 2026-08-15. CC BY 3.0.
+ * pre-emit critique: P4 H5 E5 S4 R5 V4
  */
 @import "tailwindcss";
 
@@ -26,10 +30,12 @@
   --shadow-pill: 0 8px 30px oklch(22% 0.02 45 / 18%);
   --shadow-fab: 0 10px 30px oklch(22% 0.02 45 / 26%);
 
-  --text-display: clamp(2.75rem, 11vw, 8rem);
-  --text-h2: clamp(2rem, 5vw, 3.75rem);
-  --text-h3: clamp(1.25rem, 2.4vw, 1.75rem);
-  --text-lead: clamp(1.0625rem, 1.8vw, 1.375rem);
+  /* 320px floor: Archivo Black caps run ~0.68em, so 3.125rem keeps an 8-letter
+     word inside 288px without mid-word breaking. */
+  --text-display: clamp(3.125rem, 13vw, 9rem);
+  --text-h2: clamp(1.5rem, 4vw, 3rem);
+  --text-h3: clamp(1rem, 2.6vw, 1.9375rem);
+  --text-lead: clamp(1rem, 2vw, 1.5rem);
   --text-body: clamp(1rem, 1.1vw, 1.125rem);
   --text-cta: clamp(0.9375rem, 1.2vw, 1.0625rem);
 
@@ -234,47 +240,33 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
-/* 3D icon disc — a lit, floating puck that reads as depth without any WebGL.
-   Holds an uploaded 3D icon PNG, or the emoji fallback when the CMS has none.
-   Each card offsets the float by its --i so the row does not bob in lockstep. */
-.icon-3d {
-  display: grid;
-  place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 9999px;
-  transform-style: preserve-3d;
-  background:
-    radial-gradient(
-      circle at 32% 26%,
-      color-mix(in oklab, white 55%, transparent),
-      transparent 58%
-    ),
-    linear-gradient(
-      145deg,
-      color-mix(in oklab, var(--color-accent) 26%, transparent),
-      color-mix(in oklab, var(--color-accent-2) 16%, transparent)
-    );
-  box-shadow:
-    inset 0 1px 1px color-mix(in oklab, white 60%, transparent),
-    inset 0 -2px 4px color-mix(in oklab, black 22%, transparent),
-    0 8px 18px -6px color-mix(in oklab, var(--color-accent) 45%, transparent);
-  animation: icon-float 6s var(--ease-out) infinite alternate;
-  animation-delay: calc(var(--i, 0) * -0.9s);
-  transition: transform var(--dur-base) var(--ease-out);
+/* Promotion poster — one artwork held in an offset accent slab. The slab
+   is the only rotated thing; the artwork stays upright so its copy reads. */
+.promo-frame {
+  position: relative;
+  isolation: isolate;
 }
 
-.group:hover .icon-3d {
-  transform: perspective(320px) rotateX(-12deg) rotateY(16deg) scale(1.1);
+.promo-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  translate: 14px 14px;
+  rotate: -2.5deg;
+  border-radius: 4px;
+  background: var(--color-accent);
 }
 
-@keyframes icon-float {
-  from {
-    translate: 0 -3px;
-  }
-  to {
-    translate: 0 3px;
-  }
+.promo-poster {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Whatever ratio the upload is, that is the frame. No crop, no letterbox. */
+  aspect-ratio: auto;
+  border-radius: 4px;
+  border: 1px solid var(--color-hairline);
+  box-shadow: var(--shadow-pill);
 }
 
 .ken-burns {
@@ -306,13 +298,8 @@ body {
     transform: none;
   }
 
-  .ken-burns,
-  .icon-3d {
+  .ken-burns {
     animation: none;
-  }
-
-  .group:hover .icon-3d {
-    transform: none;
   }
 
   .accordion-panel {

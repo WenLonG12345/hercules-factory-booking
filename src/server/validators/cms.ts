@@ -22,6 +22,7 @@ export const TRANSLATABLE = {
     "whyTitle",
     "classesTitle",
     "galleryTitle",
+    "promotionsTitle",
     "testimonialsTitle",
     "faqTitle",
     "locationTitle",
@@ -43,6 +44,7 @@ export const landingPageContentInput = z.object({
   whyTitle: z.string().min(2),
   classesTitle: z.string().min(2),
   galleryTitle: z.string().min(2),
+  promotionsTitle: z.string().min(2),
   testimonialsTitle: z.string().min(2),
   faqTitle: z.string().min(2),
   locationTitle: z.string().min(2),
@@ -85,6 +87,15 @@ export const galleryImageInput = z.object({
   category: z.string().optional(),
   caption: z.string().optional(),
   submittedBy: z.string().optional(),
+  sortOrder: z.coerce.number().int().default(0),
+  isActive: z.boolean().default(true),
+});
+
+/** Promotion banner — portrait artwork, 9:16. */
+export const promotionInput = z.object({
+  imageUrl: z.string().min(4),
+  title: z.string().min(2),
+  whatsappMessage: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
   isActive: z.boolean().default(true),
 });

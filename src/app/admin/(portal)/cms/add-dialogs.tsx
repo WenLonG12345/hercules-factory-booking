@@ -87,16 +87,17 @@ function Shell({
 }
 
 /**
- * 3D icon for a Why pillar. Left empty, the landing page keeps rendering the
- * emoji — the same lit disc and float animation wrap either one.
+ * Icon for a Why pillar. Left empty, the landing page marks the row with its
+ * ordinal instead. The emoji is admin-side only — it labels the row in this
+ * CMS list and never reaches the public page.
  */
 export function IconField({ iconUrl }: { iconUrl?: string | null }) {
   return (
     <div className="grid gap-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2">
       <span className="text-sm font-semibold text-stone-700">
-        3D icon{" "}
+        Icon{" "}
         <span className="font-normal text-stone-500">
-          — optional; the emoji is shown when this is empty
+          — optional; the row is numbered when this is empty
         </span>
       </span>
       {iconUrl ? (
@@ -285,6 +286,79 @@ export function AddGalleryDialog({ sortOrder }: { sortOrder: number }) {
           <Input name="category" placeholder="Group class / PT / Sparring" />
         </Field>
       </div>
+    </Shell>
+  );
+}
+
+export function AddPromoDialog({ sortOrder }: { sortOrder: number }) {
+  const { open, setOpen, options } = useCreateDialog("Promotion added.");
+  const create = api.cms.promos.create.useMutation(options);
+  const [uploading, startUpload] = useTransition();
+
+  return (
+    <Shell
+      label="Add promotion"
+      onSubmit={(fd) => {
+        const add = (imageUrl: string) =>
+          create.mutate({
+            imageUrl,
+            title: String(fd.get("title")),
+            whatsappMessage:
+              String(fd.get("whatsappMessage") ?? "") || undefined,
+            sortOrder,
+            isActive: true,
+          });
+
+        const file = fd.get("imageFile") as File | null;
+        if (file && file.size > 0) {
+          const upload = new FormData();
+          upload.set("imageFile", file);
+          upload.set("prefix", "promotions");
+          startUpload(async () => {
+            try {
+              add(await uploadImageAction(upload));
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : "Upload failed",
+              );
+            }
+          });
+          return;
+        }
+
+        const imageUrl = String(fd.get("imageUrl") ?? "");
+        if (!imageUrl) {
+          toast.error("Upload a file or paste an image URL.");
+          return;
+        }
+        add(imageUrl);
+      }}
+      open={open}
+      pending={uploading || create.isPending}
+      setOpen={setOpen}
+      submitLabel={uploading ? "Uploading…" : "Add promotion"}
+    >
+      <p className="text-sm text-stone-500">
+        Portrait artwork, 9:16 (1080×1920) — the same file you post as an
+        Instagram story. Other ratios get cropped to fit.
+      </p>
+      <ImageFileUpload name="imageFile" />
+      <Field label="…or paste an image URL">
+        <Input name="imageUrl" />
+      </Field>
+      <Field label="Title">
+        <Input
+          name="title"
+          placeholder="Merdeka special — 10 classes RM350"
+          required
+        />
+      </Field>
+      <Field label="WhatsApp message">
+        <Input
+          name="whatsappMessage"
+          placeholder="Hi! I'd like to claim the Merdeka special."
+        />
+      </Field>
     </Shell>
   );
 }

@@ -1,10 +1,12 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { FaqAccordion } from "@/components/faq-accordion";
+import { PhotoProvider, PhotoView } from "@/components/photo-viewer";
 import { PublicFooter } from "@/components/public-footer";
 import { PublicHeader } from "@/components/public-header";
 import { Reveal } from "@/components/reveal";
 import { SiteFab } from "@/components/site-fab";
+import { WhyIcon } from "@/components/why-icon";
 import type { Locale } from "@/i18n/routing";
 import { whatsappLink } from "@/lib/utils";
 import { getLandingData } from "@/server/services/queries";
@@ -18,7 +20,7 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
   const t = await getTranslations("Home");
-  const { content, why, classes, faq, gallery, reviews, social } =
+  const { content, why, classes, faq, gallery, promo, reviews, social } =
     await getLandingData(locale);
 
   const averageRating = reviews.length
@@ -41,7 +43,7 @@ export default async function HomePage({
       <main>
         {/* 1 — Hero */}
         <section className="on-dark grain relative flex min-h-[92svh] items-end overflow-hidden bg-paper">
-          {content?.heroImageUrl ? (
+          {content?.heroImageUrl ?
             <Image
               alt=""
               className="ken-burns absolute inset-0 size-full object-cover"
@@ -50,18 +52,22 @@ export default async function HomePage({
               sizes="100vw"
               src={content.heroImageUrl}
             />
-          ) : null}
+          : null}
           <div className="absolute inset-0 bg-linear-to-t from-paper via-paper/70 to-paper/30" />
 
           <Reveal className="relative mx-auto w-full max-w-6xl px-4 pb-16 md:px-8 md:pb-24">
+            {/* Hard-edged slab, not a pill — the CTA below is the page's only
+                pill, and the scrim keeps it legible over any hero photograph.
+                The right pad subtracts the trailing letter-space so the box
+                reads optically centred. */}
             <p
-              className="text-sm font-black uppercase tracking-[0.32em] text-accent-2"
+              className="inline-flex border-2 border-accent-2 bg-scrim py-1.5 ps-3 pe-[calc(0.75rem-0.24em)] font-black text-accent-2 text-xs uppercase tracking-[0.24em]"
               data-reveal
             >
               {content?.heroKicker ?? "HERCULES FACTORY"}
             </p>
             <h1
-              className="display mt-4 text-(--text-display) leading-[0.86]"
+              className="display mt-4 text-3xl tracking-wide"
               data-reveal
               style={{ "--i": 1 } as React.CSSProperties}
             >
@@ -89,45 +95,55 @@ export default async function HomePage({
         {/* 2 — Why */}
         <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
           <h2
-            className="display section-head text-(--text-h2)"
+            className="display section-head text-(length:--text-h2)"
             data-reveal
             id="why"
           >
             {content?.whyTitle ?? "Why Hercules Factory"}
           </h2>
-          <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Cards, but hard-edged plates — square corners, 2px ink rule, an
+              accent slab on the top edge. The Classes grid below is soft and
+              rounded with photography, so the two never read as one component. */}
+          <ul className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {why.map((item, index) => (
               <li
                 key={item.id}
-                className="lift group flex flex-col rounded-2xl border border-hairline bg-paper-2 p-7 shadow-card"
+                className="flex flex-col border-2 border-ink border-t-[6px] border-t-accent bg-paper-2 p-6"
                 data-reveal
                 style={{ "--i": index } as React.CSSProperties}
               >
-                {/* Uploaded 3D icon when the CMS has one, emoji as the fallback —
-                    both get the same lit disc and float/tilt treatment. */}
-                <span aria-hidden className="icon-3d">
-                  {item.iconUrl ? (
+                {/* The uploaded CMS icon when there is one, otherwise the Game
+                    Icons mark keyed off the row's emoji. The ordinal stays
+                    opposite it so the ledger reading survives. */}
+                <span
+                  aria-hidden
+                  className="flex h-11 items-center justify-between"
+                >
+                  {item.iconUrl ?
                     <Image
                       alt=""
-                      className="size-11 object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.28)]"
+                      className="size-11 object-contain"
                       height={44}
                       src={item.iconUrl}
                       width={44}
                     />
-                  ) : (
-                    <span className="text-3xl drop-shadow-[0_4px_6px_rgba(0,0,0,0.25)]">
-                      {item.emoji}
-                    </span>
-                  )}
+                  : <WhyIcon
+                      className="size-11 text-accent"
+                      emoji={item.emoji}
+                    />
+                  }
+                  <span className="font-black text-sm tabular-nums tracking-[0.2em] text-ink-dim">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
                 </span>
-                <h3 className="display mt-5 text-(--text-h3) leading-tight">
+                <h3 className="display mt-4 text-(length:--text-h3) leading-tight">
                   {item.title}
                 </h3>
-                {item.description ? (
-                  <p className="mt-3 text-[0.9375rem] leading-6 text-ink-dim">
+                {item.description ?
+                  <p className="mt-3 text-(length:--text-body) leading-7 text-ink-dim">
                     {item.description}
                   </p>
-                ) : null}
+                : null}
               </li>
             ))}
           </ul>
@@ -137,7 +153,7 @@ export default async function HomePage({
         <div className="bg-paper-3">
           <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
             <h2
-              className="display section-head text-(--text-h2)"
+              className="display section-head text-(length:--text-h2)"
               data-reveal
               id="classes"
             >
@@ -151,7 +167,7 @@ export default async function HomePage({
                   data-reveal
                   style={{ "--i": index } as React.CSSProperties}
                 >
-                  {offering.imageUrl ? (
+                  {offering.imageUrl ?
                     <div className="relative aspect-4/5 w-full">
                       <Image
                         alt={offering.name}
@@ -161,9 +177,9 @@ export default async function HomePage({
                         src={offering.imageUrl}
                       />
                     </div>
-                  ) : null}
+                  : null}
                   <div className="flex flex-1 flex-col p-6">
-                    <h3 className="display text-(--text-h3)">
+                    <h3 className="display text-(length:--text-h3)">
                       {offering.name}
                     </h3>
                     <p className="mt-3 flex-1 text-ink-dim">
@@ -184,10 +200,69 @@ export default async function HomePage({
           </Reveal>
         </div>
 
+        {/* 3.5 — Promotion: one 9:16 poster at a time, straight to WhatsApp.
+            Dark band so the offer is the loudest beat between the two light
+            card grids around it. */}
+        {promo ?
+          <div className="on-dark grain relative overflow-hidden bg-paper">
+            <Reveal
+              as="section"
+              className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-24 md:grid-cols-[minmax(0,0.78fr)_minmax(0,1fr)] md:gap-16 md:px-8"
+            >
+              <div className="promo-frame mx-auto w-full max-w-80 md:mx-0">
+                <PhotoProvider maskOpacity={0.9}>
+                  <PhotoView src={promo.imageUrl}>
+                    <Image
+                      alt={promo.title}
+                      className="promo-poster lift cursor-zoom-in"
+                      data-reveal
+                      height={1600}
+                      sizes="(min-width: 768px) 340px, 80vw"
+                      src={promo.imageUrl}
+                      width={900}
+                    />
+                  </PhotoView>
+                </PhotoProvider>
+              </div>
+              <div>
+                <p
+                  className="text-sm font-black uppercase tracking-[0.32em] text-accent-2"
+                  data-reveal
+                  style={{ "--i": 1 } as React.CSSProperties}
+                >
+                  {content?.promotionsTitle ?? "Promotions"}
+                </p>
+                <h2
+                  className="display mt-4 text-(length:--text-h2) leading-[0.92]"
+                  data-reveal
+                  id="promotions"
+                  style={{ "--i": 2 } as React.CSSProperties}
+                >
+                  {promo.title}
+                </h2>
+                <div
+                  className="mt-10"
+                  data-reveal
+                  style={{ "--i": 3 } as React.CSSProperties}
+                >
+                  <a
+                    className="cta"
+                    href={wa(promo.whatsappMessage)}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {t("promoCta")}
+                  </a>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        : null}
+
         {/* 4 — Gallery */}
         <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
           <h2
-            className="display section-head text-(--text-h2)"
+            className="display section-head text-(length:--text-h2)"
             data-reveal
             id="gallery"
           >
@@ -200,39 +275,43 @@ export default async function HomePage({
             {t("galleryBlurb")}
           </p>
           <div className="mt-12 grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4">
-            {gallery.map((image, index) => (
-              <figure
-                key={image.id}
-                className={`lift relative overflow-hidden rounded-xl border border-hairline ${
-                  index % 3 === 0 ? "aspect-4/5" : "aspect-square"
-                }`}
-                data-reveal
-                style={{ "--i": index } as React.CSSProperties}
-              >
-                <Image
-                  alt={image.alt}
-                  className="object-cover"
-                  fill
-                  sizes="(min-width: 768px) 33vw, 100vw"
-                  src={image.imageUrl}
-                />
-                {image.category || image.submittedBy ? (
-                  <figcaption className="on-dark absolute inset-x-0 bottom-0 bg-linear-to-t from-scrim to-transparent px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-ink">
-                    {image.category}
-                    {image.submittedBy ? (
-                      <span className="block font-normal normal-case tracking-normal text-ink-dim">
-                        {t("sharedBy", { name: image.submittedBy })}
-                      </span>
-                    ) : null}
-                  </figcaption>
-                ) : null}
-              </figure>
-            ))}
+            <PhotoProvider maskOpacity={0.9}>
+              {gallery.map((image, index) => (
+                <figure
+                  key={image.id}
+                  className={`lift relative overflow-hidden rounded-xl border border-hairline ${
+                    index % 3 === 0 ? "aspect-4/5" : "aspect-square"
+                  }`}
+                  data-reveal
+                  style={{ "--i": index } as React.CSSProperties}
+                >
+                  <PhotoView src={image.imageUrl}>
+                    <Image
+                      alt={image.alt}
+                      className="cursor-zoom-in object-cover"
+                      fill
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                      src={image.imageUrl}
+                    />
+                  </PhotoView>
+                  {image.category || image.submittedBy ?
+                    <figcaption className="on-dark pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-scrim to-transparent px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-ink">
+                      {image.category}
+                      {image.submittedBy ?
+                        <span className="block font-normal normal-case tracking-normal text-ink-dim">
+                          {t("sharedBy", { name: image.submittedBy })}
+                        </span>
+                      : null}
+                    </figcaption>
+                  : null}
+                </figure>
+              ))}
+            </PhotoProvider>
           </div>
         </Reveal>
 
         {/* 5 — Reviews */}
-        {reviews.length ? (
+        {reviews.length ?
           <div className="bg-paper-3">
             <Reveal
               as="section"
@@ -243,7 +322,7 @@ export default async function HomePage({
                 data-reveal
               >
                 <h2
-                  className="display section-head text-(--text-h2)"
+                  className="display section-head text-(length:--text-h2)"
                   id="reviews"
                 >
                   {content?.testimonialsTitle ?? "What members say"}
@@ -293,12 +372,12 @@ export default async function HomePage({
               </div>
             </Reveal>
           </div>
-        ) : null}
+        : null}
 
         {/* 6 — FAQ */}
         <Reveal as="section" className="mx-auto max-w-4xl px-4 py-24 md:px-8">
           <h2
-            className="display section-head mb-12 text-(--text-h2)"
+            className="display section-head mb-12 text-(length:--text-h2)"
             data-reveal
             id="faq"
           >
@@ -310,7 +389,7 @@ export default async function HomePage({
         {/* 7 — Location */}
         <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
           <h2
-            className="display section-head text-(--text-h2)"
+            className="display section-head text-(length:--text-h2)"
             data-reveal
             id="location"
           >
@@ -322,7 +401,7 @@ export default async function HomePage({
           >
             {content?.locationAddress}
           </p>
-          {content?.mapEmbedUrl ? (
+          {content?.mapEmbedUrl ?
             <div
               className="mt-10 overflow-hidden rounded-2xl border border-hairline"
               data-reveal
@@ -336,7 +415,7 @@ export default async function HomePage({
                 title={t("mapTitle")}
               />
             </div>
-          ) : null}
+          : null}
         </Reveal>
 
         {/* 8 — Closing CTA */}
@@ -349,7 +428,7 @@ export default async function HomePage({
               {t("closingKicker")}
             </p>
             <h2
-              className="display mt-5 max-w-4xl text-(--text-h2)"
+              className="display mt-5 max-w-4xl text-(length:--text-h2)"
               data-reveal
               style={{ "--i": 1 } as React.CSSProperties}
             >

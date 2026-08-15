@@ -199,6 +199,7 @@ export const demoLanding = {
     whyTitle: "Why Hercules Factory",
     classesTitle: "Classes",
     galleryTitle: "Gallery",
+    promotionsTitle: "Promotions",
     testimonialsTitle: "What members say",
     faqTitle: "FAQ",
     locationTitle: "Find us",
@@ -213,6 +214,7 @@ export const demoLanding = {
       whyTitle: "为什么选 Hercules Factory",
       classesTitle: "课程",
       galleryTitle: "相册",
+      promotionsTitle: "优惠",
       testimonialsTitle: "学员怎么说",
       faqTitle: "常见问题",
       locationTitle: "怎么找到我们",
@@ -236,6 +238,14 @@ export const demoLanding = {
     submittedBy: null as string | null,
     ...item,
   })),
+  promo: {
+    id: "p1",
+    title: "Trial class RM30",
+    imageUrl: `${UNSPLASH}-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=900&h=1600&q=70`,
+    whatsappMessage: "Hi! I'd like to claim the RM30 trial class." as
+      | string
+      | null,
+  },
   // Google Business Profile reviews (5.0★ from 9 reviews at time of import).
   reviews: [
     {

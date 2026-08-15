@@ -25,7 +25,7 @@ const localizeAll = <T extends Translatable>(rows: T[], locale: Locale) =>
 export async function getLandingData(locale: Locale = "en") {
   if (!db) return localizeLanding(demoLanding, locale);
 
-  const [content, why, classes, faq, gallery, reviews, social] =
+  const [content, why, classes, faq, gallery, promo, reviews, social] =
     await Promise.all([
       db.query.landingPageContent.findFirst(),
       db.query.whyItems.findMany({
@@ -44,6 +44,12 @@ export async function getLandingData(locale: Locale = "en") {
         where: (image, { eq }) => eq(image.isActive, true),
         orderBy: (image, { asc }) => asc(image.sortOrder),
       }),
+      // One promotion runs at a time — the newest active row wins, so adding a
+      // banner replaces the last one without any ordering UI.
+      db.query.promotions.findFirst({
+        where: (promo, { eq }) => eq(promo.isActive, true),
+        orderBy: (promo, { desc }) => desc(promo.createdAt),
+      }),
       db.query.testimonials.findMany({
         where: (review, { eq }) => eq(review.isActive, true),
         orderBy: (review, { asc }) => asc(review.sortOrder),
@@ -59,7 +65,16 @@ export async function getLandingData(locale: Locale = "en") {
   // Reviews, gallery captions and social labels stay as written — they are
   // real quotes and proper nouns, not copy the admin authors.
   return localizeLanding(
-    { content, why, classes, faq, gallery, reviews, social },
+    {
+      content,
+      why,
+      classes,
+      faq,
+      gallery,
+      promo: promo ?? null,
+      reviews,
+      social,
+    },
     locale,
   );
 }

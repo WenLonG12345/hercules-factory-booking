@@ -13,6 +13,7 @@ import {
   AddClassDialog,
   AddFaqDialog,
   AddGalleryDialog,
+  AddPromoDialog,
   AddReviewDialog,
   AddSocialDialog,
   AddWhyDialog,
@@ -27,6 +28,7 @@ const SECTIONS = [
   ["classes", "Classes"],
   ["submissions", "Submissions"],
   ["gallery", "Gallery"],
+  ["promotions", "Promotions"],
   ["reviews", "Reviews"],
   ["faq", "FAQ"],
   ["location", "Location"],
@@ -139,6 +141,10 @@ export default function CmsPage() {
     onSuccess: onSuccess("Photo published to the gallery."),
     onError,
   });
+  const deletePromo = api.cms.promos.delete.useMutation({
+    onSuccess: onSuccess("Promotion removed."),
+    onError,
+  });
   const deleteReview = api.cms.reviews.delete.useMutation({
     onSuccess: onSuccess("Review removed."),
     onError,
@@ -168,6 +174,9 @@ export default function CmsPage() {
   const publishedPhotos = data.gallery.filter(
     (image) => image.isActive || !image.submittedBy,
   );
+
+  // The landing page runs the newest active promotion; the rest wait behind it.
+  const livePromo = data.promos.find((promo) => promo.isActive);
 
   return (
     <>
@@ -203,6 +212,7 @@ export default function CmsPage() {
               whyTitle: String(fd.get("whyTitle")),
               classesTitle: String(fd.get("classesTitle")),
               galleryTitle: String(fd.get("galleryTitle")),
+              promotionsTitle: String(fd.get("promotionsTitle")),
               testimonialsTitle: String(fd.get("testimonialsTitle")),
               faqTitle: String(fd.get("faqTitle")),
               locationTitle: String(fd.get("locationTitle")),
@@ -268,7 +278,7 @@ export default function CmsPage() {
               />
             </Field>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Why title">
               <Input
                 defaultValue={content?.whyTitle ?? "Why Hercules Factory"}
@@ -287,6 +297,13 @@ export default function CmsPage() {
               <Input
                 defaultValue={content?.galleryTitle ?? "Gallery / Training"}
                 name="galleryTitle"
+                required
+              />
+            </Field>
+            <Field label="Promotions title">
+              <Input
+                defaultValue={content?.promotionsTitle ?? "Promotions"}
+                name="promotionsTitle"
                 required
               />
             </Field>
@@ -536,6 +553,53 @@ export default function CmsPage() {
         </div>
 
         <AddGalleryDialog sortOrder={data.gallery.length} />
+      </Card>
+
+      <SectionHeader id="promotions" title="Promotions" />
+      <Card className="mb-8">
+        <p className="mb-4 text-sm text-stone-500">
+          One promotion runs on the landing page at a time — the newest one
+          below. Adding a banner replaces the one showing now; delete it and the
+          previous banner takes over.
+        </p>
+        <div className="mb-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {data.promos.map((promo) => (
+            <figure
+              key={promo.id}
+              className={`overflow-hidden rounded-lg border ${
+                promo.id === livePromo?.id
+                  ? "border-red-700 ring-2 ring-red-700/20"
+                  : "border-stone-200"
+              }`}
+            >
+              {/* biome-ignore lint/performance/noImgElement: admin preview only */}
+              <img
+                alt={promo.title}
+                className="aspect-9/16 w-full object-cover"
+                src={promo.imageUrl}
+              />
+              <figcaption className="grid gap-1.5 px-2 py-1.5">
+                {promo.id === livePromo?.id ? (
+                  <Badge tone="red">Live now</Badge>
+                ) : (
+                  <Badge tone="gray">Queued</Badge>
+                )}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-xs font-semibold">
+                    {promo.title}
+                  </span>
+                  <button
+                    onClick={() => deletePromo.mutate({ id: promo.id })}
+                    type="button"
+                  >
+                    <Trash2 className="size-4 text-red-700" />
+                  </button>
+                </div>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+        <AddPromoDialog sortOrder={data.promos.length} />
       </Card>
 
       <SectionHeader id="reviews" title="Reviews" />
