@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -69,12 +71,27 @@ export default function LoginPage() {
             <Input autoComplete="email" name="email" required type="email" />
           </Field>
           <Field label="Password">
-            <Input
-              autoComplete="current-password"
-              name="password"
-              required
-              type="password"
-            />
+            <div className="relative">
+              <Input
+                autoComplete="current-password"
+                className="w-full pr-11"
+                name="password"
+                required
+                type={showPassword ? "text" : "password"}
+              />
+              <button
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute inset-y-0 right-0 grid w-11 place-items-center text-stone-400 transition hover:text-stone-700"
+                onClick={() => setShowPassword((v) => !v)}
+                type="button"
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
+              </button>
+            </div>
           </Field>
           <Button className="mt-2 w-full" disabled={pending} type="submit">
             {pending ? "Signing in…" : "Sign in"}

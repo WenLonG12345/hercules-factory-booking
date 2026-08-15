@@ -10,8 +10,8 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isPending) return;
-    if (!session) router.replace("/admin/login");
-    else if (session.user.role !== "admin") router.replace("/member");
+    if (!session || session.user.role !== "admin")
+      router.replace("/admin/login");
   }, [session, isPending, router]);
 
   if (isPending || !session || session.user.role !== "admin") {

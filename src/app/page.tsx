@@ -1,313 +1,314 @@
-import {
-  ArrowRight,
-  CalendarDays,
-  MapPin,
-  MessageCircle,
-  ShieldCheck,
-  Star,
-} from "lucide-react";
-import Link from "next/link";
+import Image from "next/image";
+import { FaqAccordion } from "@/components/faq-accordion";
 import { PublicFooter } from "@/components/public-footer";
 import { PublicHeader } from "@/components/public-header";
-import { ButtonLink } from "@/components/ui/button";
-import { formatCurrency, whatsappLink } from "@/lib/utils";
-import { getLandingData, getPackages } from "@/server/services/queries";
+import { Reveal } from "@/components/reveal";
+import { SiteFab } from "@/components/site-fab";
+import { whatsappLink } from "@/lib/utils";
+import { getLandingData } from "@/server/services/queries";
 
-export default async function Home() {
-  const [{ content, gallery, coaches, testimonials, socialLinks }, packages] =
-    await Promise.all([getLandingData(), getPackages()]);
+export const revalidate = 300;
 
-  const whatsappSocialLink = socialLinks.find(
-    (link) => link.platform.toLowerCase() === "whatsapp",
-  );
-  const whatsappHref = whatsappSocialLink
-    ? whatsappSocialLink.url.startsWith("http")
-      ? whatsappSocialLink.url
-      : whatsappLink(
-          whatsappSocialLink.url,
-          "Hi Hercules Factory, I want to book a Muay Thai class.",
-        )
-    : null;
+export default async function HomePage() {
+  const { content, why, classes, faq, gallery, reviews, social } =
+    await getLandingData();
 
-  const hasCtas = content?.primaryCtaText || content?.secondaryCtaText;
+  const averageRating = reviews.length
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+    : 0;
+
+  const wa = (message?: string | null) =>
+    whatsappLink(
+      content?.whatsappPhone ?? "",
+      message || content?.whatsappMessage || "Hi Hercules Factory!",
+    );
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100">
-      <PublicHeader />
+    <>
+      <PublicHeader
+        ctaHref={wa()}
+        ctaText={content?.primaryCtaText ?? "BOOK A CLASS"}
+      />
 
       <main>
-        <section className="relative isolate overflow-hidden pt-24">
-          <img
-            alt="Muay Thai fighter wrapping hands"
-            className="absolute inset-0 -z-20 h-full w-full object-cover opacity-42"
-            src="https://images.unsplash.com/photo-1591117207239-788bf8de6c3b?auto=format&fit=crop&w=1800&q=80"
-          />
-          <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(15,12,10,0.96),rgba(15,12,10,0.72),rgba(127,29,29,0.42))]" />
-          <div className="mx-auto grid min-h-190 max-w-7xl content-center gap-12 px-4 pb-20 md:grid-cols-[1.15fr_0.85fr] md:px-8">
-            <div>
-              <p className="mb-5 inline-flex items-center gap-2 rounded bg-red-700 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-white">
-                <ShieldCheck className="size-4" />
-                Monday to Saturday
-              </p>
-              {content?.heroTitle && (
-                <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-tight text-stone-50 md:text-7xl">
-                  {content.heroTitle}
-                </h1>
-              )}
-              {content?.heroSubtitle && (
-                <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-200 md:text-xl">
-                  {content.heroSubtitle}
-                </p>
-              )}
-              {hasCtas && (
-                <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                  {content?.primaryCtaText && (
-                    <ButtonLink href="/member/login">
-                      {content.primaryCtaText}
-                      <ArrowRight className="size-4" />
-                    </ButtonLink>
-                  )}
-                  {content?.secondaryCtaText && whatsappHref && (
-                    <ButtonLink
-                      href={whatsappHref}
-                      target="_blank"
-                      variant="secondary"
-                    >
-                      <MessageCircle className="size-4" />
-                      {content.secondaryCtaText}
-                    </ButtonLink>
-                  )}
-                </div>
-              )}
+        {/* 1 — Hero */}
+        <section className="grain relative flex min-h-[92svh] items-end overflow-hidden">
+          {content?.heroImageUrl ? (
+            <Image
+              alt=""
+              className="ken-burns absolute inset-0 size-full object-cover"
+              fill
+              priority
+              sizes="100vw"
+              src={content.heroImageUrl}
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-linear-to-t from-paper via-paper/70 to-paper/30" />
+
+          <Reveal className="relative mx-auto w-full max-w-6xl px-4 pb-16 md:px-8 md:pb-24">
+            <p
+              className="text-xs font-black uppercase tracking-[0.32em] text-accent-2"
+              data-reveal
+            >
+              {content?.heroKicker ?? "HERCULES FACTORY"}
+            </p>
+            <h1
+              className="mt-4 font-display text-(--text-display) font-black uppercase leading-[0.86] tracking-[-0.02em]"
+              data-reveal
+              style={{ "--i": 1 } as React.CSSProperties}
+            >
+              {content?.heroHeadline ?? "Muay Thai for everyone"}
+            </h1>
+            <p
+              className="mt-6 max-w-xl text-ink-dim"
+              data-reveal
+              style={{ "--i": 2 } as React.CSSProperties}
+            >
+              {content?.heroSubtitle ?? "Beginners. Fitness. Fighters."}
+            </p>
+            <div data-reveal style={{ "--i": 3 } as React.CSSProperties}>
+              <a
+                className="lift mt-10 inline-flex items-center rounded-full bg-accent px-8 py-4 text-sm font-black uppercase tracking-[0.16em] transition hover:brightness-110"
+                href={wa()}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {content?.primaryCtaText ?? "BOOK A CLASS"}
+              </a>
             </div>
-            <div className="self-end border-l border-amber-300/40 pl-6">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-300">
-                Class Slots
-              </p>
-              <div className="mt-5 grid gap-3">
-                {["7:00 PM - 8:30 PM", "8:30 PM - 10:00 PM"].map((slot) => (
-                  <div
-                    className="rounded-lg border border-white/10 bg-black/35 p-5"
-                    key={slot}
-                  >
-                    <p className="text-2xl font-black">{slot}</p>
-                    <p className="mt-1 text-sm text-stone-300">
-                      Muay Thai fundamentals, pads, bag work, and conditioning.
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          </Reveal>
         </section>
 
-        {(content?.aboutTitle || content?.aboutBody) && (
-          <section id="about" className="bg-stone-100 py-20 text-stone-950">
-            <div className="mx-auto grid max-w-7xl gap-10 px-4 md:grid-cols-[0.75fr_1.25fr] md:px-8">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-red-700">
-                  About
-                </p>
-                {content.aboutTitle && (
-                  <h2 className="mt-3 text-4xl font-black tracking-tight">
-                    {content.aboutTitle}
-                  </h2>
-                )}
-              </div>
-              {content?.aboutBody && (
-                <p className="text-xl leading-9 text-stone-700">
-                  {content.aboutBody}
-                </p>
-              )}
-            </div>
-          </section>
-        )}
-
-        {packages.length > 0 && (
-          <section id="pricing" className="bg-stone-950 py-20">
-            <div className="mx-auto max-w-7xl px-4 md:px-8">
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-300">
-                Pricing
-              </p>
-              <h2 className="mt-3 text-4xl font-black tracking-tight">
-                Simple packages for every rhythm.
-              </h2>
-              <div className="mt-10 grid gap-4 md:grid-cols-3">
-                {packages.map((pkg) => (
-                  <div
-                    className="rounded-lg border border-white/10 bg-white/[0.04] p-6"
-                    key={pkg.id}
-                  >
-                    <p className="text-lg font-black">{pkg.name}</p>
-                    <p className="mt-4 text-4xl font-black text-amber-300">
-                      {formatCurrency(pkg.priceCents)}
-                    </p>
-                    <p className="mt-4 text-sm leading-6 text-stone-300">
-                      {pkg.type === "single" && "Pay per drop-in class."}
-                      {pkg.type === "ten_class" &&
-                        "10 class credits, valid for 1 month."}
-                      {pkg.type === "unlimited" &&
-                        "Unlimited classes for 1 month."}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        <section id="schedule" className="bg-red-950 py-16">
-          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-8">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-300">
-                Schedule
-              </p>
-              <h2 className="mt-2 text-4xl font-black">Monday to Saturday</h2>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Link
-                className="rounded-lg bg-stone-50 px-5 py-4 font-black text-stone-950"
-                href="/schedule"
+        {/* 2 — Why */}
+        <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
+          <h2
+            className="font-display text-(--text-h2) font-black uppercase tracking-tight"
+            data-reveal
+            id="why"
+          >
+            {content?.whyTitle ?? "Why Hercules Factory"}
+          </h2>
+          <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {why.map((item, index) => (
+              <li
+                key={item.id}
+                className="lift flex flex-col rounded-2xl border border-hairline bg-paper-2 p-7"
+                data-reveal
+                style={{ "--i": index } as React.CSSProperties}
               >
-                <CalendarDays className="mb-2 size-5 text-red-700" />
-                View schedule
-              </Link>
-              <Link
-                className="rounded-lg bg-amber-300 px-5 py-4 font-black text-stone-950"
-                href="/member/login"
-              >
-                <ArrowRight className="mb-2 size-5" />
-                Reserve a slot
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {gallery.length > 0 && (
-          <section className="bg-stone-100 py-20 text-stone-950">
-            <div className="mx-auto max-w-7xl px-4 md:px-8">
-              <div className="grid gap-4 md:grid-cols-3">
-                {gallery.map((image) => (
-                  <figure className="overflow-hidden rounded-lg" key={image.id}>
-                    <img
-                      alt={image.alt}
-                      className="h-80 w-full object-cover"
-                      src={image.imageUrl}
-                    />
-                    {image.caption && (
-                      <figcaption className="bg-stone-950 px-4 py-3 text-sm font-semibold text-stone-100">
-                        {image.caption}
-                      </figcaption>
-                    )}
-                  </figure>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {coaches.length > 0 && (
-          <section id="coaches" className="bg-stone-950 py-20">
-            <div className="mx-auto max-w-7xl px-4 md:px-8">
-              <h2 className="text-4xl font-black tracking-tight">Coaches</h2>
-              <div className="mt-8 grid gap-5 md:grid-cols-2">
-                {coaches.map((coach) => (
-                  <article
-                    className="grid gap-5 rounded-lg border border-white/10 bg-white/[0.04] p-5 sm:grid-cols-[180px_1fr]"
-                    key={coach.id}
-                  >
-                    {coach.imageUrl && (
-                      <img
-                        alt={coach.name}
-                        className="h-48 w-full rounded-md object-cover sm:h-full"
-                        src={coach.imageUrl}
-                      />
-                    )}
-                    <div>
-                      <p className="text-2xl font-black">{coach.name}</p>
-                      <p className="mt-1 text-amber-300">{coach.title}</p>
-                      <p className="mt-4 leading-7 text-stone-300">
-                        {coach.bio}
-                      </p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {testimonials.length > 0 && (
-          <section className="bg-stone-100 py-20 text-stone-950">
-            <div className="mx-auto max-w-7xl px-4 md:px-8">
-              <h2 className="text-4xl font-black tracking-tight">
-                What members say
-              </h2>
-              <div className="mt-8 grid gap-5 md:grid-cols-2">
-                {testimonials.map((testimonial) => (
-                  <figure
-                    className="rounded-lg border border-stone-200 bg-white p-6"
-                    key={testimonial.id}
-                  >
-                    <div className="mb-4 flex gap-1 text-amber-500">
-                      {Array.from(
-                        { length: testimonial.rating },
-                        (_, star) => star + 1,
-                      ).map((star) => (
-                        <Star
-                          className="size-4 fill-current"
-                          key={`${testimonial.id}-${star}`}
-                        />
-                      ))}
-                    </div>
-                    <blockquote className="text-xl font-semibold leading-8">
-                      "{testimonial.quote}"
-                    </blockquote>
-                    <figcaption className="mt-5 text-sm font-black text-red-700">
-                      {testimonial.customerName}
-                    </figcaption>
-                  </figure>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {(content?.locationTitle || content?.locationAddress) && (
-          <section className="bg-stone-950 py-16">
-            <div className="mx-auto grid max-w-7xl gap-8 px-4 md:grid-cols-[0.8fr_1.2fr] md:px-8">
-              <div>
-                <MapPin className="mb-4 size-8 text-red-500" />
-                {content.locationTitle && (
-                  <h2 className="text-4xl font-black">
-                    {content.locationTitle}
-                  </h2>
-                )}
-                {content.locationAddress && (
-                  <p className="mt-4 text-stone-300">
-                    {content.locationAddress}
+                <span
+                  aria-hidden
+                  className="grid size-12 place-items-center rounded-full bg-accent/15 text-2xl"
+                >
+                  {item.emoji}
+                </span>
+                <h3 className="mt-5 font-display text-(--text-h3) font-black uppercase leading-tight tracking-tight">
+                  {item.title}
+                </h3>
+                {item.description ? (
+                  <p className="mt-3 text-sm leading-6 text-ink-dim">
+                    {item.description}
                   </p>
-                )}
-              </div>
-              {(content.mapEmbedUrl || content.locationAddress) && (
-                <div className="grid min-h-72 place-items-center rounded-lg border border-white/10 bg-stone-900">
-                  <iframe
-                    src={
-                      content.mapEmbedUrl ||
-                      `https://www.google.com/maps?q=${encodeURIComponent(content.locationAddress ?? "")}&output=embed`
-                    }
-                    className="h-100 w-full rounded-md border-0"
-                    loading="lazy"
-                    title="Location"
-                  />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+
+        {/* 3 — Classes */}
+        <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
+          <h2
+            className="font-display text-(--text-h2) font-black uppercase tracking-tight"
+            data-reveal
+            id="classes"
+          >
+            {content?.classesTitle ?? "Classes"}
+          </h2>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {classes.map((offering, index) => (
+              <article
+                key={offering.id}
+                className="lift flex flex-col overflow-hidden rounded-2xl border border-hairline bg-paper-2"
+                data-reveal
+                style={{ "--i": index } as React.CSSProperties}
+              >
+                {offering.imageUrl ? (
+                  <div className="relative aspect-4/5 w-full">
+                    <Image
+                      alt={offering.name}
+                      className="object-cover"
+                      fill
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                      src={offering.imageUrl}
+                    />
+                  </div>
+                ) : null}
+                <div className="flex flex-1 flex-col p-6">
+                  <h3 className="font-display text-(--text-h3) font-black uppercase tracking-tight">
+                    {offering.name}
+                  </h3>
+                  <p className="mt-3 flex-1 text-ink-dim">
+                    {offering.description}
+                  </p>
+                  <a
+                    className="mt-6 inline-flex items-center justify-center rounded-full border border-accent px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-accent-2 transition hover:bg-accent hover:text-ink"
+                    href={wa(offering.whatsappMessage)}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Enquire on WhatsApp
+                  </a>
                 </div>
-              )}
+              </article>
+            ))}
+          </div>
+        </Reveal>
+
+        {/* 4 — Gallery */}
+        <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
+          <h2
+            className="font-display text-(--text-h2) font-black uppercase tracking-tight"
+            data-reveal
+            id="gallery"
+          >
+            {content?.galleryTitle ?? "Gallery"}
+          </h2>
+          <p className="mt-4 max-w-xl text-ink-dim" data-reveal>
+            Trained with us? Send us your photo with the button in the corner —
+            we&apos;ll put it up here.
+          </p>
+          <div className="mt-12 grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4">
+            {gallery.map((image, index) => (
+              <figure
+                key={image.id}
+                className={`lift relative overflow-hidden rounded-xl border border-hairline ${
+                  index % 3 === 0 ? "aspect-4/5" : "aspect-square"
+                }`}
+                data-reveal
+                style={{ "--i": index } as React.CSSProperties}
+              >
+                <Image
+                  alt={image.alt}
+                  className="object-cover"
+                  fill
+                  sizes="(min-width: 768px) 33vw, 100vw"
+                  src={image.imageUrl}
+                />
+                {image.category || image.submittedBy ? (
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-linear-to-t from-paper to-transparent px-4 py-3 text-xs font-black uppercase tracking-[0.16em]">
+                    {image.category}
+                    {image.submittedBy ? (
+                      <span className="block font-normal normal-case tracking-normal text-ink-dim">
+                        Shared by {image.submittedBy}
+                      </span>
+                    ) : null}
+                  </figcaption>
+                ) : null}
+              </figure>
+            ))}
+          </div>
+        </Reveal>
+
+        {/* 5 — Reviews */}
+        {reviews.length ? (
+          <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
+            <div
+              className="flex flex-wrap items-baseline justify-between gap-4"
+              data-reveal
+            >
+              <h2
+                className="font-display text-(--text-h2) font-black uppercase tracking-tight"
+                id="reviews"
+              >
+                {content?.testimonialsTitle ?? "What members say"}
+              </h2>
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-accent-2">
+                {averageRating.toFixed(1)} ★ · {reviews.length} reviews
+              </p>
             </div>
-          </section>
-        )}
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
+              {reviews.map((review, index) => (
+                <figure
+                  key={review.id}
+                  className="lift flex flex-col rounded-2xl border border-hairline bg-paper-2 p-6"
+                  data-reveal
+                  style={{ "--i": index } as React.CSSProperties}
+                >
+                  <p className="text-accent-2">
+                    <span aria-hidden>{"★".repeat(review.rating)}</span>
+                    <span className="sr-only">
+                      {review.rating} out of 5 stars
+                    </span>
+                  </p>
+                  <blockquote className="mt-4 flex-1 text-ink-dim">
+                    “{review.quote}”
+                  </blockquote>
+                  <figcaption className="mt-6 flex items-center gap-3">
+                    <span
+                      aria-hidden
+                      className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-sm font-black"
+                    >
+                      {review.author.slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="text-xs font-black uppercase tracking-[0.14em]">
+                      {review.author}
+                      <span className="block font-normal normal-case tracking-normal text-ink-dim">
+                        {[review.source, review.reviewedAt]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </Reveal>
+        ) : null}
+
+        {/* 6 — FAQ */}
+        <Reveal as="section" className="mx-auto max-w-4xl px-4 py-24 md:px-8">
+          <h2
+            className="mb-12 font-display text-(--text-h2) font-black uppercase tracking-tight"
+            data-reveal
+            id="faq"
+          >
+            {content?.faqTitle ?? "FAQ"}
+          </h2>
+          <FaqAccordion items={faq} />
+        </Reveal>
+
+        {/* 7 — Location */}
+        <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
+          <h2
+            className="font-display text-(--text-h2) font-black uppercase tracking-tight"
+            data-reveal
+            id="location"
+          >
+            {content?.locationTitle ?? "Find us"}
+          </h2>
+          <p className="mt-6 max-w-xl text-ink-dim" data-reveal>
+            {content?.locationAddress}
+          </p>
+          {content?.mapEmbedUrl ? (
+            <div
+              className="mt-10 overflow-hidden rounded-2xl border border-hairline"
+              data-reveal
+            >
+              <iframe
+                allowFullScreen
+                className="aspect-video w-full"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={content.mapEmbedUrl}
+                title="Hercules Factory location"
+              />
+            </div>
+          ) : null}
+        </Reveal>
       </main>
 
-      <PublicFooter />
-    </div>
+      <SiteFab whatsappHref={wa()} />
+      <PublicFooter social={social} />
+    </>
   );
 }

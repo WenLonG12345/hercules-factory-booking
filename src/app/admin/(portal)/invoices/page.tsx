@@ -1,40 +1,70 @@
 "use client";
 
 import { FileDown } from "lucide-react";
-import { RiWhatsappLine } from "react-icons/ri";
-import {
-  CreateInvoiceDialog,
-  RecordPaymentDialog,
-} from "@/app/admin/(portal)/invoices/invoice-dialogs";
+import { useState } from "react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/admin-shell";
-import { ApproveMembershipDialog } from "@/components/admin/approve-membership-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
+import { PAYMENT_METHODS } from "@/db/schema";
 import { exportInvoicePDF } from "@/lib/invoice-pdf";
 import { api } from "@/lib/trpc";
-import { formatCurrency, whatsappLink } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
+import {
+  PACKAGE_TYPE_LABEL,
+  PAYMENT_METHOD_LABEL,
+  ringgitToCents,
+  today,
+} from "../admin-format";
 
-const PORTAL_PREFIX = "Customer self-request via portal: ";
-
-function parsePortalPackageName(notes: string | null): string | null {
-  if (!notes?.startsWith(PORTAL_PREFIX)) return null;
-  return notes.slice(PORTAL_PREFIX.length);
-}
-
-const statusTone: Record<string, "green" | "amber" | "gray"> = {
+const statusTone = {
   paid: "green",
   pending: "amber",
-  overdue: "gray",
-};
+  cancelled: "gray",
+} as const;
 
 export default function InvoicesPage() {
   const utils = api.useUtils();
+  const [open, setOpen] = useState(false);
+  const [customerId, setCustomerId] = useState("");
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   const { data: invoices = [], isLoading } = api.invoice.list.useQuery();
   const { data: customers = [] } = api.customer.list.useQuery();
-  const { data: packages = [] } = api.membership.packages.useQuery();
+  const { data: packages = [] } = api.package.list.useQuery();
 
-  const refetchInvoices = () => utils.invoice.list.invalidate();
+  const invalidate = () => {
+    utils.invoice.list.invalidate();
+    utils.report.dashboard.invalidate();
+  };
+
+  const createInvoice = api.invoice.create.useMutation({
+    onSuccess: () => {
+      toast.success("Invoice created.");
+      setOpen(false);
+      invalidate();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const updateStatus = api.invoice.updateStatus.useMutation({
+    onSuccess: () => {
+      toast.success("Invoice updated.");
+      setPayingId(null);
+      invalidate();
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   if (isLoading) {
     return (
@@ -45,167 +75,242 @@ export default function InvoicesPage() {
     );
   }
 
-  const activePackages = packages.filter((p) => p.isActive);
-  const pendingPortalRequests = invoices.filter(
-    (inv) =>
-      inv.status === "pending" && parsePortalPackageName(inv.notes ?? null),
-  );
-  const otherInvoices = invoices.filter(
-    (inv) =>
-      !(inv.status === "pending" && parsePortalPackageName(inv.notes ?? null)),
+  const customerPackages = packages.filter(
+    (pkg) => pkg.customerId === customerId,
   );
 
   return (
     <>
-      <PageHeader eyebrow="Payments" title="Invoices">
-        <div className="flex items-center gap-2">
-          <CreateInvoiceDialog
-            customers={customers}
-            onSuccess={refetchInvoices}
-          />
-          <RecordPaymentDialog
-            invoices={invoices.map((inv) => ({
-              id: inv.id,
-              invoiceNumber: inv.invoiceNumber,
-              customerId: inv.customerId,
-              customer: inv.customer ?? null,
-            }))}
-            onSuccess={refetchInvoices}
-          />
-        </div>
-      </PageHeader>
-
-      {pendingPortalRequests.length > 0 && (
-        <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-amber-700">
-            Pending membership requests — {pendingPortalRequests.length}
-          </p>
-          <div className="grid gap-2">
-            {pendingPortalRequests.map((inv) => {
-              const pkgName = parsePortalPackageName(inv.notes ?? null) ?? "";
-              return (
-                <div
-                  key={inv.id}
-                  className="flex items-center justify-between gap-4 rounded-md bg-white px-4 py-3 shadow-sm ring-1 ring-amber-100"
+      <PageHeader eyebrow="Money in" title="Invoices">
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button type="button">Create invoice</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create invoice</DialogTitle>
+              <DialogDescription>
+                Marking an invoice paid is what books the income — there is no
+                separate income entry.
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              className="grid gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                createInvoice.mutate({
+                  customerId: String(fd.get("customerId")),
+                  packageId: String(fd.get("packageId") ?? "") || undefined,
+                  description: String(fd.get("description") ?? "") || undefined,
+                  subtotalCents: ringgitToCents(fd.get("subtotal")),
+                  discountCents: ringgitToCents(fd.get("discount")),
+                  issueDate: String(fd.get("issueDate")),
+                  dueDate: String(fd.get("dueDate") ?? "") || undefined,
+                  notes: String(fd.get("notes") ?? "") || undefined,
+                });
+              }}
+            >
+              <Field label="Customer">
+                <Select
+                  name="customerId"
+                  onChange={(e) => setCustomerId(e.target.value)}
+                  required
+                  value={customerId}
                 >
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-stone-900">
-                      {inv.customer?.name}
-                    </p>
-                    <p className="mt-0.5 text-xs text-stone-500">
-                      {pkgName} · {formatCurrency(inv.totalCents)} ·{" "}
-                      {inv.invoiceNumber}
-                    </p>
-                  </div>
-                  <ApproveMembershipDialog
-                    invoiceId={inv.id}
-                    customerName={inv.customer?.name ?? ""}
-                    totalCents={inv.totalCents}
-                    requestedPackageName={pkgName}
-                    packages={activePackages.map((p) => ({
-                      id: p.id,
-                      name: p.name,
-                    }))}
-                    onSuccess={refetchInvoices}
+                  <option value="">Select a customer…</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name} — {customer.phone}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Package (optional)">
+                <Select name="packageId" defaultValue="">
+                  <option value="">Not linked</option>
+                  {customerPackages.map((pkg) => (
+                    <option key={pkg.id} value={pkg.id}>
+                      {PACKAGE_TYPE_LABEL[pkg.type]} · {pkg.startDate}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Description">
+                <Input name="description" placeholder="10 credit package" />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Subtotal (RM)">
+                  <Input inputMode="decimal" name="subtotal" required />
+                </Field>
+                <Field label="Discount (RM)">
+                  <Input defaultValue="0" inputMode="decimal" name="discount" />
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Issue date">
+                  <Input
+                    defaultValue={today()}
+                    name="issueDate"
+                    required
+                    type="date"
                   />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                </Field>
+                <Field label="Due date">
+                  <Input name="dueDate" type="date" />
+                </Field>
+              </div>
+              <Field label="Notes">
+                <Textarea name="notes" />
+              </Field>
+              <Button disabled={createInvoice.isPending} type="submit">
+                {createInvoice.isPending ? "Saving…" : "Create invoice"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </PageHeader>
 
       <TableWrap>
         <table className={tableClass}>
           <thead>
             <tr>
-              <th className={thClass}>Invoice</th>
+              <th className={thClass}>Number</th>
               <th className={thClass}>Customer</th>
+              <th className={thClass}>Issued</th>
+              <th className={thClass}>Subtotal</th>
+              <th className={thClass}>Discount</th>
+              <th className={thClass}>Total</th>
               <th className={thClass}>Status</th>
-              <th className={thClass}>Amount</th>
-              <th className={thClass}>Notes</th>
-              <th className={thClass}>Date</th>
               <th className={thClass}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {otherInvoices.map((invoice) => (
-              <tr key={invoice.id}>
-                <td className={tdClass}>
-                  <span className="font-mono text-xs">
-                    {invoice.invoiceNumber}
-                  </span>
-                </td>
-                <td className={tdClass}>{invoice.customer?.name ?? "—"}</td>
-                <td className={tdClass}>
-                  <Badge tone={statusTone[invoice.status] ?? "gray"}>
-                    {invoice.status}
-                  </Badge>
-                </td>
-                <td className={tdClass}>
-                  {formatCurrency(invoice.totalCents)}
-                </td>
-                <td className={tdClass}>
-                  <span className="block max-w-45 truncate text-xs text-stone-500">
-                    {invoice.notes ?? "—"}
-                  </span>
-                </td>
-                <td className={tdClass}>
-                  <span className="text-xs text-stone-500">
-                    {invoice.issueDate}
-                  </span>
-                </td>
-                <td className={tdClass}>
-                  <div className="flex items-center gap-3">
-                    {invoice.customer ? (
-                      <a
-                        href={whatsappLink(
-                          invoice.customer.phone,
-                          `Hi ${invoice.customer.name}, your Hercules Factory invoice ${invoice.invoiceNumber} is ${formatCurrency(invoice.totalCents)}.`,
-                        )}
-                        rel="noreferrer"
-                        target="_blank"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900"
-                      >
-                        <RiWhatsappLine className="size-3.5" />
-                        Send
-                      </a>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 text-xs font-medium text-stone-500 hover:text-stone-900 cursor-pointer"
-                      onClick={() =>
-                        exportInvoicePDF({
-                          customerName: invoice.customer?.name ?? "—",
-                          customerPhone: invoice.customer?.phone ?? "—",
-                          invoiceNumber: invoice.invoiceNumber,
-                          invoiceDate: invoice.issueDate,
-                          totalCents: invoice.totalCents,
-                          description:
-                            invoice.notes ??
-                            invoice.membership?.package?.name ??
-                            "Membership",
-                          dateRange:
-                            invoice.membership?.startDate &&
-                            invoice.membership.expiryDate
-                              ? `${invoice.membership.startDate} TO ${invoice.membership.expiryDate}`
-                              : undefined,
-                        })
-                      }
-                    >
-                      <FileDown className="size-3.5" />
-                      PDF
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {otherInvoices.length === 0 && (
+            {invoices.length === 0 ? (
               <tr>
-                <td className={tdClass} colSpan={7}>
-                  <span className="text-stone-400">No invoices yet.</span>
+                <td className={tdClass} colSpan={8}>
+                  No invoices yet.
                 </td>
               </tr>
+            ) : (
+              invoices.map((invoice) => (
+                <tr key={invoice.id}>
+                  <td className={tdClass}>{invoice.invoiceNumber}</td>
+                  <td className={tdClass}>{invoice.customer?.name}</td>
+                  <td className={tdClass}>{invoice.issueDate}</td>
+                  <td className={tdClass}>
+                    {formatCurrency(invoice.subtotalCents)}
+                  </td>
+                  <td className={tdClass}>
+                    {formatCurrency(invoice.discountCents)}
+                  </td>
+                  <td className={tdClass}>
+                    {formatCurrency(invoice.totalCents)}
+                  </td>
+                  <td className={tdClass}>
+                    <Badge tone={statusTone[invoice.status]}>
+                      {invoice.status}
+                      {invoice.paidDate ? ` · ${invoice.paidDate}` : ""}
+                    </Badge>
+                  </td>
+                  <td className={tdClass}>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {invoice.status === "pending" ? (
+                        <Dialog
+                          open={payingId === invoice.id}
+                          onOpenChange={(next) =>
+                            setPayingId(next ? invoice.id : null)
+                          }
+                        >
+                          <DialogTrigger asChild>
+                            <button
+                              className="text-sm font-semibold text-emerald-700"
+                              type="button"
+                            >
+                              Mark paid
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Mark as paid</DialogTitle>
+                              <DialogDescription>
+                                {invoice.invoiceNumber} ·{" "}
+                                {formatCurrency(invoice.totalCents)}. This books
+                                the income.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <form
+                              className="grid gap-4"
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                const fd = new FormData(e.currentTarget);
+                                updateStatus.mutate({
+                                  id: invoice.id,
+                                  status: "paid",
+                                  paymentMethod: String(
+                                    fd.get("paymentMethod"),
+                                  ) as (typeof PAYMENT_METHODS)[number],
+                                  paidDate: String(fd.get("paidDate")),
+                                });
+                              }}
+                            >
+                              <Field label="Payment method">
+                                <Select
+                                  defaultValue="cash"
+                                  name="paymentMethod"
+                                >
+                                  {PAYMENT_METHODS.map((value) => (
+                                    <option key={value} value={value}>
+                                      {PAYMENT_METHOD_LABEL[value]}
+                                    </option>
+                                  ))}
+                                </Select>
+                              </Field>
+                              <Field label="Paid date">
+                                <Input
+                                  defaultValue={today()}
+                                  name="paidDate"
+                                  required
+                                  type="date"
+                                />
+                              </Field>
+                              <Button
+                                disabled={updateStatus.isPending}
+                                type="submit"
+                              >
+                                {updateStatus.isPending
+                                  ? "Saving…"
+                                  : "Mark as paid"}
+                              </Button>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      ) : null}
+                      <button
+                        className="inline-flex items-center gap-1 text-sm font-semibold text-stone-600"
+                        onClick={() =>
+                          exportInvoicePDF({
+                            customerName: invoice.customer?.name ?? "",
+                            customerPhone: invoice.customer?.phone ?? "",
+                            invoiceNumber: invoice.invoiceNumber,
+                            invoiceDate: invoice.issueDate,
+                            totalCents: invoice.totalCents,
+                            description:
+                              invoice.description ??
+                              (invoice.package
+                                ? `${PACKAGE_TYPE_LABEL[invoice.package.type]} package`
+                                : "Membership"),
+                          })
+                        }
+                        type="button"
+                      >
+                        <FileDown className="size-4" />
+                        PDF
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>

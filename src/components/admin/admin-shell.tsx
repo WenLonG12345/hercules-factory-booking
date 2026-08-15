@@ -22,7 +22,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 Hercules
               </p>
               <h1 className="mt-1 text-2xl font-black tracking-tight">
-                Factory HQ
+                Management
               </h1>
             </div>
           </div>
@@ -48,7 +48,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               Hercules HQ
             </Link>
             <div className="hidden text-sm text-stone-500 lg:block">
-              Admin portal for classes, members, payments, and content.
+              Hercules Factory Management System — customers, packages,
+              invoices, expenses, reports.
             </div>
             <div className="flex items-center gap-2">
               <details className="relative lg:hidden">

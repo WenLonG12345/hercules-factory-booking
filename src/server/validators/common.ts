@@ -1,24 +1,32 @@
 import { z } from "zod";
+import {
+  ATTENDEE_STATUSES,
+  CUSTOMER_SOURCES,
+  EXPENSE_CATEGORIES,
+  GENDERS,
+  INVOICE_STATUSES,
+  PACKAGE_TYPES,
+  PAYMENT_METHODS,
+  SESSION_TYPES,
+} from "@/db/schema";
 
 export const idSchema = z.object({ id: z.uuid() });
 
-export const packageTypeSchema = z.enum(["single", "ten_class", "unlimited"]);
-export const membershipStatusSchema = z.enum([
-  "active",
-  "expired",
-  "cancelled",
-]);
-export const bookingStatusSchema = z.enum([
-  "booked",
-  "attended",
-  "no_show",
-  "cancelled",
-]);
-export const invoiceStatusSchema = z.enum(["pending", "paid", "cancelled"]);
-export const paymentMethodSchema = z.enum([
-  "cash",
-  "bank_transfer",
-  "tng",
-  "card",
-  "other",
-]);
+export const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");
+export const timeString = z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM");
+
+export const packageTypeSchema = z.enum(PACKAGE_TYPES);
+export const paymentMethodSchema = z.enum(PAYMENT_METHODS);
+export const invoiceStatusSchema = z.enum(INVOICE_STATUSES);
+export const sessionTypeSchema = z.enum(SESSION_TYPES);
+export const attendeeStatusSchema = z.enum(ATTENDEE_STATUSES);
+export const customerSourceSchema = z.enum(CUSTOMER_SOURCES);
+export const genderSchema = z.enum(GENDERS);
+export const expenseCategorySchema = z.enum(EXPENSE_CATEGORIES);
+
+/** A month, as YYYY-MM. */
+export const monthSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}$/, "Expected YYYY-MM");

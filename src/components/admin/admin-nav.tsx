@@ -2,13 +2,14 @@
 
 import {
   CalendarDays,
-  ClipboardCheck,
-  CreditCard,
+  Dumbbell,
   FileText,
   LayoutDashboard,
-  MessageSquareText,
+  Sparkles,
   Tags,
+  TrendingUp,
   Users,
+  Wallet,
   WalletCards,
 } from "lucide-react";
 import Link from "next/link";
@@ -17,13 +18,14 @@ import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/memberships", label: "Memberships", icon: Tags },
   { href: "/admin/schedule", label: "Schedule", icon: CalendarDays },
-  { href: "/admin/bookings", label: "Bookings", icon: MessageSquareText },
-  { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
+  { href: "/admin/customers", label: "Customers", icon: Users },
+  { href: "/admin/packages", label: "Packages", icon: Tags },
+  { href: "/admin/trials", label: "Trials", icon: Sparkles },
   { href: "/admin/invoices", label: "Invoices", icon: FileText },
-  { href: "/admin/reports", label: "Reports", icon: CreditCard },
+  { href: "/admin/expenses", label: "Expenses", icon: Wallet },
+  { href: "/admin/coaches", label: "Coaches", icon: Dumbbell },
+  { href: "/admin/reports", label: "Reports", icon: TrendingUp },
   { href: "/admin/cms", label: "CMS", icon: WalletCards },
 ];
 

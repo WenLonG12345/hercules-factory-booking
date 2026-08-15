@@ -1,5 +1,19 @@
 import type { Metadata } from "next";
+import { Archivo, Inter_Tight } from "next/font/google";
 import "./globals.css";
+
+const display = Archivo({
+  subsets: ["latin"],
+  axes: ["wdth"],
+  variable: "--font-display-face",
+  display: "swap",
+});
+
+const body = Inter_Tight({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -10,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s | Hercules Factory",
   },
   description:
-    "Book Muay Thai classes at Hercules Factory. Train Monday to Saturday with structured coaching, flexible packages, and WhatsApp booking.",
+    "Muay Thai for everyone in Malaysia — beginners, fitness, and fighters. Group classes, kids classes, and personal training. Book on WhatsApp.",
   applicationName: "Hercules Factory",
   authors: [{ name: "Hercules Factory" }],
   creator: "Hercules Factory",
@@ -30,7 +44,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Hercules Factory Muay Thai",
     description:
-      "Book Muay Thai classes at Hercules Factory. Single classes, 10-class packages, and unlimited monthly training.",
+      "Muay Thai for everyone. Beginners. Fitness. Fighters. Book a class on WhatsApp.",
     url: "/",
     siteName: "Hercules Factory",
     images: [
@@ -47,8 +61,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Hercules Factory Muay Thai",
-    description:
-      "Book Muay Thai classes at Hercules Factory. Train Monday to Saturday.",
+    description: "Muay Thai for everyone. Beginners. Fitness. Fighters.",
     images: ["/logo.png"],
   },
   icons: {
@@ -81,7 +94,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="h-full antialiased"
+      className={`${display.variable} ${body.variable} h-full antialiased`}
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col">{children}</body>
