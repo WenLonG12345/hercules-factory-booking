@@ -5,6 +5,7 @@ import {
   faqItems,
   galleryImages,
   landingPageContent,
+  pricingPlans,
   promotions,
   socialLinks,
   testimonials,
@@ -21,6 +22,7 @@ import {
   faqItemInput,
   galleryImageInput,
   landingPageContentInput,
+  pricingPlanInput,
   promotionInput,
   reorderInput,
   socialLinkInput,
@@ -31,75 +33,116 @@ import { idSchema } from "@/server/validators/common";
 
 export const cmsRouter = createTRPCRouter({
   publicContent: publicDbProcedure.query(async ({ ctx }) => {
-    const [content, why, classes, faq, gallery, promos, reviews, social] =
-      await Promise.all([
-        ctx.db.query.landingPageContent.findFirst(),
-        ctx.db
-          .select()
-          .from(whyItems)
-          .where(eq(whyItems.isActive, true))
-          .orderBy(asc(whyItems.sortOrder)),
-        ctx.db
-          .select()
-          .from(classOfferings)
-          .where(eq(classOfferings.isActive, true))
-          .orderBy(asc(classOfferings.sortOrder)),
-        ctx.db
-          .select()
-          .from(faqItems)
-          .where(eq(faqItems.isActive, true))
-          .orderBy(asc(faqItems.sortOrder)),
-        ctx.db
-          .select()
-          .from(galleryImages)
-          .where(eq(galleryImages.isActive, true))
-          .orderBy(asc(galleryImages.sortOrder)),
-        ctx.db
-          .select()
-          .from(promotions)
-          .where(eq(promotions.isActive, true))
-          .orderBy(desc(promotions.createdAt)),
-        ctx.db
-          .select()
-          .from(testimonials)
-          .where(eq(testimonials.isActive, true))
-          .orderBy(asc(testimonials.sortOrder)),
-        ctx.db
-          .select()
-          .from(socialLinks)
-          .where(eq(socialLinks.isActive, true))
-          .orderBy(asc(socialLinks.sortOrder)),
-      ]);
+    const [
+      content,
+      why,
+      classes,
+      pricing,
+      faq,
+      gallery,
+      promos,
+      reviews,
+      social,
+    ] = await Promise.all([
+      ctx.db.query.landingPageContent.findFirst(),
+      ctx.db
+        .select()
+        .from(whyItems)
+        .where(eq(whyItems.isActive, true))
+        .orderBy(asc(whyItems.sortOrder)),
+      ctx.db
+        .select()
+        .from(classOfferings)
+        .where(eq(classOfferings.isActive, true))
+        .orderBy(asc(classOfferings.sortOrder)),
+      ctx.db
+        .select()
+        .from(pricingPlans)
+        .where(eq(pricingPlans.isActive, true))
+        .orderBy(asc(pricingPlans.sortOrder)),
+      ctx.db
+        .select()
+        .from(faqItems)
+        .where(eq(faqItems.isActive, true))
+        .orderBy(asc(faqItems.sortOrder)),
+      ctx.db
+        .select()
+        .from(galleryImages)
+        .where(eq(galleryImages.isActive, true))
+        .orderBy(asc(galleryImages.sortOrder)),
+      ctx.db
+        .select()
+        .from(promotions)
+        .where(eq(promotions.isActive, true))
+        .orderBy(desc(promotions.createdAt)),
+      ctx.db
+        .select()
+        .from(testimonials)
+        .where(eq(testimonials.isActive, true))
+        .orderBy(asc(testimonials.sortOrder)),
+      ctx.db
+        .select()
+        .from(socialLinks)
+        .where(eq(socialLinks.isActive, true))
+        .orderBy(asc(socialLinks.sortOrder)),
+    ]);
 
-    return { content, why, classes, faq, gallery, promos, reviews, social };
+    return {
+      content,
+      why,
+      classes,
+      pricing,
+      faq,
+      gallery,
+      promos,
+      reviews,
+      social,
+    };
   }),
 
   /** Admin view — inactive rows included. */
   allContent: adminProcedure.query(async ({ ctx }) => {
-    const [content, why, classes, faq, gallery, promos, reviews, social] =
-      await Promise.all([
-        ctx.db.query.landingPageContent.findFirst(),
-        ctx.db.select().from(whyItems).orderBy(asc(whyItems.sortOrder)),
-        ctx.db
-          .select()
-          .from(classOfferings)
-          .orderBy(asc(classOfferings.sortOrder)),
-        ctx.db.select().from(faqItems).orderBy(asc(faqItems.sortOrder)),
-        ctx.db
-          .select()
-          .from(galleryImages)
-          .orderBy(asc(galleryImages.sortOrder)),
-        // Newest first — the landing page runs the newest active one, so the
-        // top row of this list is the one currently live.
-        ctx.db
-          .select()
-          .from(promotions)
-          .orderBy(desc(promotions.createdAt)),
-        ctx.db.select().from(testimonials).orderBy(asc(testimonials.sortOrder)),
-        ctx.db.select().from(socialLinks).orderBy(asc(socialLinks.sortOrder)),
-      ]);
+    const [
+      content,
+      why,
+      classes,
+      pricing,
+      faq,
+      gallery,
+      promos,
+      reviews,
+      social,
+    ] = await Promise.all([
+      ctx.db.query.landingPageContent.findFirst(),
+      ctx.db.select().from(whyItems).orderBy(asc(whyItems.sortOrder)),
+      ctx.db
+        .select()
+        .from(classOfferings)
+        .orderBy(asc(classOfferings.sortOrder)),
+      ctx.db.select().from(pricingPlans).orderBy(asc(pricingPlans.sortOrder)),
+      ctx.db.select().from(faqItems).orderBy(asc(faqItems.sortOrder)),
+      ctx.db.select().from(galleryImages).orderBy(asc(galleryImages.sortOrder)),
+      // Newest first — the landing page runs the newest active one, so the
+      // top row of this list is the one currently live.
+      ctx.db
+        .select()
+        .from(promotions)
+        .orderBy(desc(promotions.createdAt)),
+      ctx.db.select().from(testimonials).orderBy(asc(testimonials.sortOrder)),
+      ctx.db.select().from(socialLinks).orderBy(asc(socialLinks.sortOrder)),
+    ]);
 
-    return { content, why, classes, faq, gallery, promos, reviews, social };
+    return {
+      content,
+      why,
+      classes,
+      pricing,
+      faq,
+      gallery,
+      promos,
+      reviews,
+      social,
+    };
   }),
 
   updateLandingContent: adminProcedure
@@ -183,6 +226,44 @@ export const cmsRouter = createTRPCRouter({
               .update(classOfferings)
               .set({ sortOrder: index, updatedAt: new Date() })
               .where(eq(classOfferings.id, id)),
+          ),
+        );
+        return { ok: true };
+      }),
+  }),
+
+  pricing: createTRPCRouter({
+    create: adminProcedure
+      .input(pricingPlanInput)
+      .mutation(({ ctx, input }) =>
+        ctx.db.insert(pricingPlans).values(input).returning(),
+      ),
+    update: adminProcedure
+      .input(pricingPlanInput.extend({ id: z.uuid() }))
+      .mutation(({ ctx, input: { id, ...values } }) =>
+        ctx.db
+          .update(pricingPlans)
+          .set({ ...values, updatedAt: new Date() })
+          .where(eq(pricingPlans.id, id))
+          .returning(),
+      ),
+    delete: adminProcedure
+      .input(idSchema)
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .delete(pricingPlans)
+          .where(eq(pricingPlans.id, input.id))
+          .returning(),
+      ),
+    reorder: adminProcedure
+      .input(reorderInput)
+      .mutation(async ({ ctx, input }) => {
+        await Promise.all(
+          input.ids.map((id, index) =>
+            ctx.db
+              .update(pricingPlans)
+              .set({ sortOrder: index, updatedAt: new Date() })
+              .where(eq(pricingPlans.id, id)),
           ),
         );
         return { ok: true };

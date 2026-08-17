@@ -25,7 +25,7 @@ const localizeAll = <T extends Translatable>(rows: T[], locale: Locale) =>
 export async function getLandingData(locale: Locale = "en") {
   if (!db) return localizeLanding(demoLanding, locale);
 
-  const [content, why, classes, faq, gallery, promo, reviews, social] =
+  const [content, why, classes, pricing, faq, gallery, promo, reviews, social] =
     await Promise.all([
       db.query.landingPageContent.findFirst(),
       db.query.whyItems.findMany({
@@ -35,6 +35,10 @@ export async function getLandingData(locale: Locale = "en") {
       db.query.classOfferings.findMany({
         where: (item, { eq }) => eq(item.isActive, true),
         orderBy: (item, { asc }) => asc(item.sortOrder),
+      }),
+      db.query.pricingPlans.findMany({
+        where: (plan, { eq }) => eq(plan.isActive, true),
+        orderBy: (plan, { asc }) => asc(plan.sortOrder),
       }),
       db.query.faqItems.findMany({
         where: (item, { eq }) => eq(item.isActive, true),
@@ -69,6 +73,7 @@ export async function getLandingData(locale: Locale = "en") {
       content,
       why,
       classes,
+      pricing,
       faq,
       gallery,
       promo: promo ?? null,
@@ -79,11 +84,33 @@ export async function getLandingData(locale: Locale = "en") {
   );
 }
 
+/**
+ * One invoice, for the customer-facing view the admin sends over WhatsApp.
+ *
+ * The id *is* the capability: a v4 UUID, never listed anywhere public, so the
+ * customer can open their own invoice without an account. Anyone holding the
+ * link can read it — which is the same trade every "view your receipt" link
+ * makes. Nothing here exposes another customer's row.
+ */
+export async function getPublicInvoice(id: string) {
+  if (!db) return null;
+
+  const invoice = await db.query.invoices.findFirst({
+    where: (row, { eq }) => eq(row.id, id),
+    with: { customer: true, package: true },
+  });
+  if (!invoice) return null;
+
+  const content = await db.query.landingPageContent.findFirst();
+  return { invoice, whatsappPhone: content?.whatsappPhone ?? "" };
+}
+
 function localizeLanding<
   T extends {
     content: Translatable;
     why: Translatable[];
     classes: Translatable[];
+    pricing: Translatable[];
     faq: Translatable[];
   },
 >(data: T, locale: Locale): T {
@@ -93,6 +120,7 @@ function localizeLanding<
     content: localize(data.content, locale),
     why: localizeAll(data.why, locale),
     classes: localizeAll(data.classes, locale),
+    pricing: localizeAll(data.pricing, locale),
     faq: localizeAll(data.faq, locale),
   };
 }

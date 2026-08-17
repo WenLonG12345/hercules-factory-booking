@@ -8,6 +8,7 @@
   "Nav": {
     "why": "关于我们",
     "classes": "课程",
+    "pricing": "价格",
     "gallery": "相册",
     "reviews": "评价",
     "faq": "常见问题"
@@ -21,6 +22,8 @@
     "enquire": "咨询",
     "galleryBlurb": "在我们这里训练过？用右下角的按钮把照片发给我们，我们会放上来。",
     "sharedBy": "由 {name} 分享",
+    "trialKicker": "从这里开始",
+    "trialCta": "预约体验课",
     "promoCta": "立即领取优惠",
     "reviewsSummary": "{rating} ★ · {count} 则评价",
     "starsLabel": "5 分中的 {rating} 分",

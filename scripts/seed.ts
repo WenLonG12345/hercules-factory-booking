@@ -18,6 +18,7 @@ import {
   galleryImages,
   invoices,
   landingPageContent,
+  pricingPlans,
   sessionAttendees,
   sessions,
   socialLinks,
@@ -29,6 +30,7 @@ import {
   demoLanding,
   FAQ_ITEMS,
   GALLERY_ITEMS,
+  PRICING_ITEMS,
   WHY_ITEMS,
 } from "@/lib/demo-data";
 
@@ -74,6 +76,7 @@ async function main() {
   await Promise.all([
     db.delete(whyItems),
     db.delete(classOfferings),
+    db.delete(pricingPlans),
     db.delete(faqItems),
     db.delete(testimonials),
     db.delete(socialLinks),
@@ -91,6 +94,12 @@ async function main() {
       sortOrder: index,
     })),
   );
+
+  await db
+    .insert(pricingPlans)
+    .values(
+      PRICING_ITEMS.map((item, index) => ({ ...item, sortOrder: index })),
+    );
 
   // Opening hours in the last entry come from the Google Business Profile.
   await db

@@ -22,6 +22,7 @@ export const TRANSLATABLE = {
     "whyTitle",
     "classesTitle",
     "galleryTitle",
+    "pricingTitle",
     "promotionsTitle",
     "testimonialsTitle",
     "faqTitle",
@@ -30,6 +31,8 @@ export const TRANSLATABLE = {
   ],
   why: ["title", "description"],
   classes: ["name", "description", "whatsappMessage"],
+  // `unit` translates too — "month" has to read 月 on /zh.
+  pricing: ["name", "unit", "features", "whatsappMessage"],
   faq: ["question", "answer"],
 } as const;
 
@@ -44,6 +47,7 @@ export const landingPageContentInput = z.object({
   whyTitle: z.string().min(2),
   classesTitle: z.string().min(2),
   galleryTitle: z.string().min(2),
+  pricingTitle: z.string().min(2),
   promotionsTitle: z.string().min(2),
   testimonialsTitle: z.string().min(2),
   faqTitle: z.string().min(2),
@@ -67,6 +71,19 @@ export const classOfferingInput = z.object({
   name: z.string().min(2),
   description: z.string().min(2),
   imageUrl: z.string().optional(),
+  whatsappMessage: z.string().optional(),
+  sortOrder: z.coerce.number().int().default(0),
+  isActive: z.boolean().default(true),
+  zh: zhInput,
+});
+
+/** Rate-card row. Price is integer cents; the admin form types ringgit. */
+export const pricingPlanInput = z.object({
+  name: z.string().min(2),
+  priceCents: z.coerce.number().int().min(0),
+  unit: z.string().optional(),
+  features: z.string().optional(),
+  highlight: z.boolean().default(false),
   whatsappMessage: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
   isActive: z.boolean().default(true),

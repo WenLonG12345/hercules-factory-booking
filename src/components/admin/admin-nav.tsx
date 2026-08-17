@@ -6,8 +6,8 @@ import {
   FileText,
   LayoutDashboard,
   Sparkles,
-  Tags,
   TrendingUp,
+  UserPlus,
   Users,
   Wallet,
   WalletCards,
@@ -18,9 +18,9 @@ import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/onboard", label: "New signup", icon: UserPlus },
   { href: "/admin/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/packages", label: "Packages", icon: Tags },
   { href: "/admin/trials", label: "Trials", icon: Sparkles },
   { href: "/admin/invoices", label: "Invoices", icon: FileText },
   { href: "/admin/expenses", label: "Expenses", icon: Wallet },

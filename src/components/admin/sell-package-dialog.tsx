@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import {
+  defaultExpiry,
   PACKAGE_TYPE_LABEL,
   PAYMENT_METHOD_LABEL,
   ringgitToCents,
@@ -20,13 +21,6 @@ import {
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { PACKAGE_TYPES, PAYMENT_METHODS } from "@/db/schema";
 import { api } from "@/lib/trpc";
-
-/** Default expiry: one month out for unlimited, three months for credit/PT. */
-function defaultExpiry(start: string, type: string) {
-  const date = new Date(`${start}T00:00:00`);
-  date.setMonth(date.getMonth() + (type === "unlimited" ? 1 : 3));
-  return date.toISOString().slice(0, 10);
-}
 
 export function SellPackageDialog({
   customerId,

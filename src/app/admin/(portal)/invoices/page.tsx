@@ -2,6 +2,7 @@
 
 import { FileDown } from "lucide-react";
 import { useState } from "react";
+import { FaWhatsapp } from "react-icons/fa";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,7 @@ import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
 import { PAYMENT_METHODS } from "@/db/schema";
 import { exportInvoicePDF } from "@/lib/invoice-pdf";
 import { api } from "@/lib/trpc";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, whatsappLink } from "@/lib/utils";
 import {
   PACKAGE_TYPE_LABEL,
   PAYMENT_METHOD_LABEL,
@@ -32,6 +33,15 @@ const statusTone = {
   pending: "amber",
   cancelled: "gray",
 } as const;
+
+/**
+ * The customer-facing view of one invoice. The id is the whole credential, so
+ * the link only ever goes out over WhatsApp to the customer it belongs to.
+ * Read inside the click handler, not during render, so the `window` fallback
+ * never runs on the server.
+ */
+const invoiceUrl = (id: string) =>
+  `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/invoice/${id}`;
 
 export default function InvoicesPage() {
   const utils = api.useUtils();
@@ -287,6 +297,31 @@ export default function InvoicesPage() {
                         </Dialog>
                       ) : null}
                       <button
+                        className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 disabled:opacity-40"
+                        disabled={!invoice.customer?.phone}
+                        onClick={() => {
+                          const phone = invoice.customer?.phone;
+                          if (!phone) return;
+                          window.open(
+                            whatsappLink(
+                              phone,
+                              `Hi ${invoice.customer?.name}, here is your invoice ${invoice.invoiceNumber} from Hercules Factory — ${formatCurrency(invoice.totalCents)}.\n\nView it here: ${invoiceUrl(invoice.id)}`,
+                            ),
+                            "_blank",
+                            "noopener",
+                          );
+                        }}
+                        title={
+                          invoice.customer?.phone
+                            ? undefined
+                            : "This customer has no phone number"
+                        }
+                        type="button"
+                      >
+                        <FaWhatsapp className="size-4" />
+                        Send
+                      </button>
+                      <button
                         className="inline-flex items-center gap-1 text-sm font-semibold text-stone-600"
                         onClick={() =>
                           exportInvoicePDF({
@@ -300,6 +335,8 @@ export default function InvoicesPage() {
                               (invoice.package
                                 ? `${PACKAGE_TYPE_LABEL[invoice.package.type]} package`
                                 : "Membership"),
+                            startDate: invoice.package?.startDate,
+                            expiryDate: invoice.package?.expiryDate,
                           })
                         }
                         type="button"

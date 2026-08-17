@@ -55,6 +55,13 @@ export function currentMonth() {
   return today().slice(0, 7);
 }
 
+/** Default expiry: one month out for unlimited, three months for credit/PT. */
+export function defaultExpiry(start: string, type: string) {
+  const date = new Date(`${start}T00:00:00`);
+  date.setMonth(date.getMonth() + (type === "unlimited" ? 1 : 3));
+  return isoDate(date);
+}
+
 /** "120" or "120.50" → cents. Money never travels as a float. */
 export function ringgitToCents(value: FormDataEntryValue | null) {
   const amount = Number(String(value ?? "0").replace(/[^\d.]/g, ""));

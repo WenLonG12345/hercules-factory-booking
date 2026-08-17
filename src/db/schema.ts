@@ -319,6 +319,7 @@ export const landingPageContent = sqliteTable("landing_page_content", {
   whyTitle: text("why_title").default("Why Hercules Factory").notNull(),
   classesTitle: text("classes_title").default("Classes").notNull(),
   galleryTitle: text("gallery_title").default("Gallery / Training").notNull(),
+  pricingTitle: text("pricing_title").default("Pricing").notNull(),
   promotionsTitle: text("promotions_title").default("Promotions").notNull(),
   testimonialsTitle: text("testimonials_title")
     .default("What members say")
@@ -349,6 +350,28 @@ export const classOfferings = sqliteTable("class_offerings", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   imageUrl: text("image_url"),
+  whatsappMessage: text("whatsapp_message"),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).default(true).notNull(),
+  zh: zh(),
+  ...timestamps,
+});
+
+// The rate card. Rows render as a ruled ledger; the one row flagged `highlight`
+// is lifted out of that ledger and runs as the accent band under it — that is
+// how the trial class gets to be the loudest thing in the section without a
+// second table or a "most popular" badge.
+export const pricingPlans = sqliteTable("pricing_plans", {
+  id: id(),
+  name: text("name").notNull(),
+  // Integer cents, same as every other money column in the schema.
+  priceCents: integer("price_cents").notNull(),
+  // "month" / "class" / "person" — printed as "/ month". Null prints no unit.
+  unit: text("unit"),
+  // One feature per line. Two to four lines per plan; a child table buys
+  // nothing here and would need its own ordering UI.
+  features: text("features"),
+  highlight: integer("highlight", { mode: "boolean" }).default(false).notNull(),
   whatsappMessage: text("whatsapp_message"),
   sortOrder: integer("sort_order").default(0).notNull(),
   isActive: integer("is_active", { mode: "boolean" }).default(true).notNull(),

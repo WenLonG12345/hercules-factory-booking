@@ -35,6 +35,8 @@
   --text-display: clamp(3.125rem, 13vw, 9rem);
   --text-h2: clamp(1.5rem, 4vw, 3rem);
   --text-h3: clamp(1rem, 2.6vw, 1.9375rem);
+  /* The trial band's figure — louder than a heading, quieter than the hero. */
+  --text-price: clamp(2.75rem, 8vw, 5rem);
   --text-lead: clamp(1rem, 2vw, 1.5rem);
   --text-body: clamp(1rem, 1.1vw, 1.125rem);
   --text-cta: clamp(0.9375rem, 1.2vw, 1.0625rem);
@@ -156,6 +158,19 @@ body {
 .cta:hover {
   transform: translateY(-2px);
   background: color-mix(in oklab, var(--color-accent) 88%, black);
+}
+
+/* For the accent band, where the standard red CTA would vanish into the
+   ground: the paper colour becomes the button, the accent becomes the type. */
+.cta-invert {
+  background: var(--color-accent-ink);
+  color: var(--color-accent);
+}
+
+.cta-invert:hover {
+  background: var(--color-accent-ink);
+  color: var(--color-accent);
+  filter: brightness(0.94);
 }
 
 .cta-quiet {

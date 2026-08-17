@@ -8,6 +8,7 @@
   "Nav": {
     "why": "Why",
     "classes": "Classes",
+    "pricing": "Pricing",
     "gallery": "Gallery",
     "reviews": "Reviews",
     "faq": "FAQ"
@@ -21,6 +22,8 @@
     "enquire": "Enquire",
     "galleryBlurb": "Trained with us? Send us your photo with the button in the corner — we'll put it up here.",
     "sharedBy": "Shared by {name}",
+    "trialKicker": "Start here",
+    "trialCta": "Book the trial",
     "promoCta": "Claim this offer",
     "reviewsSummary": "{rating} ★ · {count} reviews",
     "starsLabel": "{rating} out of 5 stars",

@@ -9,6 +9,7 @@ import { LocaleSwitcher } from "@/components/locale-switcher";
 const LINKS = [
   { href: "#why", key: "why" },
   { href: "#classes", key: "classes" },
+  { href: "#pricing", key: "pricing" },
   { href: "#gallery", key: "gallery" },
   { href: "#reviews", key: "reviews" },
   { href: "#faq", key: "faq" },

@@ -120,6 +120,78 @@ export const CLASS_ITEMS = [
   },
 ];
 
+// The rate card. `highlight` lifts the row out of the ledger and into the accent
+// band below it — exactly one row should carry it.
+export const PRICING_ITEMS: {
+  name: string;
+  priceCents: number;
+  unit: string | null;
+  features: string;
+  highlight: boolean;
+  whatsappMessage: string;
+  zh: Record<string, string>;
+}[] = [
+  {
+    name: "UNLIMITED PASS",
+    priceCents: 22_000,
+    unit: "month",
+    features: "No registration fee\nUnlimited group classes",
+    highlight: false,
+    whatsappMessage:
+      "Hi! I'd like to sign up for the Unlimited Pass at Hercules Factory. 😊",
+    zh: {
+      name: "无限次月票",
+      unit: "月",
+      features: "免注册费\n团体课无限次",
+      whatsappMessage: "你好！我想报名 Hercules Factory 的无限次月票。😊",
+    },
+  },
+  {
+    name: "10 CREDITS",
+    priceCents: 15_000,
+    unit: null,
+    features: "10 group class credits\nValid for 4 weeks",
+    highlight: false,
+    whatsappMessage:
+      "Hi! I'd like to buy the 10-credit package at Hercules Factory. 😊",
+    zh: {
+      name: "10 堂课配套",
+      features: "10 堂团体课\n有效期 4 星期",
+      whatsappMessage: "你好！我想购买 Hercules Factory 的 10 堂课配套。😊",
+    },
+  },
+  {
+    name: "DROP-IN CLASS",
+    priceCents: 4_000,
+    unit: "class",
+    features: "Perfect for those who prefer flexible training",
+    highlight: false,
+    whatsappMessage:
+      "Hi! I'd like to join a drop-in class at Hercules Factory. 😊",
+    zh: {
+      name: "单堂课",
+      unit: "堂",
+      features: "适合想弹性安排训练时间的你",
+      whatsappMessage: "你好！我想参加 Hercules Factory 的单堂课。😊",
+    },
+  },
+  {
+    name: "TRIAL CLASS",
+    priceCents: 2_000,
+    unit: "person",
+    features: "Perfect for beginners\nNo experience required",
+    highlight: true,
+    whatsappMessage:
+      "Hi! I'd like to book the RM20 trial class at Hercules Factory. 😊",
+    zh: {
+      name: "体验课",
+      unit: "位",
+      features: "最适合新手\n零经验也可以",
+      whatsappMessage: "你好！我想预约 Hercules Factory RM20 的体验课。😊",
+    },
+  },
+];
+
 export const FAQ_ITEMS = [
   {
     question: "I've never trained Muay Thai before. Can I join?",
@@ -199,6 +271,7 @@ export const demoLanding = {
     whyTitle: "Why Hercules Factory",
     classesTitle: "Classes",
     galleryTitle: "Gallery",
+    pricingTitle: "Pricing",
     promotionsTitle: "Promotions",
     testimonialsTitle: "What members say",
     faqTitle: "FAQ",
@@ -214,6 +287,7 @@ export const demoLanding = {
       whyTitle: "为什么选 Hercules Factory",
       classesTitle: "课程",
       galleryTitle: "相册",
+      pricingTitle: "价格",
       promotionsTitle: "优惠",
       testimonialsTitle: "学员怎么说",
       faqTitle: "常见问题",
@@ -231,6 +305,10 @@ export const demoLanding = {
     id: `c${index + 1}`,
     ...item,
     imageUrl: `${UNSPLASH}-${imageId}?auto=format&fit=crop&w=1200&q=70`,
+  })),
+  pricing: PRICING_ITEMS.map((item, index) => ({
+    id: `pp${index + 1}`,
+    ...item,
   })),
   faq: FAQ_ITEMS.map((item, index) => ({ id: `f${index + 1}`, ...item })),
   gallery: GALLERY_ITEMS.map((item, index) => ({

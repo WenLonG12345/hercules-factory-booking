@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { uploadImageAction } from "@/app/admin/(portal)/actions";
+import {
+  centsToRinggit,
+  ringgitToCents,
+} from "@/app/admin/(portal)/admin-format";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -223,6 +227,113 @@ export function AddClassDialog({ sortOrder }: { sortOrder: number }) {
         fields={TRANSLATABLE.classes}
         multiline={["description", "whatsappMessage"]}
       />
+    </Shell>
+  );
+}
+
+/**
+ * Shared by the add dialog and the edit row — the price is typed in ringgit and
+ * stored in cents, and the features box is one line per bullet.
+ */
+export function PricingFields({
+  plan,
+}: {
+  plan?: {
+    name: string;
+    priceCents: number;
+    unit: string | null;
+    features: string | null;
+    highlight: boolean;
+    whatsappMessage: string | null;
+    zh: Record<string, string> | null;
+  };
+}) {
+  return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-[1fr_140px_140px]">
+        <Field label="Name">
+          <Input
+            defaultValue={plan?.name}
+            name="name"
+            placeholder="UNLIMITED PASS"
+            required
+          />
+        </Field>
+        <Field label="Price (RM)">
+          <Input
+            defaultValue={plan ? centsToRinggit(plan.priceCents) : ""}
+            min={0}
+            name="price"
+            required
+            step="0.01"
+            type="number"
+          />
+        </Field>
+        <Field label="Per">
+          <Input
+            defaultValue={plan?.unit ?? ""}
+            name="unit"
+            placeholder="month / class"
+          />
+        </Field>
+      </div>
+      <Field label="Features — one per line">
+        <Textarea
+          defaultValue={plan?.features ?? ""}
+          name="features"
+          placeholder={"No registration fee\nUnlimited group classes"}
+        />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="WhatsApp message">
+          <Input
+            defaultValue={plan?.whatsappMessage ?? ""}
+            name="whatsappMessage"
+          />
+        </Field>
+        <label className="flex items-center gap-2 self-end pb-3 text-sm font-medium text-stone-700">
+          <input
+            defaultChecked={plan?.highlight}
+            name="highlight"
+            type="checkbox"
+          />
+          Highlight — runs as the red band, not a ledger row
+        </label>
+      </div>
+      <ZhFields
+        fields={TRANSLATABLE.pricing}
+        multiline={["features", "whatsappMessage"]}
+        value={plan?.zh}
+      />
+    </>
+  );
+}
+
+export function AddPricingDialog({ sortOrder }: { sortOrder: number }) {
+  const { open, setOpen, options } = useCreateDialog("Plan added.");
+  const create = api.cms.pricing.create.useMutation(options);
+
+  return (
+    <Shell
+      label="Add plan"
+      onSubmit={(fd) =>
+        create.mutate({
+          name: String(fd.get("name")),
+          priceCents: ringgitToCents(fd.get("price")),
+          unit: String(fd.get("unit") ?? "") || undefined,
+          features: String(fd.get("features") ?? "") || undefined,
+          highlight: fd.get("highlight") === "on",
+          whatsappMessage: String(fd.get("whatsappMessage") ?? "") || undefined,
+          sortOrder,
+          isActive: true,
+          zh: readZh(fd),
+        })
+      }
+      open={open}
+      pending={create.isPending}
+      setOpen={setOpen}
+    >
+      <PricingFields />
     </Shell>
   );
 }

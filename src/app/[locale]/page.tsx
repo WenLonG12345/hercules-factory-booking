@@ -20,8 +20,21 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
   const t = await getTranslations("Home");
-  const { content, why, classes, faq, gallery, promo, reviews, social } =
-    await getLandingData(locale);
+  const {
+    content,
+    why,
+    classes,
+    pricing,
+    faq,
+    gallery,
+    promo,
+    reviews,
+    social,
+  } = await getLandingData(locale);
+
+  // The one flagged row runs as the band below the ledger; the rest are rows.
+  const trial = pricing.find((plan) => plan.highlight);
+  const plans = pricing.filter((plan) => !plan.highlight);
 
   const averageRating = reviews.length
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
@@ -33,6 +46,14 @@ export default async function HomePage({
       message || content?.whatsappMessage || "Hi Hercules Factory!",
     );
 
+  // Cents in the column, ringgit on the page. Whole prices print without the
+  // trailing ".00" — RM220, not RM220.00.
+  const price = (cents: number) =>
+    `RM${(cents / 100).toLocaleString("en-MY", { maximumFractionDigits: 2 })}`;
+
+  const featureLines = (features?: string | null) =>
+    (features ?? "").split("\n").filter((line) => line.trim());
+
   return (
     <>
       <PublicHeader
@@ -43,7 +64,7 @@ export default async function HomePage({
       <main>
         {/* 1 — Hero */}
         <section className="on-dark grain relative flex min-h-[92svh] items-end overflow-hidden bg-paper">
-          {content?.heroImageUrl ?
+          {content?.heroImageUrl ? (
             <Image
               alt=""
               className="ken-burns absolute inset-0 size-full object-cover"
@@ -52,7 +73,7 @@ export default async function HomePage({
               sizes="100vw"
               src={content.heroImageUrl}
             />
-          : null}
+          ) : null}
           <div className="absolute inset-0 bg-linear-to-t from-paper via-paper/70 to-paper/30" />
 
           <Reveal className="relative mx-auto w-full max-w-6xl px-4 pb-16 md:px-8 md:pb-24">
@@ -119,7 +140,7 @@ export default async function HomePage({
                   aria-hidden
                   className="flex h-11 items-center justify-between"
                 >
-                  {item.iconUrl ?
+                  {item.iconUrl ? (
                     <Image
                       alt=""
                       className="size-11 object-contain"
@@ -127,11 +148,12 @@ export default async function HomePage({
                       src={item.iconUrl}
                       width={44}
                     />
-                  : <WhyIcon
+                  ) : (
+                    <WhyIcon
                       className="size-11 text-accent"
                       emoji={item.emoji}
                     />
-                  }
+                  )}
                   <span className="font-black text-sm tabular-nums tracking-[0.2em] text-ink-dim">
                     {String(index + 1).padStart(2, "0")}
                   </span>
@@ -139,11 +161,11 @@ export default async function HomePage({
                 <h3 className="display mt-4 text-(length:--text-h3) leading-tight">
                   {item.title}
                 </h3>
-                {item.description ?
+                {item.description ? (
                   <p className="mt-3 text-(length:--text-body) leading-7 text-ink-dim">
                     {item.description}
                   </p>
-                : null}
+                ) : null}
               </li>
             ))}
           </ul>
@@ -167,7 +189,7 @@ export default async function HomePage({
                   data-reveal
                   style={{ "--i": index } as React.CSSProperties}
                 >
-                  {offering.imageUrl ?
+                  {offering.imageUrl ? (
                     <div className="relative aspect-4/5 w-full">
                       <Image
                         alt={offering.name}
@@ -177,7 +199,7 @@ export default async function HomePage({
                         src={offering.imageUrl}
                       />
                     </div>
-                  : null}
+                  ) : null}
                   <div className="flex flex-1 flex-col p-6">
                     <h3 className="display text-(length:--text-h3)">
                       {offering.name}
@@ -200,10 +222,135 @@ export default async function HomePage({
           </Reveal>
         </div>
 
-        {/* 3.5 — Promotion: one 9:16 poster at a time, straight to WhatsApp.
+        {/* 3.5 — Pricing: a ruled rate card, not a card grid. The Why section
+            owns the hard-edged plates and Classes owns the rounded photo
+            cards, so the price list takes the third voice — hairline rows,
+            name and features left, the figure right. */}
+        {plans.length ? (
+          <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
+            <h2
+              className="display section-head text-(length:--text-h2)"
+              data-reveal
+              id="pricing"
+            >
+              {content?.pricingTitle ?? "Pricing"}
+            </h2>
+            <ul className="mt-14 border-ink border-t-2">
+              {plans.map((plan, index) => (
+                <li
+                  key={plan.id}
+                  className="grid gap-x-10 gap-y-4 border-hairline border-b py-8 sm:grid-cols-[minmax(0,1fr)_auto]"
+                  data-reveal
+                  style={{ "--i": index } as React.CSSProperties}
+                >
+                  <div className="min-w-0">
+                    <h3 className="display text-(length:--text-h3) leading-tight">
+                      {plan.name}
+                    </h3>
+                    <ul className="mt-3 grid gap-1.5 text-(length:--text-body) text-ink-dim">
+                      {featureLines(plan.features).map((line) => (
+                        <li
+                          key={line}
+                          className="before:me-2 before:font-black before:text-accent before:content-['—']"
+                        >
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="sm:text-end">
+                    <p className="display flex items-baseline gap-1.5 text-(length:--text-h2) tabular-nums sm:justify-end">
+                      {price(plan.priceCents)}
+                      {plan.unit ? (
+                        <span className="font-normal text-(length:--text-body) text-ink-dim normal-case tracking-normal">
+                          / {plan.unit}
+                        </span>
+                      ) : null}
+                    </p>
+                    <a
+                      className="mt-3 inline-block whitespace-nowrap font-black text-accent text-sm uppercase tracking-[0.14em] underline underline-offset-4"
+                      href={wa(plan.whatsappMessage)}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {t("enquire")}
+                    </a>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        ) : null}
+
+        {/* 3.6 — Trial: the one plan flagged in the CMS, lifted out of the
+            ledger onto an accent ground. It is the only red band on the page,
+            so it reads as the offer rather than as another price row. */}
+        {trial ? (
+          <div className="grain relative overflow-hidden bg-accent text-accent-ink">
+            <Reveal
+              as="section"
+              className="mx-auto grid max-w-6xl gap-10 px-4 py-20 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:px-8 md:py-24"
+            >
+              <div className="min-w-0">
+                <p
+                  className="font-black text-sm uppercase tracking-[0.32em] opacity-80"
+                  data-reveal
+                >
+                  {t("trialKicker")}
+                </p>
+                <h2
+                  className="display mt-4 text-(length:--text-h2) leading-[0.92]"
+                  data-reveal
+                  id="trial"
+                  style={{ "--i": 1 } as React.CSSProperties}
+                >
+                  {trial.name}
+                </h2>
+                <ul
+                  className="mt-6 grid gap-2 text-(length:--text-lead)"
+                  data-reveal
+                  style={{ "--i": 2 } as React.CSSProperties}
+                >
+                  {featureLines(trial.features).map((line) => (
+                    <li
+                      key={line}
+                      className="before:me-2 before:content-['✨']"
+                    >
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div
+                className="md:text-end"
+                data-reveal
+                style={{ "--i": 3 } as React.CSSProperties}
+              >
+                <p className="display flex items-baseline gap-2 text-(length:--text-price) leading-none tabular-nums md:justify-end">
+                  {price(trial.priceCents)}
+                  {trial.unit ? (
+                    <span className="font-normal text-(length:--text-body) normal-case tracking-normal opacity-80">
+                      / {trial.unit}
+                    </span>
+                  ) : null}
+                </p>
+                <a
+                  className="cta cta-invert mt-8"
+                  href={wa(trial.whatsappMessage)}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {t("trialCta")}
+                </a>
+              </div>
+            </Reveal>
+          </div>
+        ) : null}
+
+        {/* 3.7 — Promotion: one 9:16 poster at a time, straight to WhatsApp.
             Dark band so the offer is the loudest beat between the two light
             card grids around it. */}
-        {promo ?
+        {promo ? (
           <div className="on-dark grain relative overflow-hidden bg-paper">
             <Reveal
               as="section"
@@ -257,7 +404,7 @@ export default async function HomePage({
               </div>
             </Reveal>
           </div>
-        : null}
+        ) : null}
 
         {/* 4 — Gallery */}
         <Reveal as="section" className="mx-auto max-w-6xl px-4 py-24 md:px-8">
@@ -294,16 +441,16 @@ export default async function HomePage({
                       src={image.imageUrl}
                     />
                   </PhotoView>
-                  {image.category || image.submittedBy ?
+                  {image.category || image.submittedBy ? (
                     <figcaption className="on-dark pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-scrim to-transparent px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-ink">
                       {image.category}
-                      {image.submittedBy ?
+                      {image.submittedBy ? (
                         <span className="block font-normal normal-case tracking-normal text-ink-dim">
                           {t("sharedBy", { name: image.submittedBy })}
                         </span>
-                      : null}
+                      ) : null}
                     </figcaption>
-                  : null}
+                  ) : null}
                 </figure>
               ))}
             </PhotoProvider>
@@ -311,7 +458,7 @@ export default async function HomePage({
         </Reveal>
 
         {/* 5 — Reviews */}
-        {reviews.length ?
+        {reviews.length ? (
           <div className="bg-paper-3">
             <Reveal
               as="section"
@@ -372,7 +519,7 @@ export default async function HomePage({
               </div>
             </Reveal>
           </div>
-        : null}
+        ) : null}
 
         {/* 6 — FAQ */}
         <Reveal as="section" className="mx-auto max-w-4xl px-4 py-24 md:px-8">
@@ -401,7 +548,7 @@ export default async function HomePage({
           >
             {content?.locationAddress}
           </p>
-          {content?.mapEmbedUrl ?
+          {content?.mapEmbedUrl ? (
             <div
               className="mt-10 overflow-hidden rounded-2xl border border-hairline"
               data-reveal
@@ -415,7 +562,7 @@ export default async function HomePage({
                 title={t("mapTitle")}
               />
             </div>
-          : null}
+          ) : null}
         </Reveal>
 
         {/* 8 — Closing CTA */}

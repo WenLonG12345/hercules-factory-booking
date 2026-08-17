@@ -7,7 +7,9 @@ export type InvoicePDFData = {
   invoiceDate: string;
   totalCents: number;
   description: string;
-  dateRange?: string;
+  /** Package validity window, printed under the line item when linked. */
+  startDate?: string;
+  expiryDate?: string;
 };
 
 function fmtDate(dateStr: string): string {
@@ -100,8 +102,14 @@ export async function exportInvoicePDF(data: InvoicePDFData): Promise<void> {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.text(data.description.toUpperCase(), MARGIN, 113);
-  if (data.dateRange) {
-    doc.text(data.dateRange, MARGIN, 119);
+  if (data.startDate && data.expiryDate) {
+    doc.setTextColor(90, 90, 90);
+    doc.text(
+      `Valid ${fmtDate(data.startDate)} - ${fmtDate(data.expiryDate)}`,
+      MARGIN,
+      119,
+    );
+    doc.setTextColor(...BLACK);
   }
   doc.text(fmtRM(data.totalCents), rightX, 113, { align: "right" });
 
