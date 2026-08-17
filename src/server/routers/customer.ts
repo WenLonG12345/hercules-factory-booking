@@ -5,10 +5,11 @@ import {
   invoices,
   sessionAttendees,
 } from "@/db/schema";
+import { bookTrialSession } from "@/server/services/business";
 import { adminProcedure, createTRPCRouter } from "@/server/trpc";
 import { idSchema } from "@/server/validators/common";
 import {
-  customerInput,
+  createCustomerInput,
   updateCustomerInput,
 } from "@/server/validators/customer";
 
@@ -41,11 +42,23 @@ export const customerRouter = createTRPCRouter({
 
     return { customer, packages, invoices: customerInvoices, history };
   }),
+  /**
+   * Creates the customer and, when they came in off a trial class, the
+   * one-seat trial session in the same call — the trial pipeline lives on the
+   * customers page, so a signup never has to be entered twice.
+   */
   create: adminProcedure
-    .input(customerInput)
-    .mutation(({ ctx, input }) =>
-      ctx.db.insert(customers).values(input).returning(),
-    ),
+    .input(createCustomerInput)
+    .mutation(async ({ ctx, input }) => {
+      const { trial, ...values } = input;
+      const rows = await ctx.db.insert(customers).values(values).returning();
+
+      if (trial) {
+        await bookTrialSession(ctx.db, { ...trial, customerId: rows[0].id });
+      }
+
+      return rows;
+    }),
   update: adminProcedure
     .input(updateCustomerInput)
     .mutation(({ ctx, input }) => {

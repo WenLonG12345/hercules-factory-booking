@@ -4,21 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/admin-shell";
+import { BookTrialDialog } from "@/components/admin/book-trial-dialog";
 import { CheckInDialog } from "@/components/admin/check-in-dialog";
 import { SellPackageDialog } from "@/components/admin/sell-package-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/components/ui/form";
+import { Card } from "@/components/ui/card";
+import { Input, Select } from "@/components/ui/form";
 import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
-import { CUSTOMER_SOURCES, GENDERS } from "@/db/schema";
 import { api, type RouterOutputs } from "@/lib/trpc";
 import { whatsappLink } from "@/lib/utils";
 import {
@@ -27,14 +19,25 @@ import {
   remaining,
   SOURCE_LABEL,
   STATUS_TONE,
-  today,
 } from "../admin-format";
+import { CreateCustomerDialog } from "./create-customer-dialog";
 
 type Package = RouterOutputs["package"]["list"][number];
+type Trial = RouterOutputs["trial"]["list"][number];
+
+const TRIAL_TONE = {
+  booked: "gray",
+  attended: "green",
+  no_show: "red",
+  cancelled: "gray",
+  converted: "amber",
+} as const;
 
 /** Fixed-height rows so a customer's packages line up across the columns. */
 const stackClass =
   "grid justify-items-start gap-1.5 whitespace-nowrap [&>*]:flex [&>*]:h-6 [&>*]:items-center";
+
+const linkClass = "text-sm font-semibold";
 
 /**
  * The package a customer is actually on: the live one expiring soonest — the
@@ -50,23 +53,25 @@ function currentPackage(list: Package[]) {
 
 export default function CustomersPage() {
   const utils = api.useUtils();
-  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [trialFilter, setTrialFilter] = useState("all");
 
   const { data: customers = [], isLoading } = api.customer.list.useQuery();
   const { data: packages = [] } = api.package.list.useQuery();
+  const { data: trials = [] } = api.trial.list.useQuery();
 
   const invalidate = () => {
     utils.customer.list.invalidate();
     utils.package.list.invalidate();
+    utils.trial.list.invalidate();
+    utils.report.dashboard.invalidate();
   };
 
-  const createCustomer = api.customer.create.useMutation({
+  const setAttendance = api.schedule.setAttendance.useMutation({
     onSuccess: () => {
-      utils.customer.list.invalidate();
-      setOpen(false);
-      toast.success("Customer created.");
+      toast.success("Updated.");
+      invalidate();
     },
     onError: (error) => toast.error(error.message),
   });
@@ -87,17 +92,46 @@ export default function CustomersPage() {
     else byCustomer.set(pkg.customerId, [pkg]);
   }
 
+  // A trial seats exactly one customer, and `trial.list` comes back newest
+  // first — so the first hit per customer is their latest trial.
+  const trialFor = new Map<string, Trial>();
+  for (const trial of trials) {
+    const customerId = trial.attendees[0]?.customerId;
+    if (customerId && !trialFor.has(customerId))
+      trialFor.set(customerId, trial);
+  }
+
+  const total = trials.length;
+  const converted = trials.filter((trial) =>
+    trial.attendees.some((attendee) => attendee.status === "converted"),
+  ).length;
+
   const term = search.trim().toLowerCase();
   const rows = customers
     .map((customer) => {
       const list = byCustomer.get(customer.id) ?? [];
-      return { customer, list, pkg: currentPackage(list) };
+      const trial = trialFor.get(customer.id) ?? null;
+      return {
+        customer,
+        list,
+        pkg: currentPackage(list),
+        trial,
+        attendee: trial?.attendees[0] ?? null,
+      };
     })
-    .filter(({ customer, pkg }) => {
+    .filter(({ customer, pkg, attendee }) => {
       if (
         term &&
         !customer.name.toLowerCase().includes(term) &&
         !customer.phone.includes(term)
+      ) {
+        return false;
+      }
+      if (trialFilter === "none" && attendee) return false;
+      if (
+        trialFilter !== "all" &&
+        trialFilter !== "none" &&
+        attendee?.status !== trialFilter
       ) {
         return false;
       }
@@ -108,7 +142,7 @@ export default function CustomersPage() {
 
   return (
     <>
-      <PageHeader eyebrow="CRM" title="Customers & packages">
+      <PageHeader eyebrow="CRM" title="Customers, trials & packages">
         <div className="flex flex-wrap items-center gap-2">
           <Input
             className="w-56"
@@ -123,103 +157,31 @@ export default function CustomersPage() {
             <option value="expired">Expired</option>
             <option value="none">No package</option>
           </Select>
+          <Select
+            onChange={(e) => setTrialFilter(e.target.value)}
+            value={trialFilter}
+          >
+            <option value="all">All trials</option>
+            <option value="booked">Trial booked</option>
+            <option value="attended">Trial attended</option>
+            <option value="no_show">Trial no-show</option>
+            <option value="converted">Trial converted</option>
+            <option value="none">No trial</option>
+          </Select>
           <SellPackageDialog onSuccess={invalidate} />
-          <Dialog onOpenChange={setOpen} open={open}>
-            <DialogTrigger asChild>
-              <Button type="button" variant="quiet">
-                Create customer
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create customer</DialogTitle>
-                <DialogDescription>
-                  Where they came from matters — the source feeds the monthly
-                  report.
-                </DialogDescription>
-              </DialogHeader>
-              <form
-                className="grid gap-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const fd = new FormData(e.currentTarget);
-                  const age = String(fd.get("age") ?? "");
-                  createCustomer.mutate({
-                    name: String(fd.get("name")),
-                    phone: String(fd.get("phone")),
-                    age: age ? Number(age) : undefined,
-                    gender:
-                      (String(fd.get("gender")) as
-                        | (typeof GENDERS)[number]
-                        | "") || undefined,
-                    emergencyContact:
-                      String(fd.get("emergencyContact") ?? "") || undefined,
-                    dateJoined: String(fd.get("dateJoined")),
-                    source:
-                      (String(fd.get("source")) as
-                        | (typeof CUSTOMER_SOURCES)[number]
-                        | "") || undefined,
-                    notes: String(fd.get("notes") ?? "") || undefined,
-                  });
-                }}
-              >
-                <Field label="Name">
-                  <Input name="name" required />
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="WhatsApp phone">
-                    <Input name="phone" required />
-                  </Field>
-                  <Field label="Age">
-                    <Input max={100} min={3} name="age" type="number" />
-                  </Field>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Gender">
-                    <Select defaultValue="" name="gender">
-                      <option value="">Not set</option>
-                      {GENDERS.map((value) => (
-                        <option key={value} value={value}>
-                          {value}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                  <Field label="Date joined">
-                    <Input
-                      defaultValue={today()}
-                      name="dateJoined"
-                      required
-                      type="date"
-                    />
-                  </Field>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Emergency contact">
-                    <Input name="emergencyContact" />
-                  </Field>
-                  <Field label="Source">
-                    <Select defaultValue="" name="source">
-                      <option value="">Not set</option>
-                      {CUSTOMER_SOURCES.map((value) => (
-                        <option key={value} value={value}>
-                          {SOURCE_LABEL[value]}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                </div>
-                <Field label="Notes">
-                  <Textarea name="notes" />
-                </Field>
-                <Button disabled={createCustomer.isPending} type="submit">
-                  {createCustomer.isPending ? "Saving…" : "Create customer"}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <CreateCustomerDialog onSuccess={invalidate} />
         </div>
       </PageHeader>
+
+      <Card className="mb-6">
+        <p className="text-sm font-medium text-stone-500">Trial conversion</p>
+        <p className="mt-2 text-3xl font-black tracking-tight">
+          {converted} / {total}
+          <span className="ml-2 text-base font-semibold text-stone-500">
+            {total ? Math.round((converted / total) * 100) : 0}%
+          </span>
+        </p>
+      </Card>
 
       <TableWrap>
         <table className={tableClass}>
@@ -227,6 +189,7 @@ export default function CustomersPage() {
             <tr>
               <th className={thClass}>Name</th>
               <th className={thClass}>Phone</th>
+              <th className={thClass}>Trial</th>
               <th className={thClass}>Package</th>
               <th className={thClass}>Start</th>
               <th className={thClass}>Expiry</th>
@@ -238,14 +201,15 @@ export default function CustomersPage() {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td className={tdClass} colSpan={8}>
+                <td className={tdClass} colSpan={9}>
                   No customers found.
                 </td>
               </tr>
             ) : (
-              rows.map(({ customer, list, pkg }) => {
+              rows.map(({ customer, list, pkg, trial, attendee }) => {
                 const left = pkg ? remaining(pkg) : null;
                 const state = pkg ? packageStatus(pkg) : null;
+                const openTrial = attendee && attendee.status !== "converted";
                 return (
                   <tr key={customer.id}>
                     <td className={tdClass}>
@@ -262,6 +226,63 @@ export default function CustomersPage() {
                       ) : null}
                     </td>
                     <td className={tdClass}>{customer.phone}</td>
+                    {/* The trial pipeline, one customer per row — a trial seats
+                        exactly one person, so it folds into the CRM table. */}
+                    <td className={tdClass}>
+                      {trial && attendee ? (
+                        <div className="grid justify-items-start gap-1 whitespace-nowrap">
+                          <Badge tone={TRIAL_TONE[attendee.status]}>
+                            {attendee.status}
+                          </Badge>
+                          <span className="text-xs text-stone-500">
+                            {trial.date} {trial.startTime}
+                            {trial.coach ? ` · ${trial.coach.name}` : ""}
+                          </span>
+                          {attendee.status === "booked" ? (
+                            <div className="flex gap-2">
+                              <button
+                                className={`${linkClass} text-emerald-700`}
+                                onClick={() =>
+                                  setAttendance.mutate({
+                                    attendeeId: attendee.id,
+                                    status: "attended",
+                                  })
+                                }
+                                type="button"
+                              >
+                                Attended
+                              </button>
+                              <button
+                                className={`${linkClass} text-stone-500`}
+                                onClick={() =>
+                                  setAttendance.mutate({
+                                    attendeeId: attendee.id,
+                                    status: "no_show",
+                                  })
+                                }
+                                type="button"
+                              >
+                                No show
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <BookTrialDialog
+                          customerId={customer.id}
+                          customerName={customer.name}
+                          onSuccess={invalidate}
+                          trigger={
+                            <button
+                              className={`${linkClass} text-stone-600`}
+                              type="button"
+                            >
+                              Book trial
+                            </button>
+                          }
+                        />
+                      )}
+                    </td>
                     {/* One line per package, aligned across the next four
                         columns — newest first, same order as package.list. */}
                     <td className={tdClass}>
@@ -329,21 +350,30 @@ export default function CustomersPage() {
                             pkg={{ ...pkg, customer }}
                           />
                         ) : null}
+                        {/* Selling off an open trial stamps the conversion on
+                            that session — same call the pipeline used to make. */}
                         <SellPackageDialog
+                          convertedFromSessionId={
+                            openTrial ? trial?.id : undefined
+                          }
                           customerId={customer.id}
                           customerName={customer.name}
                           onSuccess={invalidate}
                           trigger={
                             <button
-                              className="text-sm font-semibold text-stone-600"
+                              className={`${linkClass} ${openTrial ? "text-red-700" : "text-stone-600"}`}
                               type="button"
                             >
-                              {pkg ? "Renew" : "Sell package"}
+                              {openTrial
+                                ? "Convert"
+                                : pkg
+                                  ? "Renew"
+                                  : "Sell package"}
                             </button>
                           }
                         />
                         <a
-                          className="text-sm font-semibold text-emerald-700"
+                          className={`${linkClass} text-emerald-700`}
                           href={whatsappLink(
                             customer.phone,
                             `Hi ${customer.name}, this is Hercules Factory 👊`,

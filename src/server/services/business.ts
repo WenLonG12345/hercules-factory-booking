@@ -29,6 +29,44 @@ export function packageStatus(
   return "active" as const;
 }
 
+/**
+ * A trial is a one-seat session plus its single roster row. Shared by
+ * `trial.book` and `customer.create`, so booking a trial for a brand-new
+ * customer writes exactly the same rows as booking one for an existing one.
+ */
+export async function bookTrialSession(
+  db: Db,
+  input: {
+    customerId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    coachId?: string;
+    notes?: string;
+  },
+) {
+  const [session] = await db
+    .insert(sessions)
+    .values({
+      type: "trial",
+      title: "Trial class",
+      date: input.date,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      capacity: 1,
+      coachId: input.coachId ?? null,
+      notes: input.notes,
+    })
+    .returning();
+
+  await db.insert(sessionAttendees).values({
+    sessionId: session.id,
+    customerId: input.customerId,
+  });
+
+  return session;
+}
+
 /** Noon UTC — keeps the date arithmetic off DST and timezone edges. */
 function addDays(date: string, days: number) {
   const d = new Date(`${date}T12:00:00Z`);

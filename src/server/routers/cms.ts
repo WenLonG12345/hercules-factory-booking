@@ -1,4 +1,5 @@
 import { asc, desc, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   classOfferings,
@@ -30,6 +31,21 @@ import {
   whyItemInput,
 } from "@/server/validators/cms";
 import { idSchema } from "@/server/validators/common";
+
+/**
+ * The landing page is ISR'd (`revalidate = 300` in `src/app/[locale]/page.tsx`),
+ * so without this an edit here would sit behind a stale page for up to five
+ * minutes. Every successful CMS mutation marks the public route — both locales,
+ * hence the route pattern rather than a literal path — so the next visit
+ * re-renders against the new rows.
+ */
+const cmsProcedure = adminProcedure.use(async ({ type, next }) => {
+  const result = await next();
+  if (type === "mutation" && result.ok) {
+    revalidatePath("/[locale]", "page");
+  }
+  return result;
+});
 
 export const cmsRouter = createTRPCRouter({
   publicContent: publicDbProcedure.query(async ({ ctx }) => {
@@ -101,7 +117,7 @@ export const cmsRouter = createTRPCRouter({
   }),
 
   /** Admin view — inactive rows included. */
-  allContent: adminProcedure.query(async ({ ctx }) => {
+  allContent: cmsProcedure.query(async ({ ctx }) => {
     const [
       content,
       why,
@@ -145,7 +161,7 @@ export const cmsRouter = createTRPCRouter({
     };
   }),
 
-  updateLandingContent: adminProcedure
+  updateLandingContent: cmsProcedure
     .input(landingPageContentInput)
     .mutation(async ({ ctx, input }) => {
       const existing = await ctx.db.query.landingPageContent.findFirst();
@@ -160,12 +176,12 @@ export const cmsRouter = createTRPCRouter({
     }),
 
   why: createTRPCRouter({
-    create: adminProcedure
+    create: cmsProcedure
       .input(whyItemInput)
       .mutation(({ ctx, input }) =>
         ctx.db.insert(whyItems).values(input).returning(),
       ),
-    update: adminProcedure
+    update: cmsProcedure
       .input(whyItemInput.extend({ id: z.uuid() }))
       .mutation(({ ctx, input: { id, ...values } }) =>
         ctx.db
@@ -174,12 +190,12 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(whyItems.id, id))
           .returning(),
       ),
-    delete: adminProcedure
+    delete: cmsProcedure
       .input(idSchema)
       .mutation(({ ctx, input }) =>
         ctx.db.delete(whyItems).where(eq(whyItems.id, input.id)).returning(),
       ),
-    reorder: adminProcedure
+    reorder: cmsProcedure
       .input(reorderInput)
       .mutation(async ({ ctx, input }) => {
         await Promise.all(
@@ -195,12 +211,12 @@ export const cmsRouter = createTRPCRouter({
   }),
 
   classes: createTRPCRouter({
-    create: adminProcedure
+    create: cmsProcedure
       .input(classOfferingInput)
       .mutation(({ ctx, input }) =>
         ctx.db.insert(classOfferings).values(input).returning(),
       ),
-    update: adminProcedure
+    update: cmsProcedure
       .input(classOfferingInput.extend({ id: z.uuid() }))
       .mutation(({ ctx, input: { id, ...values } }) =>
         ctx.db
@@ -209,7 +225,7 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(classOfferings.id, id))
           .returning(),
       ),
-    delete: adminProcedure
+    delete: cmsProcedure
       .input(idSchema)
       .mutation(({ ctx, input }) =>
         ctx.db
@@ -217,7 +233,7 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(classOfferings.id, input.id))
           .returning(),
       ),
-    reorder: adminProcedure
+    reorder: cmsProcedure
       .input(reorderInput)
       .mutation(async ({ ctx, input }) => {
         await Promise.all(
@@ -233,12 +249,12 @@ export const cmsRouter = createTRPCRouter({
   }),
 
   pricing: createTRPCRouter({
-    create: adminProcedure
+    create: cmsProcedure
       .input(pricingPlanInput)
       .mutation(({ ctx, input }) =>
         ctx.db.insert(pricingPlans).values(input).returning(),
       ),
-    update: adminProcedure
+    update: cmsProcedure
       .input(pricingPlanInput.extend({ id: z.uuid() }))
       .mutation(({ ctx, input: { id, ...values } }) =>
         ctx.db
@@ -247,7 +263,7 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(pricingPlans.id, id))
           .returning(),
       ),
-    delete: adminProcedure
+    delete: cmsProcedure
       .input(idSchema)
       .mutation(({ ctx, input }) =>
         ctx.db
@@ -255,7 +271,7 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(pricingPlans.id, input.id))
           .returning(),
       ),
-    reorder: adminProcedure
+    reorder: cmsProcedure
       .input(reorderInput)
       .mutation(async ({ ctx, input }) => {
         await Promise.all(
@@ -271,12 +287,12 @@ export const cmsRouter = createTRPCRouter({
   }),
 
   faq: createTRPCRouter({
-    create: adminProcedure
+    create: cmsProcedure
       .input(faqItemInput)
       .mutation(({ ctx, input }) =>
         ctx.db.insert(faqItems).values(input).returning(),
       ),
-    update: adminProcedure
+    update: cmsProcedure
       .input(faqItemInput.extend({ id: z.uuid() }))
       .mutation(({ ctx, input: { id, ...values } }) =>
         ctx.db
@@ -285,12 +301,12 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(faqItems.id, id))
           .returning(),
       ),
-    delete: adminProcedure
+    delete: cmsProcedure
       .input(idSchema)
       .mutation(({ ctx, input }) =>
         ctx.db.delete(faqItems).where(eq(faqItems.id, input.id)).returning(),
       ),
-    reorder: adminProcedure
+    reorder: cmsProcedure
       .input(reorderInput)
       .mutation(async ({ ctx, input }) => {
         await Promise.all(
@@ -306,12 +322,12 @@ export const cmsRouter = createTRPCRouter({
   }),
 
   reviews: createTRPCRouter({
-    create: adminProcedure
+    create: cmsProcedure
       .input(testimonialInput)
       .mutation(({ ctx, input }) =>
         ctx.db.insert(testimonials).values(input).returning(),
       ),
-    update: adminProcedure
+    update: cmsProcedure
       .input(testimonialInput.extend({ id: z.uuid() }))
       .mutation(({ ctx, input: { id, ...values } }) =>
         ctx.db
@@ -320,7 +336,7 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(testimonials.id, id))
           .returning(),
       ),
-    delete: adminProcedure
+    delete: cmsProcedure
       .input(idSchema)
       .mutation(({ ctx, input }) =>
         ctx.db
@@ -328,7 +344,7 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(testimonials.id, input.id))
           .returning(),
       ),
-    reorder: adminProcedure
+    reorder: cmsProcedure
       .input(reorderInput)
       .mutation(async ({ ctx, input }) => {
         await Promise.all(
@@ -344,12 +360,12 @@ export const cmsRouter = createTRPCRouter({
   }),
 
   social: createTRPCRouter({
-    create: adminProcedure
+    create: cmsProcedure
       .input(socialLinkInput)
       .mutation(({ ctx, input }) =>
         ctx.db.insert(socialLinks).values(input).returning(),
       ),
-    update: adminProcedure
+    update: cmsProcedure
       .input(socialLinkInput.extend({ id: z.uuid() }))
       .mutation(({ ctx, input: { id, ...values } }) =>
         ctx.db
@@ -358,7 +374,7 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(socialLinks.id, id))
           .returning(),
       ),
-    delete: adminProcedure
+    delete: cmsProcedure
       .input(idSchema)
       .mutation(({ ctx, input }) =>
         ctx.db
@@ -369,12 +385,12 @@ export const cmsRouter = createTRPCRouter({
   }),
 
   promos: createTRPCRouter({
-    create: adminProcedure
+    create: cmsProcedure
       .input(promotionInput)
       .mutation(({ ctx, input }) =>
         ctx.db.insert(promotions).values(input).returning(),
       ),
-    update: adminProcedure
+    update: cmsProcedure
       .input(promotionInput.extend({ id: z.uuid() }))
       .mutation(({ ctx, input: { id, ...values } }) =>
         ctx.db
@@ -383,7 +399,7 @@ export const cmsRouter = createTRPCRouter({
           .where(eq(promotions.id, id))
           .returning(),
       ),
-    delete: adminProcedure.input(idSchema).mutation(async ({ ctx, input }) => {
+    delete: cmsProcedure.input(idSchema).mutation(async ({ ctx, input }) => {
       const [row] = await ctx.db
         .delete(promotions)
         .where(eq(promotions.id, input.id))
@@ -394,12 +410,12 @@ export const cmsRouter = createTRPCRouter({
   }),
 
   gallery: createTRPCRouter({
-    create: adminProcedure
+    create: cmsProcedure
       .input(galleryImageInput)
       .mutation(({ ctx, input }) =>
         ctx.db.insert(galleryImages).values(input).returning(),
       ),
-    update: adminProcedure
+    update: cmsProcedure
       .input(galleryImageInput.extend({ id: z.uuid() }))
       .mutation(({ ctx, input: { id, ...values } }) =>
         ctx.db
@@ -409,7 +425,7 @@ export const cmsRouter = createTRPCRouter({
           .returning(),
       ),
     /** Publishes a visitor submission. Rejecting one is just `delete`. */
-    approve: adminProcedure
+    approve: cmsProcedure
       .input(idSchema)
       .mutation(({ ctx, input }) =>
         ctx.db
@@ -420,7 +436,7 @@ export const cmsRouter = createTRPCRouter({
       ),
     // Deleting the row deletes the R2 object — the Supabase version left
     // orphans behind.
-    delete: adminProcedure.input(idSchema).mutation(async ({ ctx, input }) => {
+    delete: cmsProcedure.input(idSchema).mutation(async ({ ctx, input }) => {
       const [row] = await ctx.db
         .delete(galleryImages)
         .where(eq(galleryImages.id, input.id))
@@ -428,7 +444,7 @@ export const cmsRouter = createTRPCRouter({
       if (row?.imageUrl) await deleteImage(row.imageUrl).catch(() => {});
       return row;
     }),
-    reorder: adminProcedure
+    reorder: cmsProcedure
       .input(reorderInput)
       .mutation(async ({ ctx, input }) => {
         await Promise.all(

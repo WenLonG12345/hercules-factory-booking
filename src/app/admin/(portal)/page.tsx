@@ -234,7 +234,7 @@ export default function AdminDashboardPage() {
                       <td className={tdClass}>
                         <Link
                           className="font-semibold text-red-700"
-                          href="/admin/trials"
+                          href="/admin/customers"
                         >
                           {session.attendees[0]?.customer?.name ?? "—"}
                         </Link>

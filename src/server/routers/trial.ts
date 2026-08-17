@@ -1,13 +1,15 @@
 import { and, asc, desc, eq, gte } from "drizzle-orm";
 import { z } from "zod";
-import { sessionAttendees, sessions } from "@/db/schema";
+import { sessions } from "@/db/schema";
 import { toDateInputValue } from "@/lib/utils";
+import { bookTrialSession } from "@/server/services/business";
 import { adminProcedure, createTRPCRouter } from "@/server/trpc";
-import { dateString, timeString } from "@/server/validators/common";
+import { trialBookingInput } from "@/server/validators/customer";
 
 /**
  * Trials are the same rows as the schedule — `sessions.type = "trial"` plus its
- * roster — listed as a pipeline instead of a calendar.
+ * roster. The pipeline itself lives on the customers page; this router only
+ * feeds and books it.
  */
 export const trialRouter = createTRPCRouter({
   list: adminProcedure
@@ -25,36 +27,6 @@ export const trialRouter = createTRPCRouter({
       });
     }),
   book: adminProcedure
-    .input(
-      z.object({
-        customerId: z.uuid(),
-        date: dateString,
-        startTime: timeString,
-        endTime: timeString,
-        coachId: z.uuid().optional(),
-        notes: z.string().optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const [session] = await ctx.db
-        .insert(sessions)
-        .values({
-          type: "trial",
-          title: "Trial class",
-          date: input.date,
-          startTime: input.startTime,
-          endTime: input.endTime,
-          capacity: 1,
-          coachId: input.coachId ?? null,
-          notes: input.notes,
-        })
-        .returning();
-
-      await ctx.db.insert(sessionAttendees).values({
-        sessionId: session.id,
-        customerId: input.customerId,
-      });
-
-      return session;
-    }),
+    .input(trialBookingInput.extend({ customerId: z.uuid() }))
+    .mutation(({ ctx, input }) => bookTrialSession(ctx.db, input)),
 });
