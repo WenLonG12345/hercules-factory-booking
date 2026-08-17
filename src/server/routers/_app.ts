@@ -5,6 +5,7 @@ import { customerRouter } from "./customer";
 import { expenseRouter } from "./expense";
 import { invoiceRouter } from "./invoice";
 import { packageRouter } from "./package";
+import { packagePlanRouter } from "./package-plan";
 import { reportRouter } from "./report";
 import { scheduleRouter } from "./schedule";
 import { trialRouter } from "./trial";
@@ -16,6 +17,7 @@ export const appRouter = createTRPCRouter({
   expense: expenseRouter,
   invoice: invoiceRouter,
   package: packageRouter,
+  packagePlan: packagePlanRouter,
   report: reportRouter,
   schedule: scheduleRouter,
   trial: trialRouter,

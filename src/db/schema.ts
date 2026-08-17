@@ -163,6 +163,25 @@ export const coaches = sqliteTable("coaches", {
   ...timestamps,
 });
 
+/**
+ * The price list the admin sells from — "10-Class Pass", "Monthly Unlimited".
+ * A plan is a template only: selling one copies its numbers onto a
+ * customer_packages row, so editing a plan never rewrites past sales.
+ */
+export const packagePlans = sqliteTable("package_plans", {
+  id: id(),
+  name: text("name").notNull(),
+  type: text("type", { enum: PACKAGE_TYPES }).notNull(),
+  // null only for unlimited plans
+  totalCredits: integer("total_credits"),
+  priceCents: integer("price_cents").default(0).notNull(),
+  validityDays: integer("validity_days").default(90).notNull(),
+  description: text("description"),
+  isActive: integer("is_active", { mode: "boolean" }).default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  ...timestamps,
+});
+
 export const customerPackages = sqliteTable(
   "customer_packages",
   {
@@ -170,6 +189,11 @@ export const customerPackages = sqliteTable(
     customerId: text("customer_id")
       .references(() => customers.id, { onDelete: "cascade" })
       .notNull(),
+    // Which price-list entry this was sold from. Null for one-off custom sales
+    // and for everything sold before the catalogue existed.
+    planId: text("plan_id").references(() => packagePlans.id, {
+      onDelete: "set null",
+    }),
     type: text("type", { enum: PACKAGE_TYPES }).notNull(),
     startDate: text("start_date").notNull(),
     expiryDate: text("expiry_date").notNull(),
@@ -463,10 +487,18 @@ export const customerPackagesRelations = relations(
       fields: [customerPackages.customerId],
       references: [customers.id],
     }),
+    plan: one(packagePlans, {
+      fields: [customerPackages.planId],
+      references: [packagePlans.id],
+    }),
     invoices: many(invoices),
     attendees: many(sessionAttendees),
   }),
 );
+
+export const packagePlansRelations = relations(packagePlans, ({ many }) => ({
+  sales: many(customerPackages),
+}));
 
 export const sessionsRelations = relations(sessions, ({ one, many }) => ({
   coach: one(coaches, {
@@ -515,6 +547,7 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
 export type Customer = typeof customers.$inferSelect;
 export type Coach = typeof coaches.$inferSelect;
 export type CustomerPackage = typeof customerPackages.$inferSelect;
+export type PackagePlan = typeof packagePlans.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type SessionAttendee = typeof sessionAttendees.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;

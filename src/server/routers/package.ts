@@ -1,5 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
-import { customerPackages, invoices, sessionAttendees } from "@/db/schema";
+import {
+  customerPackages,
+  invoices,
+  packagePlans,
+  sessionAttendees,
+} from "@/db/schema";
 import { nextInvoiceNumber } from "@/server/services/business";
 import { adminProcedure, createTRPCRouter } from "@/server/trpc";
 import { idSchema } from "@/server/validators/common";
@@ -61,11 +66,17 @@ export const packageRouter = createTRPCRouter({
 
       if (createInvoice) {
         const subtotalCents = input.amountPaidCents + discountCents;
+        // Name the plan on the invoice when it was sold off the price list.
+        const plan = input.planId
+          ? await ctx.db.query.packagePlans.findFirst({
+              where: eq(packagePlans.id, input.planId),
+            })
+          : undefined;
         await ctx.db.insert(invoices).values({
           invoiceNumber: await nextInvoiceNumber(ctx.db),
           customerId: input.customerId,
           packageId: pkg.id,
-          description: `${input.type} package`,
+          description: plan?.name ?? `${input.type} package`,
           subtotalCents,
           discountCents,
           totalCents: input.amountPaidCents,

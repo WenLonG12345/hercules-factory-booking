@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/admin-shell";
+import { PlanSummary } from "@/components/admin/plan-summary";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import {
@@ -13,12 +14,15 @@ import {
   PAYMENT_METHODS,
 } from "@/db/schema";
 import { api } from "@/lib/trpc";
+import { formatCurrency } from "@/lib/utils";
 import {
+  centsToRinggit,
   defaultExpiry,
   PACKAGE_TYPE_LABEL,
   PAYMENT_METHOD_LABEL,
   ringgitToCents,
   SOURCE_LABEL,
+  shiftDays,
   today,
 } from "../admin-format";
 
@@ -54,8 +58,13 @@ export default function OnboardPage() {
   const utils = api.useUtils();
   const [type, setType] = useState<string>("credit");
   const [startDate, setStartDate] = useState(today());
+  const [planId, setPlanId] = useState("");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState<{ id: string; name: string } | null>(null);
+
+  const { data: plans = [] } = api.packagePlan.list.useQuery();
+  const sellable = plans.filter((item) => item.isActive);
+  const plan = plans.find((item) => item.id === planId);
 
   const createCustomer = api.customer.create.useMutation();
   const sellPackage = api.package.create.useMutation();
@@ -82,16 +91,23 @@ export default function OnboardPage() {
         notes: String(fd.get("customerNotes") ?? "") || undefined,
       });
 
-      const packageType = String(fd.get("type"));
+      // On a plan the type and credits come from the plan, not the form —
+      // those fields are not rendered.
+      const packageType =
+        plan?.type ??
+        (String(fd.get("type")) as (typeof PACKAGE_TYPES)[number]);
       await sellPackage.mutateAsync({
         customerId: customer.id,
-        type: packageType as (typeof PACKAGE_TYPES)[number],
+        planId: planId || undefined,
+        type: packageType,
         startDate: String(fd.get("startDate")),
         expiryDate: String(fd.get("expiryDate")),
         totalCredits:
           packageType === "unlimited"
             ? undefined
-            : Number(fd.get("totalCredits")),
+            : plan
+              ? (plan.totalCredits ?? undefined)
+              : Number(fd.get("totalCredits")),
         amountPaidCents: ringgitToCents(fd.get("amountPaid")),
         paymentMethod: String(
           fd.get("paymentMethod"),
@@ -207,23 +223,72 @@ export default function OnboardPage() {
 
         <section className={sectionClass}>
           <SectionTitle
-            hint="Start and expiry print on the invoice PDF, so set them properly."
+            hint="Pick a plan and the type, credits and price come with it. Start and expiry print on the invoice PDF, so set them properly."
             step={2}
             title="Package"
           />
-          <Field label="Package type">
+          {/* A plan already says what the package is, so the type and credit
+              fields only appear for a one-off custom sale. */}
+          <Field label="Plan">
             <Select
-              name="type"
-              onChange={(e) => setType(e.target.value)}
-              value={type}
+              onChange={(e) => {
+                const next = plans.find((item) => item.id === e.target.value);
+                setPlanId(e.target.value);
+                if (next) setType(next.type);
+              }}
+              value={planId}
             >
-              {PACKAGE_TYPES.map((value) => (
-                <option key={value} value={value}>
-                  {PACKAGE_TYPE_LABEL[value]}
+              <option value="">Custom — set everything by hand</option>
+              {sellable.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} — {formatCurrency(item.priceCents)}
+                  {item.totalCredits === null
+                    ? ""
+                    : ` · ${item.totalCredits} credits`}
                 </option>
               ))}
             </Select>
           </Field>
+          {plans.length === 0 ? (
+            <p className="text-sm text-stone-500">
+              No plans on the price list yet —{" "}
+              <Link className="font-semibold underline" href="/admin/packages">
+                add one
+              </Link>{" "}
+              to stop typing credits and prices by hand.
+            </p>
+          ) : null}
+          {plan ? (
+            <PlanSummary plan={plan} />
+          ) : (
+            <>
+              <Field label="Package type">
+                <Select
+                  name="type"
+                  onChange={(e) => setType(e.target.value)}
+                  value={type}
+                >
+                  {PACKAGE_TYPES.map((value) => (
+                    <option key={value} value={value}>
+                      {PACKAGE_TYPE_LABEL[value]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              {type === "unlimited" ? null : (
+                <Field label={type === "pt" ? "PT sessions" : "Credits"}>
+                  <Input
+                    defaultValue={10}
+                    key={type}
+                    min={1}
+                    name="totalCredits"
+                    required
+                    type="number"
+                  />
+                </Field>
+              )}
+            </>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Start date">
               <Input
@@ -236,28 +301,27 @@ export default function OnboardPage() {
             </Field>
             <Field label="Expiry date">
               <Input
-                defaultValue={defaultExpiry(startDate, type)}
-                key={`${startDate}-${type}`}
+                defaultValue={
+                  plan
+                    ? shiftDays(startDate, plan.validityDays)
+                    : defaultExpiry(startDate, type)
+                }
+                key={`${startDate}-${type}-${planId}`}
                 name="expiryDate"
                 required
                 type="date"
               />
             </Field>
           </div>
-          {type === "unlimited" ? null : (
-            <Field label={type === "pt" ? "PT sessions" : "Credits"}>
-              <Input
-                defaultValue={10}
-                min={1}
-                name="totalCredits"
-                required
-                type="number"
-              />
-            </Field>
-          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Amount paid (RM)">
-              <Input inputMode="decimal" name="amountPaid" required />
+              <Input
+                defaultValue={plan ? centsToRinggit(plan.priceCents) : ""}
+                inputMode="decimal"
+                key={planId}
+                name="amountPaid"
+                required
+              />
             </Field>
             <Field label="Payment method">
               <Select defaultValue="cash" name="paymentMethod">
