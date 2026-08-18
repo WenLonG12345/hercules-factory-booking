@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { columnHelper, DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
   DialogContent,
@@ -14,10 +15,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, Input, Textarea } from "@/components/ui/form";
-import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
-import { api } from "@/lib/trpc";
+import { api, type RouterOutputs } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
 import { currentMonth } from "../admin-format";
+
+type CoachRow = RouterOutputs["coach"]["list"][number] & {
+  sessionCount: number;
+  headcount: number;
+  salaryCents: number;
+};
+
+const helper = columnHelper<CoachRow>();
 
 export default function CoachesPage() {
   const utils = api.useUtils();
@@ -52,6 +60,57 @@ export default function CoachesPage() {
       </div>
     );
   }
+
+  const rows: CoachRow[] = coaches.map((coach) => {
+    const stats = report?.perCoach.find((row) => row.coachId === coach.id);
+    return {
+      ...coach,
+      sessionCount: stats?.sessionCount ?? 0,
+      headcount: stats?.headcount ?? 0,
+      salaryCents: stats?.salaryCents ?? 0,
+    };
+  });
+
+  const columns = helper.columns([
+    helper.accessor("name", { header: "Name" }),
+    helper.accessor("phone", {
+      header: "Phone",
+      cell: (info) => info.getValue() ?? "\u2014",
+    }),
+    helper.accessor("sessionCount", { header: `Sessions (${month})` }),
+    helper.accessor("headcount", { header: "Headcount" }),
+    helper.accessor("salaryCents", {
+      header: "Salary paid",
+      cell: (info) => formatCurrency(info.getValue()),
+    }),
+    helper.display({
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const coach = row.original;
+        return (
+          <button
+            onClick={() =>
+              update.mutate({
+                id: coach.id,
+                name: coach.name,
+                phone: coach.phone ?? undefined,
+                photoUrl: coach.photoUrl ?? undefined,
+                bio: coach.bio ?? undefined,
+                sortOrder: coach.sortOrder,
+                isActive: !coach.isActive,
+              })
+            }
+            type="button"
+          >
+            <Badge tone={coach.isActive ? "green" : "gray"}>
+              {coach.isActive ? "Active" : "Inactive"}
+            </Badge>
+          </button>
+        );
+      },
+    }),
+  ]);
 
   return (
     <>
@@ -102,66 +161,13 @@ export default function CoachesPage() {
         </Dialog>
       </PageHeader>
 
-      <TableWrap>
-        <table className={tableClass}>
-          <thead>
-            <tr>
-              <th className={thClass}>Name</th>
-              <th className={thClass}>Phone</th>
-              <th className={thClass}>Sessions ({month})</th>
-              <th className={thClass}>Headcount</th>
-              <th className={thClass}>Salary paid</th>
-              <th className={thClass}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {coaches.length === 0 ? (
-              <tr>
-                <td className={tdClass} colSpan={6}>
-                  No coaches yet.
-                </td>
-              </tr>
-            ) : (
-              coaches.map((coach) => {
-                const stats = report?.perCoach.find(
-                  (row) => row.coachId === coach.id,
-                );
-                return (
-                  <tr key={coach.id}>
-                    <td className={tdClass}>{coach.name}</td>
-                    <td className={tdClass}>{coach.phone ?? "—"}</td>
-                    <td className={tdClass}>{stats?.sessionCount ?? 0}</td>
-                    <td className={tdClass}>{stats?.headcount ?? 0}</td>
-                    <td className={tdClass}>
-                      {formatCurrency(stats?.salaryCents ?? 0)}
-                    </td>
-                    <td className={tdClass}>
-                      <button
-                        onClick={() =>
-                          update.mutate({
-                            id: coach.id,
-                            name: coach.name,
-                            phone: coach.phone ?? undefined,
-                            photoUrl: coach.photoUrl ?? undefined,
-                            bio: coach.bio ?? undefined,
-                            sortOrder: coach.sortOrder,
-                            isActive: !coach.isActive,
-                          })
-                        }
-                        type="button"
-                      >
-                        <Badge tone={coach.isActive ? "green" : "gray"}>
-                          {coach.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </TableWrap>
+      <DataTable
+        columns={columns}
+        data={rows}
+        empty="No coaches yet."
+        getRowId={(row) => row.id}
+        sortable
+      />
     </>
   );
 }

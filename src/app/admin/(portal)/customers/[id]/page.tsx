@@ -5,8 +5,8 @@ import { PageHeader } from "@/components/admin/admin-shell";
 import { SellPackageDialog } from "@/components/admin/sell-package-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
-import { api } from "@/lib/trpc";
+import { columnHelper, DataTable } from "@/components/ui/data-table";
+import { api, type RouterOutputs } from "@/lib/trpc";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
 import {
   PACKAGE_TYPE_LABEL,
@@ -15,6 +15,91 @@ import {
   SOURCE_LABEL,
   STATUS_TONE,
 } from "../../admin-format";
+
+type Profile = RouterOutputs["customer"]["profile"];
+
+const pkg = columnHelper<Profile["packages"][number]>();
+const invoice = columnHelper<Profile["invoices"][number]>();
+const attendance = columnHelper<Profile["history"][number]>();
+
+const packageColumns = pkg.columns([
+  pkg.display({
+    id: "type",
+    header: "Type",
+    cell: ({ row }) => PACKAGE_TYPE_LABEL[row.original.type],
+  }),
+  pkg.accessor("startDate", { header: "Start" }),
+  pkg.accessor("expiryDate", { header: "Expiry" }),
+  pkg.display({
+    id: "credits",
+    header: "Credits",
+    cell: ({ row }) => {
+      const left = remaining(row.original);
+      return left === null
+        ? "Unlimited"
+        : `Total ${row.original.totalCredits} \u00b7 Used ${row.original.usedCredits} \u00b7 Remaining ${left}`;
+    },
+  }),
+  pkg.accessor("amountPaidCents", {
+    header: "Paid",
+    cell: (info) => formatCurrency(info.getValue()),
+  }),
+  pkg.display({
+    id: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = packageStatus(row.original);
+      return <Badge tone={STATUS_TONE[status]}>{status}</Badge>;
+    },
+  }),
+]);
+
+const invoiceColumns = invoice.columns([
+  invoice.accessor("invoiceNumber", { header: "Number" }),
+  invoice.accessor("totalCents", {
+    header: "Total",
+    cell: (info) => formatCurrency(info.getValue()),
+  }),
+  invoice.display({
+    id: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge tone={row.original.status === "paid" ? "green" : "amber"}>
+        {row.original.status}
+      </Badge>
+    ),
+  }),
+]);
+
+const historyColumns = attendance.columns([
+  attendance.display({
+    id: "date",
+    header: "Date",
+    cell: ({ row }) => row.original.session?.date,
+  }),
+  attendance.display({
+    id: "session",
+    header: "Session",
+    cell: ({ row }) => row.original.session?.title,
+  }),
+  attendance.display({
+    id: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge
+        tone={
+          row.original.status === "attended"
+            ? "green"
+            : row.original.status === "no_show"
+              ? "red"
+              : "gray"
+        }
+      >
+        {row.original.status}
+      </Badge>
+    ),
+  }),
+]);
 
 export default function CustomerProfilePage({
   params,
@@ -87,139 +172,36 @@ export default function CustomerProfilePage({
 
       <section className="mt-8">
         <h2 className="mb-3 text-xl font-black">Packages</h2>
-        <TableWrap>
-          <table className={tableClass}>
-            <thead>
-              <tr>
-                <th className={thClass}>Type</th>
-                <th className={thClass}>Start</th>
-                <th className={thClass}>Expiry</th>
-                <th className={thClass}>Credits</th>
-                <th className={thClass}>Paid</th>
-                <th className={thClass}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {packages.length === 0 ? (
-                <tr>
-                  <td className={tdClass} colSpan={6}>
-                    No packages yet.
-                  </td>
-                </tr>
-              ) : (
-                packages.map((pkg) => {
-                  const left = remaining(pkg);
-                  const status = packageStatus(pkg);
-                  return (
-                    <tr key={pkg.id}>
-                      <td className={tdClass}>
-                        {PACKAGE_TYPE_LABEL[pkg.type]}
-                      </td>
-                      <td className={tdClass}>{pkg.startDate}</td>
-                      <td className={tdClass}>{pkg.expiryDate}</td>
-                      <td className={tdClass}>
-                        {left === null
-                          ? "Unlimited"
-                          : `Total ${pkg.totalCredits} · Used ${pkg.usedCredits} · Remaining ${left}`}
-                      </td>
-                      <td className={tdClass}>
-                        {formatCurrency(pkg.amountPaidCents)}
-                      </td>
-                      <td className={tdClass}>
-                        <Badge tone={STATUS_TONE[status]}>{status}</Badge>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </TableWrap>
+        <DataTable
+          columns={packageColumns}
+          data={packages}
+          empty="No packages yet."
+          getRowId={(row) => row.id}
+          sortable
+        />
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
           <h2 className="mb-3 text-xl font-black">Invoices</h2>
-          <TableWrap>
-            <table className={`${tableClass} min-w-0`}>
-              <thead>
-                <tr>
-                  <th className={thClass}>Number</th>
-                  <th className={thClass}>Total</th>
-                  <th className={thClass}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.length === 0 ? (
-                  <tr>
-                    <td className={tdClass} colSpan={3}>
-                      No invoices.
-                    </td>
-                  </tr>
-                ) : (
-                  invoices.map((invoice) => (
-                    <tr key={invoice.id}>
-                      <td className={tdClass}>{invoice.invoiceNumber}</td>
-                      <td className={tdClass}>
-                        {formatCurrency(invoice.totalCents)}
-                      </td>
-                      <td className={tdClass}>
-                        <Badge
-                          tone={invoice.status === "paid" ? "green" : "amber"}
-                        >
-                          {invoice.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+          <DataTable
+            columns={invoiceColumns}
+            data={invoices}
+            dense
+            empty="No invoices."
+            getRowId={(row) => row.id}
+          />
         </div>
 
         <div>
           <h2 className="mb-3 text-xl font-black">Attendance history</h2>
-          <TableWrap>
-            <table className={`${tableClass} min-w-0`}>
-              <thead>
-                <tr>
-                  <th className={thClass}>Date</th>
-                  <th className={thClass}>Session</th>
-                  <th className={thClass}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.length === 0 ? (
-                  <tr>
-                    <td className={tdClass} colSpan={3}>
-                      No sessions yet.
-                    </td>
-                  </tr>
-                ) : (
-                  history.map((row) => (
-                    <tr key={row.id}>
-                      <td className={tdClass}>{row.session?.date}</td>
-                      <td className={tdClass}>{row.session?.title}</td>
-                      <td className={tdClass}>
-                        <Badge
-                          tone={
-                            row.status === "attended"
-                              ? "green"
-                              : row.status === "no_show"
-                                ? "red"
-                                : "gray"
-                          }
-                        >
-                          {row.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+          <DataTable
+            columns={historyColumns}
+            data={history}
+            dense
+            empty="No sessions yet."
+            getRowId={(row) => row.id}
+          />
         </div>
       </section>
     </>

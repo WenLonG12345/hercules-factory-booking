@@ -7,9 +7,9 @@ import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { columnHelper, DataTable } from "@/components/ui/data-table";
 import { Field, Select } from "@/components/ui/form";
-import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
-import { api } from "@/lib/trpc";
+import { api, type RouterOutputs } from "@/lib/trpc";
 import {
   PACKAGE_TYPE_LABEL,
   packageStatus,
@@ -24,6 +24,12 @@ const STATUS_TONE = {
   cancelled: "gray",
   converted: "amber",
 } as const;
+
+type Attendee = NonNullable<
+  RouterOutputs["schedule"]["byId"]
+>["attendees"][number];
+
+const helper = columnHelper<Attendee>();
 
 export default function SessionDetailPage({
   params,
@@ -92,6 +98,104 @@ export default function SessionDetailPage({
   const roster = session.attendees;
   const onRoster = new Set(roster.map((attendee) => attendee.customerId));
 
+  const columns = helper.columns([
+    helper.display({
+      id: "customer",
+      header: "Customer",
+      cell: ({ row }) => (
+        <Link
+          className="font-semibold text-red-700"
+          href={`/admin/customers/${row.original.customerId}`}
+        >
+          {row.original.customer?.name}
+        </Link>
+      ),
+    }),
+    helper.display({
+      id: "package",
+      header: "Package",
+      cell: ({ row }) => {
+        const pkg = row.original.package;
+        if (!pkg) return "Trial";
+        const left = remaining(pkg);
+        const expired = packageStatus(pkg) === "expired";
+        return (
+          <span className={expired ? "font-semibold text-red-700" : ""}>
+            {PACKAGE_TYPE_LABEL[pkg.type]}
+            {left === null ? "" : ` \u00b7 ${left} left`}
+            {expired ? " \u00b7 EXPIRED" : ""}
+          </span>
+        );
+      },
+    }),
+    helper.display({
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge tone={STATUS_TONE[row.original.status]}>
+          {row.original.status}
+        </Badge>
+      ),
+    }),
+    helper.display({
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const attendee = row.original;
+        return (
+          <div className="flex flex-wrap gap-3">
+            {attendee.status === "attended" ? (
+              <button
+                className="text-sm font-semibold text-stone-600"
+                onClick={() =>
+                  setAttendance.mutate({
+                    attendeeId: attendee.id,
+                    status: "booked",
+                  })
+                }
+                type="button"
+              >
+                Undo attended
+              </button>
+            ) : (
+              <button
+                className="text-sm font-semibold text-emerald-700"
+                onClick={() =>
+                  setAttendance.mutate({
+                    attendeeId: attendee.id,
+                    status: "attended",
+                  })
+                }
+                type="button"
+              >
+                Attended
+              </button>
+            )}
+            <button
+              className="text-sm font-semibold text-stone-500"
+              onClick={() =>
+                setAttendance.mutate({
+                  attendeeId: attendee.id,
+                  status: "no_show",
+                })
+              }
+              type="button"
+            >
+              No show
+            </button>
+            <button
+              className="text-sm font-semibold text-red-700"
+              onClick={() => removeAttendee.mutate({ attendeeId: attendee.id })}
+              type="button"
+            >
+              Remove
+            </button>
+          </div>
+        );
+      },
+    }),
+  ]);
+
   return (
     <>
       <PageHeader
@@ -158,117 +262,12 @@ export default function SessionDetailPage({
         </Button>
       </div>
 
-      <TableWrap>
-        <table className={tableClass}>
-          <thead>
-            <tr>
-              <th className={thClass}>Customer</th>
-              <th className={thClass}>Package</th>
-              <th className={thClass}>Status</th>
-              <th className={thClass}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roster.length === 0 ? (
-              <tr>
-                <td className={tdClass} colSpan={4}>
-                  Nobody on this roster yet.
-                </td>
-              </tr>
-            ) : (
-              roster.map((attendee) => {
-                const pkg = attendee.package;
-                const left = pkg ? remaining(pkg) : null;
-                const expired = pkg ? packageStatus(pkg) === "expired" : false;
-                return (
-                  <tr key={attendee.id}>
-                    <td className={tdClass}>
-                      <Link
-                        className="font-semibold text-red-700"
-                        href={`/admin/customers/${attendee.customerId}`}
-                      >
-                        {attendee.customer?.name}
-                      </Link>
-                    </td>
-                    <td className={tdClass}>
-                      {pkg ? (
-                        <span
-                          className={
-                            expired ? "font-semibold text-red-700" : ""
-                          }
-                        >
-                          {PACKAGE_TYPE_LABEL[pkg.type]}
-                          {left === null ? "" : ` · ${left} left`}
-                          {expired ? " · EXPIRED" : ""}
-                        </span>
-                      ) : (
-                        "Trial"
-                      )}
-                    </td>
-                    <td className={tdClass}>
-                      <Badge tone={STATUS_TONE[attendee.status]}>
-                        {attendee.status}
-                      </Badge>
-                    </td>
-                    <td className={tdClass}>
-                      <div className="flex flex-wrap gap-3">
-                        {attendee.status === "attended" ? (
-                          <button
-                            className="text-sm font-semibold text-stone-600"
-                            onClick={() =>
-                              setAttendance.mutate({
-                                attendeeId: attendee.id,
-                                status: "booked",
-                              })
-                            }
-                            type="button"
-                          >
-                            Undo attended
-                          </button>
-                        ) : (
-                          <button
-                            className="text-sm font-semibold text-emerald-700"
-                            onClick={() =>
-                              setAttendance.mutate({
-                                attendeeId: attendee.id,
-                                status: "attended",
-                              })
-                            }
-                            type="button"
-                          >
-                            Attended
-                          </button>
-                        )}
-                        <button
-                          className="text-sm font-semibold text-stone-500"
-                          onClick={() =>
-                            setAttendance.mutate({
-                              attendeeId: attendee.id,
-                              status: "no_show",
-                            })
-                          }
-                          type="button"
-                        >
-                          No show
-                        </button>
-                        <button
-                          className="text-sm font-semibold text-red-700"
-                          onClick={() =>
-                            removeAttendee.mutate({ attendeeId: attendee.id })
-                          }
-                          type="button"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </TableWrap>
+      <DataTable
+        columns={columns}
+        data={roster}
+        empty="Nobody on this roster yet."
+        getRowId={(attendee) => attendee.id}
+      />
     </>
   );
 }

@@ -9,7 +9,8 @@
  *   customers.csv  name, phone, age, gender, emergency_contact, date_joined, source, notes
  *   packages.csv   phone, type, start_date, expiry_date, total_credits, used_credits, amount_paid, payment_method
  *   invoices.csv   invoice_number, phone, description, subtotal, discount, status, payment_method, issue_date, paid_date
- *   expenses.csv   date, category, amount, vendor, notes
+ *   ledger.csv     date, direction (income|expense), category, amount, vendor, notes
+ *                  (expenses.csv is still read, as expense rows)
  *
  * Dates are assumed DD/MM/YY or DD/MM/YYYY (the client's format); YYYY-MM-DD
  * also parses. Rows that cannot be parsed are written to import-errors.csv
@@ -23,9 +24,9 @@ import {
   CUSTOMER_SOURCES,
   customerPackages,
   customers,
-  EXPENSE_CATEGORIES,
-  expenses,
   invoices,
+  ledgerCategories,
+  ledgerEntries,
   PACKAGE_TYPES,
   PAYMENT_METHODS,
 } from "@/db/schema";
@@ -288,32 +289,62 @@ async function main() {
   }
   console.log(`invoices: ${invoicesCreated} imported`);
 
-  // 4. Expenses.
-  const expenseRows = readSheet("expenses");
-  let expensesCreated = 0;
-  for (const [index, row] of expenseRows.entries()) {
+  // 4. Daily ledger. Categories are data now, so unknown names are created.
+  const ledgerRows: Record<string, string>[] = [
+    ...readSheet("ledger"),
+    ...readSheet("expenses").map((row) => ({
+      ...row,
+      direction: "expense",
+    })),
+  ];
+  const existingCategories = await db.select().from(ledgerCategories);
+  let entriesCreated = 0;
+
+  for (const [index, row] of ledgerRows.entries()) {
     const date = toDate(row.date ?? "");
     const amountCents = toCents(row.amount ?? "");
-    const category =
-      matchEnum(row.category ?? "", EXPENSE_CATEGORIES) ?? "other";
+    const direction =
+      matchEnum(row.direction ?? "", ["income", "expense"] as const) ??
+      "expense";
+    const name = (row.category ?? "").trim() || "Other";
 
     if (!date || amountCents === null) {
-      fail("expenses", index, "unparseable date or amount", row);
+      fail("ledger", index, "unparseable date or amount", row);
       continue;
     }
 
-    if (!dryRun) {
-      await db.insert(expenses).values({
+    let category = existingCategories.find(
+      (existing) =>
+        existing.direction === direction &&
+        existing.name.toLowerCase() === name.toLowerCase(),
+    );
+
+    if (!category) {
+      if (dryRun) {
+        console.log(`- would create ${direction} category "${name}"`);
+      } else {
+        const [created] = await db
+          .insert(ledgerCategories)
+          .values({ name, direction, sortOrder: existingCategories.length })
+          .returning();
+        category = created;
+        existingCategories.push(created);
+      }
+    }
+
+    if (!dryRun && category) {
+      await db.insert(ledgerEntries).values({
         date,
-        category,
+        direction,
+        categoryId: category.id,
         amountCents,
         vendor: row.vendor || undefined,
         notes: row.notes || undefined,
       });
     }
-    expensesCreated++;
+    entriesCreated++;
   }
-  console.log(`expenses: ${expensesCreated} imported`);
+  console.log(`ledger entries: ${entriesCreated} imported`);
 
   if (errors.length > 1) {
     const path = join(dir, "import-errors.csv");

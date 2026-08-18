@@ -1,11 +1,15 @@
 import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
+import type { Db } from "@/db";
 import {
   coaches,
   customerPackages,
   customers,
-  expenses,
+  galleryImages,
   invoices,
+  LEDGER_SYSTEM_CATEGORIES,
+  ledgerCategories,
+  ledgerEntries,
   sessionAttendees,
   sessions,
 } from "@/db/schema";
@@ -15,6 +19,57 @@ import { monthSchema } from "@/server/validators/common";
 
 function monthBounds(month: string) {
   return { from: `${month}-01`, to: `${month}-31` };
+}
+
+/** Every money figure in reports comes from the ledger — one table, one truth. */
+function categoryTotals(
+  db: Db,
+  direction: "income" | "expense",
+  from: string,
+  to: string,
+) {
+  return db
+    .select({
+      categoryId: ledgerCategories.id,
+      category: ledgerCategories.name,
+      totalCents: sql<number>`coalesce(sum(${ledgerEntries.amountCents}), 0)`,
+    })
+    .from(ledgerEntries)
+    .innerJoin(
+      ledgerCategories,
+      eq(ledgerCategories.id, ledgerEntries.categoryId),
+    )
+    .where(
+      and(
+        eq(ledgerEntries.direction, direction),
+        gte(ledgerEntries.date, from),
+        lte(ledgerEntries.date, to),
+      ),
+    )
+    .groupBy(ledgerCategories.id, ledgerCategories.name)
+    .orderBy(desc(sql`sum(${ledgerEntries.amountCents})`));
+}
+
+function monthlyTotals(
+  db: Db,
+  direction: "income" | "expense",
+  from: string,
+  to: string,
+) {
+  return db
+    .select({
+      month: sql<string>`substr(${ledgerEntries.date}, 1, 7)`,
+      totalCents: sql<number>`coalesce(sum(${ledgerEntries.amountCents}), 0)`,
+    })
+    .from(ledgerEntries)
+    .where(
+      and(
+        eq(ledgerEntries.direction, direction),
+        gte(ledgerEntries.date, from),
+        lte(ledgerEntries.date, to),
+      ),
+    )
+    .groupBy(sql`substr(${ledgerEntries.date}, 1, 7)`);
 }
 
 export const reportRouter = createTRPCRouter({
@@ -31,7 +86,13 @@ export const reportRouter = createTRPCRouter({
         todayPt: number;
         todayTrials: number;
         newCustomers: number;
+        monthNewCustomers: number;
+        totalCustomers: number;
+        activePackages: number;
+        activeCoaches: number;
+        pendingSubmissions: number;
         todayIncomeCents: number;
+        todayExpenseCents: number;
         monthIncomeCents: number;
         monthExpenseCents: number;
       }>(sql`
@@ -50,14 +111,30 @@ export const reportRouter = createTRPCRouter({
               and ${sessions.isCancelled} = 0) as "todayTrials",
           (select count(*) from ${customers}
             where ${customers.dateJoined} = ${today}) as "newCustomers",
-          (select coalesce(sum(${invoices.totalCents}), 0) from ${invoices}
-            where ${invoices.status} = 'paid'
-              and ${invoices.paidDate} = ${today}) as "todayIncomeCents",
-          (select coalesce(sum(${invoices.totalCents}), 0) from ${invoices}
-            where ${invoices.status} = 'paid'
-              and ${invoices.paidDate} between ${from} and ${to}) as "monthIncomeCents",
-          (select coalesce(sum(${expenses.amountCents}), 0) from ${expenses}
-            where ${expenses.date} between ${from} and ${to}) as "monthExpenseCents"
+          (select count(*) from ${customers}
+            where ${customers.dateJoined} between ${from} and ${to}) as "monthNewCustomers",
+          (select count(*) from ${customers}) as "totalCustomers",
+          (select count(*) from ${customerPackages}
+            where ${customerPackages.expiryDate} >= ${today}
+              and (${customerPackages.totalCredits} is null
+                or ${customerPackages.usedCredits} < ${customerPackages.totalCredits})) as "activePackages",
+          (select count(*) from ${coaches}
+            where ${coaches.isActive} = 1) as "activeCoaches",
+          (select count(*) from ${galleryImages}
+            where ${galleryImages.submittedBy} is not null
+              and ${galleryImages.isActive} = 0) as "pendingSubmissions",
+          (select coalesce(sum(${ledgerEntries.amountCents}), 0) from ${ledgerEntries}
+            where ${ledgerEntries.direction} = 'income'
+              and ${ledgerEntries.date} = ${today}) as "todayIncomeCents",
+          (select coalesce(sum(${ledgerEntries.amountCents}), 0) from ${ledgerEntries}
+            where ${ledgerEntries.direction} = 'expense'
+              and ${ledgerEntries.date} = ${today}) as "todayExpenseCents",
+          (select coalesce(sum(${ledgerEntries.amountCents}), 0) from ${ledgerEntries}
+            where ${ledgerEntries.direction} = 'income'
+              and ${ledgerEntries.date} between ${from} and ${to}) as "monthIncomeCents",
+          (select coalesce(sum(${ledgerEntries.amountCents}), 0) from ${ledgerEntries}
+            where ${ledgerEntries.direction} = 'expense'
+              and ${ledgerEntries.date} between ${from} and ${to}) as "monthExpenseCents"
       `),
       ctx.db.query.customerPackages.findMany({
         where: and(
@@ -88,7 +165,13 @@ export const reportRouter = createTRPCRouter({
       todayPt: counters?.todayPt ?? 0,
       todayTrials: counters?.todayTrials ?? 0,
       newCustomers: counters?.newCustomers ?? 0,
+      monthNewCustomers: counters?.monthNewCustomers ?? 0,
+      totalCustomers: counters?.totalCustomers ?? 0,
+      activePackages: counters?.activePackages ?? 0,
+      activeCoaches: counters?.activeCoaches ?? 0,
+      pendingSubmissions: counters?.pendingSubmissions ?? 0,
       todayIncomeCents: counters?.todayIncomeCents ?? 0,
+      todayExpenseCents: counters?.todayExpenseCents ?? 0,
       monthIncomeCents,
       monthExpenseCents,
       monthNetCents: monthIncomeCents - monthExpenseCents,
@@ -111,39 +194,15 @@ export const reportRouter = createTRPCRouter({
       const { from, to } = monthBounds(input.month);
 
       const [
-        incomeByType,
+        incomeByCategory,
         expenseByCategory,
         newCustomers,
         trials,
         perCoach,
         paidInvoices,
       ] = await Promise.all([
-        ctx.db
-          .select({
-            type: sql<string>`coalesce(${customerPackages.type}, 'other')`,
-            totalCents: sql<number>`coalesce(sum(${invoices.totalCents}), 0)`,
-          })
-          .from(invoices)
-          .leftJoin(
-            customerPackages,
-            eq(customerPackages.id, invoices.packageId),
-          )
-          .where(
-            and(
-              eq(invoices.status, "paid"),
-              gte(invoices.paidDate, from),
-              lte(invoices.paidDate, to),
-            ),
-          )
-          .groupBy(customerPackages.type),
-        ctx.db
-          .select({
-            category: expenses.category,
-            totalCents: sql<number>`coalesce(sum(${expenses.amountCents}), 0)`,
-          })
-          .from(expenses)
-          .where(and(gte(expenses.date, from), lte(expenses.date, to)))
-          .groupBy(expenses.category),
+        categoryTotals(ctx.db, "income", from, to),
+        categoryTotals(ctx.db, "expense", from, to),
         ctx.db
           .select({ value: sql<number>`count(*)` })
           .from(customers)
@@ -202,20 +261,24 @@ export const reportRouter = createTRPCRouter({
 
       const salaries = await ctx.db
         .select({
-          coachId: expenses.coachId,
-          totalCents: sql<number>`coalesce(sum(${expenses.amountCents}), 0)`,
+          coachId: ledgerEntries.coachId,
+          totalCents: sql<number>`coalesce(sum(${ledgerEntries.amountCents}), 0)`,
         })
-        .from(expenses)
+        .from(ledgerEntries)
+        .innerJoin(
+          ledgerCategories,
+          eq(ledgerCategories.id, ledgerEntries.categoryId),
+        )
         .where(
           and(
-            eq(expenses.category, "coach_salary"),
-            gte(expenses.date, from),
-            lte(expenses.date, to),
+            eq(ledgerCategories.slug, LEDGER_SYSTEM_CATEGORIES.coachSalary),
+            gte(ledgerEntries.date, from),
+            lte(ledgerEntries.date, to),
           ),
         )
-        .groupBy(expenses.coachId);
+        .groupBy(ledgerEntries.coachId);
 
-      const totalIncomeCents = incomeByType.reduce(
+      const totalIncomeCents = incomeByCategory.reduce(
         (sum, row) => sum + Number(row.totalCents),
         0,
       );
@@ -236,7 +299,7 @@ export const reportRouter = createTRPCRouter({
         totalIncomeCents,
         totalExpenseCents,
         netCents: totalIncomeCents - totalExpenseCents,
-        incomeByType,
+        incomeByCategory,
         expenseByCategory,
         newCustomers: Number(newCustomers[0]?.value ?? 0),
         trialsTotal,
@@ -258,28 +321,8 @@ export const reportRouter = createTRPCRouter({
       const to = `${input.year}-12-31`;
 
       const [income, expense] = await Promise.all([
-        ctx.db
-          .select({
-            month: sql<string>`substr(${invoices.paidDate}, 1, 7)`,
-            totalCents: sql<number>`coalesce(sum(${invoices.totalCents}), 0)`,
-          })
-          .from(invoices)
-          .where(
-            and(
-              eq(invoices.status, "paid"),
-              gte(invoices.paidDate, from),
-              lte(invoices.paidDate, to),
-            ),
-          )
-          .groupBy(sql`substr(${invoices.paidDate}, 1, 7)`),
-        ctx.db
-          .select({
-            month: sql<string>`substr(${expenses.date}, 1, 7)`,
-            totalCents: sql<number>`coalesce(sum(${expenses.amountCents}), 0)`,
-          })
-          .from(expenses)
-          .where(and(gte(expenses.date, from), lte(expenses.date, to)))
-          .groupBy(sql`substr(${expenses.date}, 1, 7)`),
+        monthlyTotals(ctx.db, "income", from, to),
+        monthlyTotals(ctx.db, "expense", from, to),
       ]);
 
       const months = Array.from({ length: 12 }, (_, i) => {

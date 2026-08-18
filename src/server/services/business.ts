@@ -3,6 +3,9 @@ import type { Db } from "@/db";
 import {
   customerPackages,
   invoices,
+  LEDGER_SYSTEM_CATEGORIES,
+  ledgerCategories,
+  ledgerEntries,
   sessionAttendees,
   sessions,
 } from "@/db/schema";
@@ -240,4 +243,78 @@ export async function nextInvoiceNumber(db: Db) {
 
   const lastSeq = row?.last ? Number(row.last.slice(prefix.length)) : 0;
   return `${prefix}${String(lastSeq + 1).padStart(4, "0")}`;
+}
+
+/**
+ * The ledger is the single source of truth for money. A paid invoice books one
+ * income row; un-paying or cancelling removes it again. The unique index on
+ * `ledger_entries.invoice_id` is what makes a double-click harmless — the
+ * insert upserts instead of minting a second income row.
+ */
+export async function bookInvoiceIncome(
+  db: Db,
+  invoice: {
+    id: string;
+    customerId: string;
+    totalCents: number;
+    paidDate: string | null;
+    invoiceNumber: string;
+    description: string | null;
+  },
+) {
+  const categoryId = await systemCategoryId(
+    db,
+    LEDGER_SYSTEM_CATEGORIES.packageSale,
+    "income",
+    "Package Sale",
+  );
+
+  const values = {
+    date: invoice.paidDate ?? toDateInputValue(new Date()),
+    direction: "income" as const,
+    categoryId,
+    amountCents: invoice.totalCents,
+    customerId: invoice.customerId,
+    invoiceId: invoice.id,
+    notes: invoice.description ?? invoice.invoiceNumber,
+  };
+
+  await db
+    .insert(ledgerEntries)
+    .values(values)
+    .onConflictDoUpdate({
+      target: ledgerEntries.invoiceId,
+      set: {
+        date: values.date,
+        amountCents: values.amountCents,
+        categoryId: values.categoryId,
+        updatedAt: new Date(),
+      },
+    });
+}
+
+export async function unbookInvoiceIncome(db: Db, invoiceId: string) {
+  await db.delete(ledgerEntries).where(eq(ledgerEntries.invoiceId, invoiceId));
+}
+
+/**
+ * Slugged categories are renameable but never deletable, so a lookup normally
+ * hits. The insert is the fresh-database path (before the seed has run).
+ */
+export async function systemCategoryId(
+  db: Db,
+  slug: string,
+  direction: "income" | "expense",
+  fallbackName: string,
+) {
+  const existing = await db.query.ledgerCategories.findFirst({
+    where: eq(ledgerCategories.slug, slug),
+  });
+  if (existing) return existing.id;
+
+  const [created] = await db
+    .insert(ledgerCategories)
+    .values({ name: fallbackName, direction, slug })
+    .returning();
+  return created.id;
 }

@@ -11,15 +11,19 @@ import { createClient } from "@libsql/client";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "@/db/schema";
+import { ledgerRouter } from "@/server/routers/ledger";
 import {
   assertSessionHasCapacity,
   BusinessRuleError,
+  bookInvoiceIncome,
   nextInvoiceNumber,
   packageStatus,
   recurringDates,
   remainingCredits,
   setAttendance,
+  unbookInvoiceIncome,
 } from "@/server/services/business";
+import { createTRPCRouter } from "@/server/trpc";
 
 const FILE = "./.business-test.db";
 
@@ -192,6 +196,91 @@ async function main() {
     await nextInvoiceNumber(anyDb),
     `HF-${year}-0002`,
     "invoice numbers are sequential within the year",
+  );
+
+  // --- the daily ledger -------------------------------------------------------
+  const ledger = createTRPCRouter({ ledger: ledgerRouter }).createCaller({
+    db: anyDb,
+    session: { user: { role: "admin" } },
+  } as never);
+
+  const [paidInvoice] = await db
+    .insert(schema.invoices)
+    .values({
+      invoiceNumber: `HF-${year}-0002`,
+      customerId: customer.id,
+      subtotalCents: 15000,
+      discountCents: 0,
+      totalCents: 15000,
+      status: "paid",
+      paymentMethod: "cash",
+      issueDate: today,
+      paidDate: today,
+    })
+    .returning();
+
+  const invoiceRows = () =>
+    db
+      .select()
+      .from(schema.ledgerEntries)
+      .where(eq(schema.ledgerEntries.invoiceId, paidInvoice.id));
+
+  await bookInvoiceIncome(anyDb, paidInvoice);
+  await bookInvoiceIncome(anyDb, paidInvoice);
+  assert.equal(
+    (await invoiceRows()).length,
+    1,
+    "marking an invoice paid twice books the income once",
+  );
+
+  const [entry] = await invoiceRows();
+  await assert.rejects(
+    () => ledger.ledger.delete({ id: entry.id }),
+    /Invoices page/,
+    "invoice-booked rows cannot be edited from the ledger",
+  );
+
+  await unbookInvoiceIncome(anyDb, paidInvoice.id);
+  assert.equal(
+    (await invoiceRows()).length,
+    0,
+    "un-paying an invoice removes its income row",
+  );
+
+  const categories = await ledger.ledger.categories.list();
+  const rent = categories.find((row) => row.name === "Rent");
+  assert.ok(rent, "the migration seeds the starter categories");
+
+  await assert.rejects(
+    () =>
+      ledger.ledger.create({
+        date: today,
+        direction: "income",
+        categoryId: rent.id,
+        amountCents: 100,
+      }),
+    /is an expense category/,
+    "an expense category cannot hold income",
+  );
+
+  await ledger.ledger.create({
+    date: today,
+    direction: "expense",
+    categoryId: rent.id,
+    amountCents: 45000,
+  });
+  await assert.rejects(
+    () => ledger.ledger.categories.delete({ id: rent.id }),
+    /Archive it instead/,
+    "a category in use is archived, never deleted",
+  );
+
+  const salary = categories.find((row) => row.slug === "coach_salary");
+  assert.ok(salary);
+  await assert.rejects(
+    () => ledger.ledger.categories.delete({ id: salary.id }),
+    /Rename it instead/,
+    "categories the app looks up by slug cannot be deleted",
   );
 
   rmSync(FILE, { force: true });

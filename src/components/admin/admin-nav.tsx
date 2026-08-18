@@ -23,7 +23,7 @@ const nav = [
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/packages", label: "Packages", icon: Tags },
   { href: "/admin/invoices", label: "Invoices", icon: FileText },
-  { href: "/admin/expenses", label: "Expenses", icon: Wallet },
+  { href: "/admin/daily-income", label: "Daily Income", icon: Wallet },
   { href: "/admin/coaches", label: "Coaches", icon: Dumbbell },
   { href: "/admin/reports", label: "Reports", icon: TrendingUp },
   { href: "/admin/cms", label: "CMS", icon: WalletCards },

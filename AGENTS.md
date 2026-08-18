@@ -22,6 +22,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Images go to **Cloudflare R2** via `src/lib/r2.ts`.
 - Preserve the business rules in `src/server/services/business.ts`: session
   capacity, package expiry, credit deduction on attended check-in only, and
-  "a paid invoice is the income entry" (there is no income table).
+  "a paid invoice books one income row in the ledger" (`ledger_entries` is the
+  single source of truth for money; its unique `invoice_id` keeps that
+  booking idempotent).
 - Money is integer cents everywhere. No floats in the money path.
 - Self-checks: `bun run test:business` and `bun run test:import`.

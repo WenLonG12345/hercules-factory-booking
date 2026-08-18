@@ -14,7 +14,7 @@ arrive on WhatsApp.
 The flow the whole app is shaped around:
 
 ```
-Customer → Package → Trial Conversion → Invoice → Income/Expense → Reports
+Customer → Package → Trial Conversion → Invoice → Daily Income ledger → Reports
               ▲                            ▲
               └── Schedule: sessions + attendance rosters
                   (credits burn here, coach salary lands here)
@@ -90,6 +90,36 @@ wraps every page with `AdminShell`.
 When `TURSO_CONNECTION_URL` is not set, the landing page falls back to
 `src/lib/demo-data.ts` so the public site renders without a database.
 
+### UI Components
+
+**Reach for a shadcn/ui component first.** Before hand-rolling any primitive —
+switch, tabs, popover, tooltip, dropdown, checkbox, radio — pull it in:
+
+```bash
+npx shadcn@latest add switch
+```
+
+`components.json` is configured for this repo (new-york, stone base, utility
+classes not CSS variables, `@/components/ui`, lucide icons), so the CLI drops
+files straight into `src/components/ui/`. Repaint the generated classes into the
+admin palette (stone surfaces, `red-700` accents, `focus-visible:ring-4
+ring-red-600/20`) the way `switch.tsx` and `dialog.tsx` do — the API and
+structure stay shadcn's, only the colours are ours.
+
+Hand-roll only when no shadcn primitive covers the need (`Card`, `PageHeader`,
+`TableWrap` are ours because shadcn has no equivalent shape).
+
+**Tables go through `DataTable`.** `src/components/ui/data-table.tsx` wraps
+TanStack Table v9 (`useTable` + `tableFeatures`, sorting is the only feature
+registered) around the shadcn table primitives in `src/components/ui/table.tsx`.
+No page writes `<table>`/`<thead>`/`<tr>` by hand. Build columns with the
+pre-bound `columnHelper<Row>()` — `helper.accessor` for plain values (these are
+the ones that can sort), `helper.display` for JSX/action cells. Props cover what
+the hand-rolled tables used to do: `empty`, `sortable`, `dense` (drops the 760px
+floor for tables sitting in a grid column), `rowClassName`, `renderSubRow` (the
+full-width inline edit row on Packages) and `footer` (raw `<TableRow>` totals,
+which carry their own `colSpan`). Pass `getRowId` so keys survive a re-sort.
+
 ### Adding New Admin Pages
 
 All pages in `src/app/admin/(portal)/` are client components (`"use client"`):
@@ -129,9 +159,19 @@ All enforced in `src/server/services/business.ts`, covered by `bun test:business
   double-click can neither double-burn nor mint credits
 - **Expiry blocks check-in** for all three package types
 - **Remaining credits are derived** (`totalCredits - usedCredits`), never stored
-- **A paid invoice is the income entry** — there is no income table. Setting
-  `status = "paid"` requires a payment method and stamps `paidDate`
-- Reports are computed on read from `invoices` and `expenses`; nothing is stored
+- **The ledger is the only place money is counted.** `ledger_entries` holds both
+  directions — income and expense — as one flat daily book, and every report
+  figure comes from it
+- **A paid invoice books its income row.** Setting `status = "paid"` requires a
+  payment method, stamps `paidDate`, and inserts the matching ledger row;
+  moving the invoice back to pending or cancelled removes it. The unique index
+  on `ledger_entries.invoice_id` makes a double-click harmless. Rows carrying an
+  `invoiceId` are read-only in the ledger UI
+- **Categories are data, not an enum.** `ledger_categories` is admin-editable
+  (add / rename / archive). A category in use can only be archived, and the two
+  slugged rows — `package_sale`, `coach_salary` — are load-bearing: renameable,
+  never deletable. Per-coach salary reporting finds them by slug
+- Reports are computed on read from `ledger_entries`; nothing is stored
 - Money is integer **cents** everywhere
 - WhatsApp links are generated via `whatsappLink` in `src/lib/utils.ts` (Malaysian format)
 

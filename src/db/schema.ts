@@ -33,15 +33,35 @@ export const CUSTOMER_SOURCES = [
   "other",
 ] as const;
 export const GENDERS = ["male", "female", "other"] as const;
-export const EXPENSE_CATEGORIES = [
-  "rent",
-  "utilities",
-  "coach_salary",
-  "marketing",
-  "equipment",
-  "cleaning",
-  "maintenance",
-  "other",
+export const LEDGER_DIRECTIONS = ["income", "expense"] as const;
+
+/**
+ * Categories are rows the admin can add/rename/archive. A handful carry a
+ * `slug` because business logic needs to find them: `package_sale` is where a
+ * paid invoice books its income, `coach_salary` is what per-coach reporting
+ * sums. Slugged rows can be renamed but never deleted.
+ */
+export const LEDGER_SYSTEM_CATEGORIES = {
+  packageSale: "package_sale",
+  coachSalary: "coach_salary",
+} as const;
+
+/** Seeded once on a fresh database; the admin owns the list after that. */
+export const DEFAULT_LEDGER_CATEGORIES = [
+  { name: "Package Sale", direction: "income", slug: "package_sale" },
+  { name: "Per Entry", direction: "income", slug: null },
+  { name: "Merchandise", direction: "income", slug: null },
+  { name: "Drinks", direction: "income", slug: null },
+  { name: "Promo", direction: "income", slug: null },
+  { name: "Other Income", direction: "income", slug: null },
+  { name: "Rent", direction: "expense", slug: null },
+  { name: "Utilities", direction: "expense", slug: null },
+  { name: "Coach Salary", direction: "expense", slug: "coach_salary" },
+  { name: "Marketing", direction: "expense", slug: null },
+  { name: "Equipment", direction: "expense", slug: null },
+  { name: "Cleaning", direction: "expense", slug: null },
+  { name: "Maintenance", direction: "expense", slug: null },
+  { name: "Other Expense", direction: "expense", slug: null },
 ] as const;
 
 const id = () =>
@@ -308,24 +328,60 @@ export const invoices = sqliteTable(
   ],
 );
 
-export const expenses = sqliteTable(
-  "expenses",
+export const ledgerCategories = sqliteTable(
+  "ledger_categories",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    direction: text("direction", { enum: LEDGER_DIRECTIONS }).notNull(),
+    /** Set only on categories business logic looks up by hand. */
+    slug: text("slug").unique(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    isArchived: integer("is_archived", { mode: "boolean" })
+      .default(false)
+      .notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("ledger_categories_name_idx").on(table.direction, table.name),
+    index("ledger_categories_direction_idx").on(table.direction),
+  ],
+);
+
+/**
+ * One flat daily book: money in and money out share a table so the admin sees
+ * the same ledger their spreadsheet had. Rows carrying an `invoiceId` were
+ * booked by marking an invoice paid — they are read-only here.
+ */
+export const ledgerEntries = sqliteTable(
+  "ledger_entries",
   {
     id: id(),
     date: text("date").notNull(),
-    category: text("category", { enum: EXPENSE_CATEGORIES }).notNull(),
+    direction: text("direction", { enum: LEDGER_DIRECTIONS }).notNull(),
+    categoryId: text("category_id")
+      .references(() => ledgerCategories.id, { onDelete: "restrict" })
+      .notNull(),
     amountCents: integer("amount_cents").notNull(),
+    customerId: text("customer_id").references(() => customers.id, {
+      onDelete: "set null",
+    }),
     coachId: text("coach_id").references(() => coaches.id, {
       onDelete: "set null",
     }),
+    /** Unique so a double-click on "mark paid" cannot book the income twice. */
+    invoiceId: text("invoice_id")
+      .references(() => invoices.id, { onDelete: "cascade" })
+      .unique(),
     vendor: text("vendor"),
     notes: text("notes"),
     receiptUrl: text("receipt_url"),
     ...timestamps,
   },
   (table) => [
-    index("expenses_date_idx").on(table.date),
-    index("expenses_category_idx").on(table.category),
+    index("ledger_entries_date_idx").on(table.date),
+    index("ledger_entries_direction_idx").on(table.direction),
+    index("ledger_entries_category_idx").on(table.categoryId),
   ],
 );
 
@@ -473,11 +529,12 @@ export const customersRelations = relations(customers, ({ many }) => ({
   packages: many(customerPackages),
   attendees: many(sessionAttendees),
   invoices: many(invoices),
+  ledgerEntries: many(ledgerEntries),
 }));
 
 export const coachesRelations = relations(coaches, ({ many }) => ({
   sessions: many(sessions),
-  expenses: many(expenses),
+  ledgerEntries: many(ledgerEntries),
 }));
 
 export const customerPackagesRelations = relations(
@@ -527,6 +584,10 @@ export const sessionAttendeesRelations = relations(
 );
 
 export const invoicesRelations = relations(invoices, ({ one }) => ({
+  ledgerEntry: one(ledgerEntries, {
+    fields: [invoices.id],
+    references: [ledgerEntries.invoiceId],
+  }),
   customer: one(customers, {
     fields: [invoices.customerId],
     references: [customers.id],
@@ -537,10 +598,29 @@ export const invoicesRelations = relations(invoices, ({ one }) => ({
   }),
 }));
 
-export const expensesRelations = relations(expenses, ({ one }) => ({
+export const ledgerCategoriesRelations = relations(
+  ledgerCategories,
+  ({ many }) => ({
+    entries: many(ledgerEntries),
+  }),
+);
+
+export const ledgerEntriesRelations = relations(ledgerEntries, ({ one }) => ({
+  category: one(ledgerCategories, {
+    fields: [ledgerEntries.categoryId],
+    references: [ledgerCategories.id],
+  }),
   coach: one(coaches, {
-    fields: [expenses.coachId],
+    fields: [ledgerEntries.coachId],
     references: [coaches.id],
+  }),
+  customer: one(customers, {
+    fields: [ledgerEntries.customerId],
+    references: [customers.id],
+  }),
+  invoice: one(invoices, {
+    fields: [ledgerEntries.invoiceId],
+    references: [invoices.id],
   }),
 }));
 
@@ -551,9 +631,10 @@ export type PackagePlan = typeof packagePlans.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type SessionAttendee = typeof sessionAttendees.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
-export type Expense = typeof expenses.$inferSelect;
+export type LedgerCategory = typeof ledgerCategories.$inferSelect;
+export type LedgerEntry = typeof ledgerEntries.$inferSelect;
 export type PackageType = (typeof PACKAGE_TYPES)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
-export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+export type LedgerDirection = (typeof LEDGER_DIRECTIONS)[number];
 export type SessionType = (typeof SESSION_TYPES)[number];
 export type AttendeeStatus = (typeof ATTENDEE_STATUSES)[number];

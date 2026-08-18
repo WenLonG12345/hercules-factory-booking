@@ -2,9 +2,9 @@ import { z } from "zod";
 import {
   ATTENDEE_STATUSES,
   CUSTOMER_SOURCES,
-  EXPENSE_CATEGORIES,
   GENDERS,
   INVOICE_STATUSES,
+  LEDGER_DIRECTIONS,
   PACKAGE_TYPES,
   PAYMENT_METHODS,
   SESSION_TYPES,
@@ -24,7 +24,7 @@ export const sessionTypeSchema = z.enum(SESSION_TYPES);
 export const attendeeStatusSchema = z.enum(ATTENDEE_STATUSES);
 export const customerSourceSchema = z.enum(CUSTOMER_SOURCES);
 export const genderSchema = z.enum(GENDERS);
-export const expenseCategorySchema = z.enum(EXPENSE_CATEGORIES);
+export const ledgerDirectionSchema = z.enum(LEDGER_DIRECTIONS);
 
 /** A month, as YYYY-MM. */
 export const monthSchema = z

@@ -1,6 +1,10 @@
 import { desc, eq } from "drizzle-orm";
 import { invoices } from "@/db/schema";
-import { nextInvoiceNumber } from "@/server/services/business";
+import {
+  bookInvoiceIncome,
+  nextInvoiceNumber,
+  unbookInvoiceIncome,
+} from "@/server/services/business";
 import { adminProcedure, createTRPCRouter } from "@/server/trpc";
 import { idSchema } from "@/server/validators/common";
 import {
@@ -26,11 +30,15 @@ export const invoiceRouter = createTRPCRouter({
       })
       .returning(),
   ),
-  /** Marking an invoice paid is what books the income — there is no income table. */
+  /**
+   * Marking an invoice paid books the income row in the ledger; moving it back
+   * to pending or cancelled removes that row again. The ledger is the only
+   * place income is counted from.
+   */
   updateStatus: adminProcedure
     .input(updateInvoiceStatusInput)
-    .mutation(({ ctx, input }) =>
-      ctx.db
+    .mutation(async ({ ctx, input }) => {
+      const [invoice] = await ctx.db
         .update(invoices)
         .set({
           status: input.status,
@@ -42,8 +50,15 @@ export const invoiceRouter = createTRPCRouter({
           updatedAt: new Date(),
         })
         .where(eq(invoices.id, input.id))
-        .returning(),
-    ),
+        .returning();
+
+      if (invoice) {
+        if (invoice.status === "paid") await bookInvoiceIncome(ctx.db, invoice);
+        else await unbookInvoiceIncome(ctx.db, invoice.id);
+      }
+
+      return invoice ? [invoice] : [];
+    }),
   delete: adminProcedure
     .input(idSchema)
     .mutation(({ ctx, input }) =>

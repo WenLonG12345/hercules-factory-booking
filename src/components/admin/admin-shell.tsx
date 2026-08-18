@@ -49,7 +49,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </Link>
             <div className="hidden text-sm text-stone-500 lg:block">
               Hercules Factory Management System — customers, packages,
-              invoices, expenses, reports.
+              invoices, daily income, reports.
             </div>
             <div className="flex items-center gap-2">
               <details className="relative lg:hidden">

@@ -13,11 +13,13 @@ import {
   coaches,
   customerPackages,
   customers,
-  expenses,
+  DEFAULT_LEDGER_CATEGORIES,
   faqItems,
   galleryImages,
   invoices,
   landingPageContent,
+  ledgerCategories,
+  ledgerEntries,
   pricingPlans,
   sessionAttendees,
   sessions,
@@ -236,60 +238,135 @@ async function main() {
     .returning();
 
   const year = new Date().getFullYear();
-  await db.insert(invoices).values([
-    {
-      invoiceNumber: `HF-${year}-0001`,
-      customerId: insertedCustomers[0].id,
-      packageId: unlimited.id,
-      description: "Unlimited package",
-      subtotalCents: 35000,
-      discountCents: 0,
-      totalCents: 35000,
-      status: "paid",
-      paymentMethod: "bank_transfer",
-      issueDate: shift(-40),
-      paidDate: shift(-40),
-    },
-    {
-      invoiceNumber: `HF-${year}-0002`,
-      customerId: insertedCustomers[1].id,
-      packageId: credit.id,
-      description: "10 credit package",
-      subtotalCents: 32000,
-      discountCents: 2000,
-      totalCents: 30000,
-      status: "paid",
-      paymentMethod: "cash",
-      issueDate: shift(-12),
-      paidDate: shift(-12),
-    },
-    {
-      invoiceNumber: `HF-${year}-0003`,
-      customerId: insertedCustomers[2].id,
-      description: "Trial follow-up package",
-      subtotalCents: 30000,
-      discountCents: 0,
-      totalCents: 30000,
-      status: "pending",
-      issueDate: shift(-1),
-    },
-  ]);
+  const insertedInvoices = await db
+    .insert(invoices)
+    .values([
+      {
+        invoiceNumber: `HF-${year}-0001`,
+        customerId: insertedCustomers[0].id,
+        packageId: unlimited.id,
+        description: "Unlimited package",
+        subtotalCents: 35000,
+        discountCents: 0,
+        totalCents: 35000,
+        status: "paid",
+        paymentMethod: "bank_transfer",
+        issueDate: shift(-40),
+        paidDate: shift(-40),
+      },
+      {
+        invoiceNumber: `HF-${year}-0002`,
+        customerId: insertedCustomers[1].id,
+        packageId: credit.id,
+        description: "10 credit package",
+        subtotalCents: 32000,
+        discountCents: 2000,
+        totalCents: 30000,
+        status: "paid",
+        paymentMethod: "cash",
+        issueDate: shift(-12),
+        paidDate: shift(-12),
+      },
+      {
+        invoiceNumber: `HF-${year}-0003`,
+        customerId: insertedCustomers[2].id,
+        description: "Trial follow-up package",
+        subtotalCents: 30000,
+        discountCents: 0,
+        totalCents: 30000,
+        status: "pending",
+        issueDate: shift(-1),
+      },
+    ])
+    .returning();
 
-  await db.insert(expenses).values([
+  // The migration already planted the defaults; this only fills gaps.
+  await db
+    .insert(ledgerCategories)
+    .values(
+      DEFAULT_LEDGER_CATEGORIES.map((category, index) => ({
+        name: category.name,
+        direction: category.direction,
+        slug: category.slug,
+        sortOrder: index,
+      })),
+    )
+    .onConflictDoNothing();
+
+  const categories = await db.select().from(ledgerCategories);
+
+  const categoryId = (name: string) => {
+    const match = categories.find((category) => category.name === name);
+    if (!match) throw new Error(`Seed is missing the "${name}" category.`);
+    return match.id;
+  };
+
+  // Paid invoices book their own income row, exactly like the app does.
+  await db.insert(ledgerEntries).values(
+    insertedInvoices
+      .filter((invoice) => invoice.status === "paid")
+      .map((invoice) => ({
+        date: invoice.paidDate ?? invoice.issueDate,
+        direction: "income" as const,
+        categoryId: categoryId("Package Sale"),
+        amountCents: invoice.totalCents,
+        customerId: invoice.customerId,
+        invoiceId: invoice.id,
+        notes: invoice.description ?? invoice.invoiceNumber,
+      })),
+  );
+
+  await db.insert(ledgerEntries).values([
     {
       date: shift(-20),
-      category: "rent",
+      direction: "expense",
+      categoryId: categoryId("Rent"),
       amountCents: 450000,
       vendor: "Landlord",
+      notes: "Monthly rent",
     },
-    { date: shift(-18), category: "utilities", amountCents: 42000 },
+    {
+      date: shift(-18),
+      direction: "expense",
+      categoryId: categoryId("Utilities"),
+      amountCents: 42000,
+      vendor: "TNB",
+      notes: "Electricity",
+    },
     {
       date: shift(-15),
-      category: "coach_salary",
+      direction: "expense",
+      categoryId: categoryId("Coach Salary"),
       amountCents: 280000,
       coachId: coach.id,
     },
-    { date: shift(-9), category: "marketing", amountCents: 60000 },
+    {
+      date: shift(-9),
+      direction: "expense",
+      categoryId: categoryId("Marketing"),
+      amountCents: 60000,
+    },
+    {
+      date: shift(-6),
+      direction: "income",
+      categoryId: categoryId("Per Entry"),
+      amountCents: 4000,
+      notes: "Walk-in drop-in",
+    },
+    {
+      date: shift(-6),
+      direction: "income",
+      categoryId: categoryId("Drinks"),
+      amountCents: 200,
+      notes: "Mineral water x2",
+    },
+    {
+      date: shift(-3),
+      direction: "income",
+      categoryId: categoryId("Merchandise"),
+      amountCents: 6000,
+      notes: "T-shirt",
+    },
   ]);
 
   const [groupClass, trialSession] = await db

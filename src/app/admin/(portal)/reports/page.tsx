@@ -5,17 +5,37 @@ import { useState } from "react";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { columnHelper, DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/form";
-import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
-import { api } from "@/lib/trpc";
-import { formatCurrency } from "@/lib/utils";
-import {
-  centsToRinggit,
-  currentMonth,
-  downloadCsv,
-  EXPENSE_CATEGORY_LABEL,
-  PACKAGE_TYPE_LABEL,
-} from "../admin-format";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { api, type RouterOutputs } from "@/lib/trpc";
+import { cn, formatCurrency } from "@/lib/utils";
+import { centsToRinggit, currentMonth, downloadCsv } from "../admin-format";
+
+type Monthly = RouterOutputs["report"]["monthly"];
+type Annual = RouterOutputs["report"]["annual"];
+
+const category = columnHelper<Monthly["incomeByCategory"][number]>();
+const coach = columnHelper<Monthly["perCoach"][number]>();
+const annualRow = columnHelper<Annual["months"][number]>();
+
+const categoryColumns = category.columns([
+  category.accessor("category", { header: "Category" }),
+  category.accessor("totalCents", {
+    header: "Amount",
+    cell: (info) => formatCurrency(Number(info.getValue())),
+  }),
+]);
+
+const coachColumns = coach.columns([
+  coach.accessor("coachName", { header: "Coach" }),
+  coach.accessor("sessionCount", { header: "Sessions taught" }),
+  coach.accessor("headcount", { header: "Headcount" }),
+  coach.accessor("salaryCents", {
+    header: "Salary paid",
+    cell: (info) => formatCurrency(info.getValue()),
+  }),
+]);
 
 export default function ReportsPage() {
   const [month, setMonth] = useState(currentMonth());
@@ -43,6 +63,45 @@ export default function ReportsPage() {
     ...(annual?.months.map((row) => Math.abs(row.netCents)) ?? [1]),
   );
 
+  const annualColumns = annualRow.columns([
+    annualRow.accessor("month", { header: "Month" }),
+    annualRow.accessor("incomeCents", {
+      header: "Income",
+      cell: (info) => formatCurrency(info.getValue()),
+    }),
+    annualRow.accessor("expenseCents", {
+      header: "Expenses",
+      cell: (info) => formatCurrency(info.getValue()),
+    }),
+    annualRow.accessor("netCents", {
+      header: "Net profit",
+      cell: (info) => (
+        <span
+          className={cn("font-semibold", info.getValue() < 0 && "text-red-700")}
+        >
+          {formatCurrency(info.getValue())}
+        </span>
+      ),
+    }),
+    annualRow.display({
+      id: "trend",
+      header: "Trend",
+      cell: ({ row }) => (
+        <div className="h-2 w-full min-w-24 rounded-full bg-stone-100">
+          <div
+            className={cn(
+              "h-2 rounded-full",
+              row.original.netCents < 0 ? "bg-red-600" : "bg-emerald-600",
+            )}
+            style={{
+              width: `${(Math.abs(row.original.netCents) / peak) * 100}%`,
+            }}
+          />
+        </div>
+      ),
+    }),
+  ]);
+
   return (
     <>
       <PageHeader eyebrow="Books" title="Reports">
@@ -56,14 +115,14 @@ export default function ReportsPage() {
             onClick={() =>
               downloadCsv(`hercules-${month}.csv`, [
                 ["Section", "Label", "Amount (RM)"],
-                ...monthly.incomeByType.map((row) => [
+                ...monthly.incomeByCategory.map((row) => [
                   "Income",
-                  row.type,
+                  row.category,
                   centsToRinggit(Number(row.totalCents)),
                 ]),
                 ...monthly.expenseByCategory.map((row) => [
                   "Expense",
-                  EXPENSE_CATEGORY_LABEL[row.category],
+                  row.category,
                   centsToRinggit(Number(row.totalCents)),
                 ]),
                 ["Total", "Income", centsToRinggit(monthly.totalIncomeCents)],
@@ -156,173 +215,61 @@ export default function ReportsPage() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-xl font-black">Income by package</h2>
-          <TableWrap>
-            <table className={`${tableClass} min-w-0`}>
-              <thead>
-                <tr>
-                  <th className={thClass}>Package</th>
-                  <th className={thClass}>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {monthly.incomeByType.length === 0 ? (
-                  <tr>
-                    <td className={tdClass} colSpan={2}>
-                      No income this month.
-                    </td>
-                  </tr>
-                ) : (
-                  monthly.incomeByType.map((row) => (
-                    <tr key={row.type}>
-                      <td className={tdClass}>
-                        {row.type in PACKAGE_TYPE_LABEL
-                          ? PACKAGE_TYPE_LABEL[
-                              row.type as keyof typeof PACKAGE_TYPE_LABEL
-                            ]
-                          : "Other"}
-                      </td>
-                      <td className={tdClass}>
-                        {formatCurrency(Number(row.totalCents))}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+          <h2 className="mb-3 text-xl font-black">Income by category</h2>
+          <DataTable
+            columns={categoryColumns}
+            data={monthly.incomeByCategory}
+            dense
+            empty="No income this month."
+            getRowId={(row) => row.categoryId}
+          />
         </section>
 
         <section>
           <h2 className="mb-3 text-xl font-black">Expenses by category</h2>
-          <TableWrap>
-            <table className={`${tableClass} min-w-0`}>
-              <thead>
-                <tr>
-                  <th className={thClass}>Category</th>
-                  <th className={thClass}>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {monthly.expenseByCategory.length === 0 ? (
-                  <tr>
-                    <td className={tdClass} colSpan={2}>
-                      No expenses this month.
-                    </td>
-                  </tr>
-                ) : (
-                  monthly.expenseByCategory.map((row) => (
-                    <tr key={row.category}>
-                      <td className={tdClass}>
-                        {EXPENSE_CATEGORY_LABEL[row.category]}
-                      </td>
-                      <td className={tdClass}>
-                        {formatCurrency(Number(row.totalCents))}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </TableWrap>
+          <DataTable
+            columns={categoryColumns}
+            data={monthly.expenseByCategory}
+            dense
+            empty="No expenses this month."
+            getRowId={(row) => row.categoryId}
+          />
         </section>
       </div>
 
       <section className="mt-8">
         <h2 className="mb-3 text-xl font-black">Coaches</h2>
-        <TableWrap>
-          <table className={tableClass}>
-            <thead>
-              <tr>
-                <th className={thClass}>Coach</th>
-                <th className={thClass}>Sessions taught</th>
-                <th className={thClass}>Headcount</th>
-                <th className={thClass}>Salary paid</th>
-              </tr>
-            </thead>
-            <tbody>
-              {monthly.perCoach.length === 0 ? (
-                <tr>
-                  <td className={tdClass} colSpan={4}>
-                    No coaches yet.
-                  </td>
-                </tr>
-              ) : (
-                monthly.perCoach.map((row) => (
-                  <tr key={row.coachId}>
-                    <td className={tdClass}>{row.coachName}</td>
-                    <td className={tdClass}>{row.sessionCount}</td>
-                    <td className={tdClass}>{row.headcount}</td>
-                    <td className={tdClass}>
-                      {formatCurrency(row.salaryCents)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </TableWrap>
+        <DataTable
+          columns={coachColumns}
+          data={monthly.perCoach}
+          empty="No coaches yet."
+          getRowId={(row) => row.coachId}
+          sortable
+        />
       </section>
 
       <section className="mt-8">
         <h2 className="mb-3 text-xl font-black">{year} Annual Report</h2>
-        <TableWrap>
-          <table className={tableClass}>
-            <thead>
-              <tr>
-                <th className={thClass}>Month</th>
-                <th className={thClass}>Income</th>
-                <th className={thClass}>Expenses</th>
-                <th className={thClass}>Net profit</th>
-                <th className={thClass}>Trend</th>
-              </tr>
-            </thead>
-            <tbody>
-              {annual?.months.map((row) => (
-                <tr key={row.month}>
-                  <td className={tdClass}>{row.month}</td>
-                  <td className={tdClass}>{formatCurrency(row.incomeCents)}</td>
-                  <td className={tdClass}>
-                    {formatCurrency(row.expenseCents)}
-                  </td>
-                  <td
-                    className={`${tdClass} font-semibold ${
-                      row.netCents < 0 ? "text-red-700" : ""
-                    }`}
-                  >
-                    {formatCurrency(row.netCents)}
-                  </td>
-                  <td className={tdClass}>
-                    <div className="h-2 w-full min-w-24 rounded-full bg-stone-100">
-                      <div
-                        className={`h-2 rounded-full ${
-                          row.netCents < 0 ? "bg-red-600" : "bg-emerald-600"
-                        }`}
-                        style={{
-                          width: `${(Math.abs(row.netCents) / peak) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td className={`${tdClass} font-black`}>Total</td>
-                <td className={`${tdClass} font-black`}>
-                  {formatCurrency(annual?.totalIncomeCents ?? 0)}
-                </td>
-                <td className={`${tdClass} font-black`}>
-                  {formatCurrency(annual?.totalExpenseCents ?? 0)}
-                </td>
-                <td className={`${tdClass} font-black`} colSpan={2}>
-                  {formatCurrency(annual?.netCents ?? 0)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </TableWrap>
+        <DataTable
+          columns={annualColumns}
+          data={annual?.months}
+          empty="No entries for this year."
+          footer={
+            <TableRow>
+              <TableCell className="font-black">Total</TableCell>
+              <TableCell className="font-black">
+                {formatCurrency(annual?.totalIncomeCents ?? 0)}
+              </TableCell>
+              <TableCell className="font-black">
+                {formatCurrency(annual?.totalExpenseCents ?? 0)}
+              </TableCell>
+              <TableCell className="font-black" colSpan={2}>
+                {formatCurrency(annual?.netCents ?? 0)}
+              </TableCell>
+            </TableRow>
+          }
+          getRowId={(row) => row.month}
+        />
       </section>
     </>
   );

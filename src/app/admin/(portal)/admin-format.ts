@@ -23,17 +23,6 @@ export const SOURCE_LABEL = {
   other: "Other",
 } as const;
 
-export const EXPENSE_CATEGORY_LABEL = {
-  rent: "Rent",
-  utilities: "Utilities",
-  coach_salary: "Coach salary",
-  marketing: "Marketing",
-  equipment: "Equipment",
-  cleaning: "Cleaning",
-  maintenance: "Maintenance",
-  other: "Others",
-} as const;
-
 export const SESSION_TYPE_LABEL = {
   class: "Class",
   pt: "PT",

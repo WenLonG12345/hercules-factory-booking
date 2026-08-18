@@ -9,8 +9,8 @@ import { CheckInDialog } from "@/components/admin/check-in-dialog";
 import { SellPackageDialog } from "@/components/admin/sell-package-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { columnHelper, DataTable } from "@/components/ui/data-table";
 import { Input, Select } from "@/components/ui/form";
-import { TableWrap, tableClass, tdClass, thClass } from "@/components/ui/table";
 import { api, type RouterOutputs } from "@/lib/trpc";
 import { whatsappLink } from "@/lib/utils";
 import {
@@ -22,8 +22,20 @@ import {
 } from "../admin-format";
 import { CreateCustomerDialog } from "./create-customer-dialog";
 
+type Customer = RouterOutputs["customer"]["list"][number];
 type Package = RouterOutputs["package"]["list"][number];
 type Trial = RouterOutputs["trial"]["list"][number];
+
+/** One CRM row: the customer plus everything the table shows beside them. */
+type CustomerRow = {
+  customer: Customer;
+  list: Package[];
+  pkg: Package | null;
+  trial: Trial | null;
+  attendee: Trial["attendees"][number] | null;
+};
+
+const helper = columnHelper<CustomerRow>();
 
 const TRIAL_TONE = {
   booked: "gray",
@@ -107,7 +119,7 @@ export default function CustomersPage() {
   ).length;
 
   const term = search.trim().toLowerCase();
-  const rows = customers
+  const rows: CustomerRow[] = customers
     .map((customer) => {
       const list = byCustomer.get(customer.id) ?? [];
       const trial = trialFor.get(customer.id) ?? null;
@@ -139,6 +151,217 @@ export default function CustomersPage() {
       if (status === "none") return pkg === null;
       return pkg !== null && packageStatus(pkg) === status;
     });
+
+  const columns = helper.columns([
+    helper.accessor((row) => row.customer.name, {
+      id: "name",
+      header: "Name",
+      cell: ({ row }) => {
+        const { customer } = row.original;
+        return (
+          <>
+            <Link
+              className="font-semibold text-red-700"
+              href={`/admin/customers/${customer.id}`}
+            >
+              {customer.name}
+            </Link>
+            {customer.source ? (
+              <p className="mt-0.5 text-xs text-stone-500">
+                {SOURCE_LABEL[customer.source]}
+              </p>
+            ) : null}
+          </>
+        );
+      },
+    }),
+    helper.accessor((row) => row.customer.phone, {
+      id: "phone",
+      header: "Phone",
+    }),
+    // The trial pipeline, one customer per row — a trial seats exactly one
+    // person, so it folds into the CRM table.
+    helper.display({
+      id: "trial",
+      header: "Trial",
+      cell: ({ row }) => {
+        const { customer, trial, attendee } = row.original;
+        if (!trial || !attendee) {
+          return (
+            <BookTrialDialog
+              customerId={customer.id}
+              customerName={customer.name}
+              onSuccess={invalidate}
+              trigger={
+                <button className={`${linkClass} text-stone-600`} type="button">
+                  Book trial
+                </button>
+              }
+            />
+          );
+        }
+        return (
+          <div className="grid justify-items-start gap-1 whitespace-nowrap">
+            <Badge tone={TRIAL_TONE[attendee.status]}>{attendee.status}</Badge>
+            <span className="text-xs text-stone-500">
+              {trial.date} {trial.startTime}
+              {trial.coach ? ` \u00b7 ${trial.coach.name}` : ""}
+            </span>
+            {attendee.status === "booked" ? (
+              <div className="flex gap-2">
+                <button
+                  className={`${linkClass} text-emerald-700`}
+                  onClick={() =>
+                    setAttendance.mutate({
+                      attendeeId: attendee.id,
+                      status: "attended",
+                    })
+                  }
+                  type="button"
+                >
+                  Attended
+                </button>
+                <button
+                  className={`${linkClass} text-stone-500`}
+                  onClick={() =>
+                    setAttendance.mutate({
+                      attendeeId: attendee.id,
+                      status: "no_show",
+                    })
+                  }
+                  type="button"
+                >
+                  No show
+                </button>
+              </div>
+            ) : null}
+          </div>
+        );
+      },
+    }),
+    // One line per package, aligned across the next four columns — newest
+    // first, same order as package.list.
+    helper.display({
+      id: "package",
+      header: "Package",
+      cell: ({ row }) =>
+        row.original.list.length === 0 ? (
+          "\u2014"
+        ) : (
+          <div className={stackClass}>
+            {row.original.list.map((pkg) => (
+              <span key={pkg.id}>{PACKAGE_TYPE_LABEL[pkg.type]}</span>
+            ))}
+          </div>
+        ),
+    }),
+    helper.display({
+      id: "start",
+      header: "Start",
+      cell: ({ row }) => (
+        <div className={stackClass}>
+          {row.original.list.map((pkg) => (
+            <span key={pkg.id}>{pkg.startDate}</span>
+          ))}
+        </div>
+      ),
+    }),
+    helper.display({
+      id: "expiry",
+      header: "Expiry",
+      cell: ({ row }) => (
+        <div className={stackClass}>
+          {row.original.list.map((pkg) => (
+            <span key={pkg.id}>{pkg.expiryDate}</span>
+          ))}
+        </div>
+      ),
+    }),
+    helper.display({
+      id: "credits",
+      header: "Credits",
+      cell: ({ row }) => (
+        <div className={stackClass}>
+          {row.original.list.map((pkg) => {
+            const rowLeft = remaining(pkg);
+            return (
+              <span key={pkg.id}>
+                {rowLeft === null
+                  ? "Unlimited"
+                  : `${rowLeft} of ${pkg.totalCredits} left`}
+              </span>
+            );
+          })}
+        </div>
+      ),
+    }),
+    helper.display({
+      id: "status",
+      header: "Status",
+      cell: ({ row }) =>
+        row.original.list.length === 0 ? (
+          <Badge tone="gray">no package</Badge>
+        ) : (
+          <div className={stackClass}>
+            {row.original.list.map((pkg) => {
+              const rowState = packageStatus(pkg);
+              return (
+                <Badge key={pkg.id} tone={STATUS_TONE[rowState]}>
+                  {rowState}
+                </Badge>
+              );
+            })}
+          </div>
+        ),
+    }),
+    helper.display({
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const { customer, pkg, trial, attendee } = row.original;
+        const left = pkg ? remaining(pkg) : null;
+        const state = pkg ? packageStatus(pkg) : null;
+        const openTrial = attendee && attendee.status !== "converted";
+        return (
+          <div className="flex flex-wrap items-center gap-3">
+            {pkg && left !== null && state !== "expired" ? (
+              <CheckInDialog
+                onSuccess={invalidate}
+                pkg={{ ...pkg, customer }}
+              />
+            ) : null}
+            {/* Selling off an open trial stamps the conversion on that
+                session — same call the pipeline used to make. */}
+            <SellPackageDialog
+              convertedFromSessionId={openTrial ? trial?.id : undefined}
+              customerId={customer.id}
+              customerName={customer.name}
+              onSuccess={invalidate}
+              trigger={
+                <button
+                  className={`${linkClass} ${openTrial ? "text-red-700" : "text-stone-600"}`}
+                  type="button"
+                >
+                  {openTrial ? "Convert" : pkg ? "Renew" : "Sell package"}
+                </button>
+              }
+            />
+            <a
+              className={`${linkClass} text-emerald-700`}
+              href={whatsappLink(
+                customer.phone,
+                `Hi ${customer.name}, this is Hercules Factory 👊`,
+              )}
+              rel="noreferrer"
+              target="_blank"
+            >
+              WhatsApp
+            </a>
+          </div>
+        );
+      },
+    }),
+  ]);
 
   return (
     <>
@@ -183,215 +406,13 @@ export default function CustomersPage() {
         </p>
       </Card>
 
-      <TableWrap>
-        <table className={tableClass}>
-          <thead>
-            <tr>
-              <th className={thClass}>Name</th>
-              <th className={thClass}>Phone</th>
-              <th className={thClass}>Trial</th>
-              <th className={thClass}>Package</th>
-              <th className={thClass}>Start</th>
-              <th className={thClass}>Expiry</th>
-              <th className={thClass}>Credits</th>
-              <th className={thClass}>Status</th>
-              <th className={thClass}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td className={tdClass} colSpan={9}>
-                  No customers found.
-                </td>
-              </tr>
-            ) : (
-              rows.map(({ customer, list, pkg, trial, attendee }) => {
-                const left = pkg ? remaining(pkg) : null;
-                const state = pkg ? packageStatus(pkg) : null;
-                const openTrial = attendee && attendee.status !== "converted";
-                return (
-                  <tr key={customer.id}>
-                    <td className={tdClass}>
-                      <Link
-                        className="font-semibold text-red-700"
-                        href={`/admin/customers/${customer.id}`}
-                      >
-                        {customer.name}
-                      </Link>
-                      {customer.source ? (
-                        <p className="mt-0.5 text-xs text-stone-500">
-                          {SOURCE_LABEL[customer.source]}
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className={tdClass}>{customer.phone}</td>
-                    {/* The trial pipeline, one customer per row — a trial seats
-                        exactly one person, so it folds into the CRM table. */}
-                    <td className={tdClass}>
-                      {trial && attendee ? (
-                        <div className="grid justify-items-start gap-1 whitespace-nowrap">
-                          <Badge tone={TRIAL_TONE[attendee.status]}>
-                            {attendee.status}
-                          </Badge>
-                          <span className="text-xs text-stone-500">
-                            {trial.date} {trial.startTime}
-                            {trial.coach ? ` · ${trial.coach.name}` : ""}
-                          </span>
-                          {attendee.status === "booked" ? (
-                            <div className="flex gap-2">
-                              <button
-                                className={`${linkClass} text-emerald-700`}
-                                onClick={() =>
-                                  setAttendance.mutate({
-                                    attendeeId: attendee.id,
-                                    status: "attended",
-                                  })
-                                }
-                                type="button"
-                              >
-                                Attended
-                              </button>
-                              <button
-                                className={`${linkClass} text-stone-500`}
-                                onClick={() =>
-                                  setAttendance.mutate({
-                                    attendeeId: attendee.id,
-                                    status: "no_show",
-                                  })
-                                }
-                                type="button"
-                              >
-                                No show
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <BookTrialDialog
-                          customerId={customer.id}
-                          customerName={customer.name}
-                          onSuccess={invalidate}
-                          trigger={
-                            <button
-                              className={`${linkClass} text-stone-600`}
-                              type="button"
-                            >
-                              Book trial
-                            </button>
-                          }
-                        />
-                      )}
-                    </td>
-                    {/* One line per package, aligned across the next four
-                        columns — newest first, same order as package.list. */}
-                    <td className={tdClass}>
-                      {list.length === 0 ? (
-                        "—"
-                      ) : (
-                        <div className={stackClass}>
-                          {list.map((row) => (
-                            <span key={row.id}>
-                              {PACKAGE_TYPE_LABEL[row.type]}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td className={tdClass}>
-                      <div className={stackClass}>
-                        {list.map((row) => (
-                          <span key={row.id}>{row.startDate}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className={tdClass}>
-                      <div className={stackClass}>
-                        {list.map((row) => (
-                          <span key={row.id}>{row.expiryDate}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className={tdClass}>
-                      <div className={stackClass}>
-                        {list.map((row) => {
-                          const rowLeft = remaining(row);
-                          return (
-                            <span key={row.id}>
-                              {rowLeft === null
-                                ? "Unlimited"
-                                : `${rowLeft} of ${row.totalCredits} left`}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </td>
-                    <td className={tdClass}>
-                      {list.length === 0 ? (
-                        <Badge tone="gray">no package</Badge>
-                      ) : (
-                        <div className={stackClass}>
-                          {list.map((row) => {
-                            const rowState = packageStatus(row);
-                            return (
-                              <Badge key={row.id} tone={STATUS_TONE[rowState]}>
-                                {rowState}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </td>
-                    <td className={tdClass}>
-                      <div className="flex flex-wrap items-center gap-3">
-                        {pkg && left !== null && state !== "expired" ? (
-                          <CheckInDialog
-                            onSuccess={invalidate}
-                            pkg={{ ...pkg, customer }}
-                          />
-                        ) : null}
-                        {/* Selling off an open trial stamps the conversion on
-                            that session — same call the pipeline used to make. */}
-                        <SellPackageDialog
-                          convertedFromSessionId={
-                            openTrial ? trial?.id : undefined
-                          }
-                          customerId={customer.id}
-                          customerName={customer.name}
-                          onSuccess={invalidate}
-                          trigger={
-                            <button
-                              className={`${linkClass} ${openTrial ? "text-red-700" : "text-stone-600"}`}
-                              type="button"
-                            >
-                              {openTrial
-                                ? "Convert"
-                                : pkg
-                                  ? "Renew"
-                                  : "Sell package"}
-                            </button>
-                          }
-                        />
-                        <a
-                          className={`${linkClass} text-emerald-700`}
-                          href={whatsappLink(
-                            customer.phone,
-                            `Hi ${customer.name}, this is Hercules Factory 👊`,
-                          )}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          WhatsApp
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </TableWrap>
+      <DataTable
+        columns={columns}
+        data={rows}
+        empty="No customers found."
+        getRowId={(row) => row.customer.id}
+        sortable
+      />
     </>
   );
 }
