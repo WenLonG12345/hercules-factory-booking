@@ -318,6 +318,10 @@ export const invoices = sqliteTable(
     issueDate: text("issue_date").notNull(),
     dueDate: text("due_date"),
     paidDate: text("paid_date"),
+    /** Validity window for an invoice written by hand — a linked package
+     *  carries its own dates and wins over these. */
+    validFrom: text("valid_from"),
+    validUntil: text("valid_until"),
     notes: text("notes"),
     ...timestamps,
   },

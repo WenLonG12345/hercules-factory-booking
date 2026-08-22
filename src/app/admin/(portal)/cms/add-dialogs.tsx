@@ -91,43 +91,59 @@ function Shell({
 }
 
 /**
- * Icon for a Why pillar. Left empty, the landing page marks the row with its
- * ordinal instead. The emoji is admin-side only — it labels the row in this
- * CMS list and never reaches the public page.
+ * Upload picker for one image field. `base` names both inputs: `${base}File`
+ * for the file, and a hidden `${base}Url` carrying the image already saved on
+ * the row — so saving without picking a new file keeps the current image, and
+ * "Remove" clears it.
  */
-export function IconField({ iconUrl }: { iconUrl?: string | null }) {
+export function ImageField({
+  base,
+  label,
+  hint,
+  url,
+  previewClassName,
+}: {
+  base: string;
+  label: string;
+  hint?: string;
+  url?: string | null;
+  previewClassName?: string;
+}) {
+  const [current, setCurrent] = useState(url ?? "");
+
   return (
-    <div className="grid gap-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2">
-      <span className="text-sm font-semibold text-stone-700">
-        Icon{" "}
-        <span className="font-normal text-stone-500">
-          — optional; the row is numbered when this is empty
-        </span>
-      </span>
-      {iconUrl ? (
-        // biome-ignore lint/performance/noImgElement: admin preview only
-        <img alt="" className="size-12 object-contain" src={iconUrl} />
-      ) : null}
-      <ImageFileUpload name="iconFile" />
-      <Field label="…or paste an icon URL">
-        <Input defaultValue={iconUrl ?? ""} name="iconUrl" />
-      </Field>
+    <div className="grid gap-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm font-semibold text-stone-700">{label}</span>
+        {hint ? <span className="text-xs text-stone-500">{hint}</span> : null}
+      </div>
+      <input name={`${base}Url`} type="hidden" value={current} />
+      <ImageFileUpload
+        className="max-w-md"
+        initialPreview={current || null}
+        name={`${base}File`}
+        onClear={() => setCurrent("")}
+        previewClassName={previewClassName}
+      />
     </div>
   );
 }
 
-/** Uploads the picked 3D icon (if any) to R2, then runs the mutation. */
-export function useIconUpload() {
+/**
+ * Uploads the picked file (if any) to R2, then runs the mutation with the
+ * resulting URL — falling back to the image already on the row.
+ */
+export function useImageUpload(base: string, prefix: string) {
   const [uploading, startUpload] = useTransition();
-  const withIcon = (fd: FormData, next: (iconUrl?: string) => void) => {
-    const file = fd.get("iconFile") as File | null;
+  const withImage = (fd: FormData, next: (url?: string) => void) => {
+    const file = fd.get(`${base}File`) as File | null;
     if (!file || file.size === 0) {
-      next(String(fd.get("iconUrl") ?? "") || undefined);
+      next(String(fd.get(`${base}Url`) ?? "") || undefined);
       return;
     }
     const upload = new FormData();
     upload.set("imageFile", file);
-    upload.set("prefix", "why-icons");
+    upload.set("prefix", prefix);
     startUpload(async () => {
       try {
         next(await uploadImageAction(upload));
@@ -136,19 +152,19 @@ export function useIconUpload() {
       }
     });
   };
-  return { uploading, withIcon };
+  return { uploading, withImage };
 }
 
 export function AddWhyDialog({ sortOrder }: { sortOrder: number }) {
   const { open, setOpen, options } = useCreateDialog("Pillar added.");
   const create = api.cms.why.create.useMutation(options);
-  const { uploading, withIcon } = useIconUpload();
+  const { uploading, withImage } = useImageUpload("icon", "why-icons");
 
   return (
     <Shell
       label="Add pillar"
       onSubmit={(fd) =>
-        withIcon(fd, (iconUrl) =>
+        withImage(fd, (iconUrl) =>
           create.mutate({
             emoji: String(fd.get("emoji")),
             iconUrl,
@@ -179,7 +195,12 @@ export function AddWhyDialog({ sortOrder }: { sortOrder: number }) {
           placeholder="One or two sentences — shown under the title on the landing page."
         />
       </Field>
-      <IconField />
+      <ImageField
+        base="icon"
+        hint="optional; the row is numbered when this is empty"
+        label="Icon"
+        previewClassName="aspect-video w-full bg-stone-50 object-contain p-3"
+      />
       <ZhFields fields={TRANSLATABLE.why} multiline={["description"]} />
     </Shell>
   );
@@ -188,24 +209,29 @@ export function AddWhyDialog({ sortOrder }: { sortOrder: number }) {
 export function AddClassDialog({ sortOrder }: { sortOrder: number }) {
   const { open, setOpen, options } = useCreateDialog("Class added.");
   const create = api.cms.classes.create.useMutation(options);
+  const { uploading, withImage } = useImageUpload("image", "classes");
 
   return (
     <Shell
       label="Add class"
       onSubmit={(fd) =>
-        create.mutate({
-          name: String(fd.get("name")),
-          description: String(fd.get("description")),
-          imageUrl: String(fd.get("imageUrl") ?? "") || undefined,
-          whatsappMessage: String(fd.get("whatsappMessage") ?? "") || undefined,
-          sortOrder,
-          isActive: true,
-          zh: readZh(fd),
-        })
+        withImage(fd, (imageUrl) =>
+          create.mutate({
+            name: String(fd.get("name")),
+            description: String(fd.get("description")),
+            imageUrl,
+            whatsappMessage:
+              String(fd.get("whatsappMessage") ?? "") || undefined,
+            sortOrder,
+            isActive: true,
+            zh: readZh(fd),
+          }),
+        )
       }
       open={open}
-      pending={create.isPending}
+      pending={uploading || create.isPending}
       setOpen={setOpen}
+      submitLabel={uploading ? "Uploading…" : "Add class"}
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Name">
@@ -215,14 +241,10 @@ export function AddClassDialog({ sortOrder }: { sortOrder: number }) {
           <Input name="description" required />
         </Field>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Image URL">
-          <Input name="imageUrl" />
-        </Field>
-        <Field label="WhatsApp message">
-          <Input name="whatsappMessage" />
-        </Field>
-      </div>
+      <ImageField base="image" label="Class photo" />
+      <Field label="WhatsApp message">
+        <Input name="whatsappMessage" />
+      </Field>
       <ZhFields
         fields={TRANSLATABLE.classes}
         multiline={["description", "whatsappMessage"]}
@@ -373,22 +395,14 @@ export function AddGalleryDialog({ sortOrder }: { sortOrder: number }) {
           return;
         }
 
-        const imageUrl = String(fd.get("imageUrl") ?? "");
-        if (!imageUrl) {
-          toast.error("Upload a file or paste an image URL.");
-          return;
-        }
-        add(imageUrl);
+        toast.error("Choose an image to upload.");
       }}
       open={open}
       pending={uploading || create.isPending}
       setOpen={setOpen}
       submitLabel={uploading ? "Uploading…" : "Add photo"}
     >
-      <ImageFileUpload name="imageFile" />
-      <Field label="…or paste an image URL">
-        <Input name="imageUrl" />
-      </Field>
+      <ImageFileUpload className="max-w-md" name="imageFile" />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Alt text">
           <Input name="alt" required />
@@ -437,12 +451,7 @@ export function AddPromoDialog({ sortOrder }: { sortOrder: number }) {
           return;
         }
 
-        const imageUrl = String(fd.get("imageUrl") ?? "");
-        if (!imageUrl) {
-          toast.error("Upload a file or paste an image URL.");
-          return;
-        }
-        add(imageUrl);
+        toast.error("Choose an image to upload.");
       }}
       open={open}
       pending={uploading || create.isPending}
@@ -453,10 +462,11 @@ export function AddPromoDialog({ sortOrder }: { sortOrder: number }) {
         Portrait artwork, 9:16 (1080×1920) — the same file you post as an
         Instagram story. Other ratios get cropped to fit.
       </p>
-      <ImageFileUpload name="imageFile" />
-      <Field label="…or paste an image URL">
-        <Input name="imageUrl" />
-      </Field>
+      <ImageFileUpload
+        className="max-w-[220px]"
+        name="imageFile"
+        previewClassName="aspect-9/16 w-full object-cover"
+      />
       <Field label="Title">
         <Input
           name="title"

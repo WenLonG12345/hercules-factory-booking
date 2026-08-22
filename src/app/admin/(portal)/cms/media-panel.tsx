@@ -100,7 +100,7 @@ export function MediaPanel({ data }: { data: CmsData }) {
       </Card>
 
       <SectionHeader
-        hint="Upload here first — the hero image URL is copied from one of these."
+        hint="The photo strip on the landing page."
         id="gallery"
         title="Gallery"
       />

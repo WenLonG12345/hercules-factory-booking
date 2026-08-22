@@ -1,22 +1,39 @@
+"use client";
+
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { Toaster } from "sonner";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { SignOutButton } from "@/components/admin/sign-out-button";
+import { cn } from "@/lib/utils";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <div className="min-h-screen bg-stone-100 text-stone-950">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-stone-200 bg-stone-950 text-stone-100 lg:block">
-        <div className="border-b border-white/10 p-6">
-          <div className="flex items-center gap-3">
-            <Image
-              alt="Hercules Factory logo"
-              className="size-11 rounded-md"
-              height={44}
-              src="/logo.png"
-              width={44}
-            />
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 hidden border-r border-stone-200 bg-stone-950 text-stone-100 transition-[width] lg:block",
+          collapsed ? "w-16" : "w-64",
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center gap-3 border-b border-white/10",
+            collapsed ? "justify-center p-3" : "p-6",
+          )}
+        >
+          <Image
+            alt="Hercules Factory logo"
+            className={cn("rounded-md", collapsed ? "size-9" : "size-11")}
+            height={44}
+            src="/logo.png"
+            width={44}
+          />
+          {collapsed ? null : (
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-300">
                 Hercules
@@ -25,13 +42,31 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 Management
               </h1>
             </div>
-          </div>
+          )}
         </div>
         <nav className="grid gap-1 p-3">
-          <AdminNav />
+          <AdminNav collapsed={collapsed} />
         </nav>
+        <button
+          className={cn(
+            "absolute bottom-3 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-stone-400 transition hover:bg-white/10 hover:text-white",
+            collapsed ? "inset-x-3 justify-center px-0" : "inset-x-3",
+          )}
+          onClick={() => setCollapsed((v) => !v)}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          type="button"
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="size-4 shrink-0" />
+          ) : (
+            <>
+              <PanelLeftClose className="size-4 shrink-0" />
+              Collapse
+            </>
+          )}
+        </button>
       </aside>
-      <div className="lg:pl-64">
+      <div className={cn(collapsed ? "lg:pl-16" : "lg:pl-64")}>
         <header className="sticky top-0 z-20 border-b border-stone-200 bg-white/90 px-4 py-3 backdrop-blur md:px-8">
           <div className="flex items-center justify-between gap-4">
             <Link

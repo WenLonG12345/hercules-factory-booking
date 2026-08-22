@@ -2,6 +2,8 @@
 
 import { use } from "react";
 import { PageHeader } from "@/components/admin/admin-shell";
+import { BookTrialDialog } from "@/components/admin/book-trial-dialog";
+import { CheckInDialog } from "@/components/admin/check-in-dialog";
 import { SellPackageDialog } from "@/components/admin/sell-package-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -122,6 +124,17 @@ export default function CustomerProfilePage({
 
   const { customer, packages, invoices, history } = data;
 
+  // The package a check-in would burn from: the live one expiring soonest —
+  // the same pick `activePackageFor` makes server-side.
+  const active = packages
+    .filter((row) => packageStatus(row) !== "expired")
+    .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate))[0];
+  const invalidate = () => {
+    utils.customer.profile.invalidate({ id });
+    utils.package.list.invalidate();
+    utils.trial.list.invalidate();
+  };
+
   return (
     <>
       <PageHeader eyebrow="Customer" title={customer.name}>
@@ -137,10 +150,21 @@ export default function CustomerProfilePage({
           >
             WhatsApp
           </a>
+          <BookTrialDialog
+            customerId={customer.id}
+            customerName={customer.name}
+            onSuccess={invalidate}
+          />
+          {active && remaining(active) !== null ? (
+            <CheckInDialog
+              onSuccess={invalidate}
+              pkg={{ ...active, customer }}
+            />
+          ) : null}
           <SellPackageDialog
             customerId={customer.id}
             customerName={customer.name}
-            onSuccess={() => utils.customer.profile.invalidate({ id })}
+            onSuccess={invalidate}
           />
         </div>
       </PageHeader>

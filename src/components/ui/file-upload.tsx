@@ -1,18 +1,29 @@
 "use client";
 
-import { ImagePlus, X } from "lucide-react";
+import { ImagePlus, RefreshCw, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * One image control: an empty drop zone until there is a picture, then the
+ * picture itself with Replace / Remove under it. `initialPreview` seeds it with
+ * the image already saved on the row; `onClear` lets the caller drop that URL.
+ */
 export function ImageFileUpload({
   name,
   className,
+  initialPreview,
+  onClear,
+  previewClassName = "aspect-video w-full object-cover",
 }: {
   name: string;
   className?: string;
+  initialPreview?: string | null;
+  onClear?: () => void;
+  previewClassName?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(initialPreview ?? null);
   const [filename, setFilename] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -28,11 +39,11 @@ export function ImageFileUpload({
     if (inputRef.current) inputRef.current.files = dt.files;
   }
 
-  function clear(e: React.MouseEvent) {
-    e.stopPropagation();
+  function clear() {
     setPreview(null);
     setFilename(null);
     if (inputRef.current) inputRef.current.value = "";
+    onClear?.();
   }
 
   return (
@@ -47,32 +58,40 @@ export function ImageFileUpload({
       />
 
       {preview ? (
-        <div className="relative overflow-hidden rounded-lg border border-stone-200">
-          <img
-            alt="Preview"
-            className="h-48 w-full object-cover"
-            src={preview}
-          />
-          <div className="flex items-center justify-between bg-stone-50 px-3 py-2">
-            <p className="truncate text-xs font-semibold text-stone-600">
-              {filename}
+        <div className="overflow-hidden rounded-lg border border-stone-200 bg-stone-50">
+          {/* biome-ignore lint/performance/noImgElement: admin preview only */}
+          <img alt="Preview" className={previewClassName} src={preview} />
+          <div className="flex items-center justify-between gap-2 border-t border-stone-200 bg-white px-3 py-2">
+            <p className="truncate text-xs text-stone-500">
+              {filename ?? "Current image"}
             </p>
-            <button
-              className="ml-2 shrink-0 rounded p-0.5 text-stone-400 transition hover:bg-red-50 hover:text-red-600"
-              onClick={clear}
-              type="button"
-            >
-              <X className="size-3.5" />
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-stone-600 transition hover:bg-stone-100"
+                onClick={() => inputRef.current?.click()}
+                type="button"
+              >
+                <RefreshCw className="size-3.5" />
+                Replace
+              </button>
+              <button
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50"
+                onClick={clear}
+                type="button"
+              >
+                <X className="size-3.5" />
+                Remove
+              </button>
+            </div>
           </div>
         </div>
       ) : (
         <button
           className={cn(
-            "flex w-full flex-col items-center gap-3 rounded-lg border-2 border-dashed border-stone-200 px-6 py-10 transition",
+            "flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-6 py-8 transition",
             dragging
               ? "border-red-400 bg-red-50"
-              : "hover:border-stone-300 hover:bg-stone-50",
+              : "border-stone-200 hover:border-stone-300 hover:bg-stone-50",
           )}
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -87,19 +106,14 @@ export function ImageFileUpload({
             handleFile(e.dataTransfer.files[0]);
           }}
         >
-          <div className="grid size-12 place-items-center rounded-full bg-stone-100">
-            <ImagePlus className="size-5 text-stone-400" />
+          <div className="grid size-10 place-items-center rounded-full bg-stone-100">
+            <ImagePlus className="size-4.5 text-stone-400" />
           </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-stone-700">
-              Click to upload
-              <span className="font-normal text-stone-400">
-                {" "}
-                or drag & drop
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-stone-400">PNG, JPG, WEBP</p>
-          </div>
+          <p className="text-sm font-semibold text-stone-700">
+            Click to upload
+            <span className="font-normal text-stone-400"> or drag & drop</span>
+          </p>
+          <p className="text-xs text-stone-400">PNG, JPG, WEBP — up to 8 MB</p>
         </button>
       )}
     </div>

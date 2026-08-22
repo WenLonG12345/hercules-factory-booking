@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/form";
 import { api } from "@/lib/trpc";
 import { TRANSLATABLE } from "@/server/validators/cms";
-import { AddSocialDialog } from "./add-dialogs";
+import { AddSocialDialog, ImageField, useImageUpload } from "./add-dialogs";
 import {
   type CmsData,
   DeleteButton,
@@ -22,6 +22,7 @@ import { readZh, ZhFields } from "./zh-fields";
 export function SitePanel({ data }: { data: CmsData }) {
   const { onError, onSuccess } = useCmsToast();
   const content = data.content;
+  const { uploading, withImage } = useImageUpload("heroImage", "hero");
 
   const saveContent = api.cms.updateLandingContent.useMutation({
     onSuccess: onSuccess("Landing content saved."),
@@ -45,26 +46,28 @@ export function SitePanel({ data }: { data: CmsData }) {
           onSubmit={(e) => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
-            saveContent.mutate({
-              heroKicker: String(fd.get("heroKicker")),
-              heroHeadline: String(fd.get("heroHeadline")),
-              heroSubtitle: String(fd.get("heroSubtitle")),
-              heroImageUrl: String(fd.get("heroImageUrl") ?? "") || undefined,
-              primaryCtaText: String(fd.get("primaryCtaText")),
-              whatsappPhone: String(fd.get("whatsappPhone")),
-              whatsappMessage: String(fd.get("whatsappMessage")),
-              whyTitle: String(fd.get("whyTitle")),
-              classesTitle: String(fd.get("classesTitle")),
-              galleryTitle: String(fd.get("galleryTitle")),
-              pricingTitle: String(fd.get("pricingTitle")),
-              promotionsTitle: String(fd.get("promotionsTitle")),
-              testimonialsTitle: String(fd.get("testimonialsTitle")),
-              faqTitle: String(fd.get("faqTitle")),
-              locationTitle: String(fd.get("locationTitle")),
-              locationAddress: String(fd.get("locationAddress")),
-              mapEmbedUrl: String(fd.get("mapEmbedUrl") ?? "") || undefined,
-              zh: readZh(fd),
-            });
+            withImage(fd, (heroImageUrl) =>
+              saveContent.mutate({
+                heroKicker: String(fd.get("heroKicker")),
+                heroHeadline: String(fd.get("heroHeadline")),
+                heroSubtitle: String(fd.get("heroSubtitle")),
+                heroImageUrl,
+                primaryCtaText: String(fd.get("primaryCtaText")),
+                whatsappPhone: String(fd.get("whatsappPhone")),
+                whatsappMessage: String(fd.get("whatsappMessage")),
+                whyTitle: String(fd.get("whyTitle")),
+                classesTitle: String(fd.get("classesTitle")),
+                galleryTitle: String(fd.get("galleryTitle")),
+                pricingTitle: String(fd.get("pricingTitle")),
+                promotionsTitle: String(fd.get("promotionsTitle")),
+                testimonialsTitle: String(fd.get("testimonialsTitle")),
+                faqTitle: String(fd.get("faqTitle")),
+                locationTitle: String(fd.get("locationTitle")),
+                locationAddress: String(fd.get("locationAddress")),
+                mapEmbedUrl: String(fd.get("mapEmbedUrl") ?? "") || undefined,
+                zh: readZh(fd),
+              }),
+            );
           }}
         >
           <div className="grid gap-4 sm:grid-cols-2">
@@ -99,13 +102,11 @@ export function SitePanel({ data }: { data: CmsData }) {
               required
             />
           </Field>
-          <Field label="Hero image URL">
-            <Input
-              defaultValue={content?.heroImageUrl ?? ""}
-              name="heroImageUrl"
-              placeholder="Upload under Media, then paste the URL"
-            />
-          </Field>
+          <ImageField
+            base="heroImage"
+            label="Hero image"
+            url={content?.heroImageUrl}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="WhatsApp phone">
               <Input
@@ -213,8 +214,12 @@ export function SitePanel({ data }: { data: CmsData }) {
             multiline={["whatsappMessage", "locationAddress"]}
             value={content?.zh}
           />
-          <Button disabled={saveContent.isPending} type="submit">
-            {saveContent.isPending ? "Saving…" : "Save landing content"}
+          <Button disabled={uploading || saveContent.isPending} type="submit">
+            {uploading
+              ? "Uploading…"
+              : saveContent.isPending
+                ? "Saving…"
+                : "Save landing content"}
           </Button>
         </form>
       </Card>

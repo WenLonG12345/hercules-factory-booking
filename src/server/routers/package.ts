@@ -5,7 +5,10 @@ import {
   packagePlans,
   sessionAttendees,
 } from "@/db/schema";
-import { nextInvoiceNumber } from "@/server/services/business";
+import {
+  bookInvoiceIncome,
+  nextInvoiceNumber,
+} from "@/server/services/business";
 import { adminProcedure, createTRPCRouter } from "@/server/trpc";
 import { idSchema } from "@/server/validators/common";
 import { packageInput, updatePackageInput } from "@/server/validators/package";
@@ -72,19 +75,26 @@ export const packageRouter = createTRPCRouter({
               where: eq(packagePlans.id, input.planId),
             })
           : undefined;
-        await ctx.db.insert(invoices).values({
-          invoiceNumber: await nextInvoiceNumber(ctx.db),
-          customerId: input.customerId,
-          packageId: pkg.id,
-          description: plan?.name ?? `${input.type} package`,
-          subtotalCents,
-          discountCents,
-          totalCents: input.amountPaidCents,
-          status: markInvoicePaid ? "paid" : "pending",
-          paymentMethod: markInvoicePaid ? input.paymentMethod : null,
-          issueDate: input.startDate,
-          paidDate: markInvoicePaid ? input.startDate : null,
-        });
+        const [invoice] = await ctx.db
+          .insert(invoices)
+          .values({
+            invoiceNumber: await nextInvoiceNumber(ctx.db),
+            customerId: input.customerId,
+            packageId: pkg.id,
+            description: plan?.name ?? `${input.type} package`,
+            subtotalCents,
+            discountCents,
+            totalCents: input.amountPaidCents,
+            status: markInvoicePaid ? "paid" : "pending",
+            paymentMethod: markInvoicePaid ? input.paymentMethod : null,
+            issueDate: input.startDate,
+            paidDate: markInvoicePaid ? input.startDate : null,
+          })
+          .returning();
+
+        // A paid invoice books one income row — the ledger is the only place
+        // money is counted, so the sale must not write the invoice alone.
+        if (invoice.status === "paid") await bookInvoiceIncome(ctx.db, invoice);
       }
 
       return pkg;

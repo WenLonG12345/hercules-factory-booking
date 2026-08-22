@@ -9,9 +9,9 @@ import {
   AddClassDialog,
   AddPricingDialog,
   AddWhyDialog,
-  IconField,
+  ImageField,
   PricingFields,
-  useIconUpload,
+  useImageUpload,
 } from "./add-dialogs";
 import { type CmsData, EditRow, SectionHeader, useCmsToast } from "./cms-ui";
 import { readZh, ZhFields } from "./zh-fields";
@@ -19,7 +19,8 @@ import { readZh, ZhFields } from "./zh-fields";
 /** What the gym sells: the pillars, the classes, and the rate card. */
 export function OfferingPanel({ data }: { data: CmsData }) {
   const { onError, onSuccess } = useCmsToast();
-  const { uploading, withIcon } = useIconUpload();
+  const { uploading, withImage } = useImageUpload("icon", "why-icons");
+  const classImage = useImageUpload("image", "classes");
 
   const updateWhy = api.cms.why.update.useMutation({
     onSuccess: onSuccess("Pillar saved."),
@@ -60,7 +61,7 @@ export function OfferingPanel({ data }: { data: CmsData }) {
               key={item.id}
               onDelete={() => deleteWhy.mutate({ id: item.id })}
               onSubmit={(fd) =>
-                withIcon(fd, (iconUrl) =>
+                withImage(fd, (iconUrl) =>
                   updateWhy.mutate({
                     id: item.id,
                     emoji: String(fd.get("emoji")),
@@ -92,7 +93,13 @@ export function OfferingPanel({ data }: { data: CmsData }) {
                   name="description"
                 />
               </Field>
-              <IconField iconUrl={item.iconUrl} />
+              <ImageField
+                base="icon"
+                hint="optional; the row is numbered when this is empty"
+                label="Icon"
+                previewClassName="aspect-video w-full bg-stone-50 object-contain p-3"
+                url={item.iconUrl}
+              />
               <ZhFields
                 fields={TRANSLATABLE.why}
                 multiline={["description"]}
@@ -116,19 +123,21 @@ export function OfferingPanel({ data }: { data: CmsData }) {
               key={item.id}
               onDelete={() => deleteClass.mutate({ id: item.id })}
               onSubmit={(fd) =>
-                updateClass.mutate({
-                  id: item.id,
-                  name: String(fd.get("name")),
-                  description: String(fd.get("description")),
-                  imageUrl: String(fd.get("imageUrl") ?? "") || undefined,
-                  whatsappMessage:
-                    String(fd.get("whatsappMessage") ?? "") || undefined,
-                  sortOrder: index,
-                  isActive: item.isActive,
-                  zh: readZh(fd),
-                })
+                classImage.withImage(fd, (imageUrl) =>
+                  updateClass.mutate({
+                    id: item.id,
+                    name: String(fd.get("name")),
+                    description: String(fd.get("description")),
+                    imageUrl,
+                    whatsappMessage:
+                      String(fd.get("whatsappMessage") ?? "") || undefined,
+                    sortOrder: index,
+                    isActive: item.isActive,
+                    zh: readZh(fd),
+                  }),
+                )
               }
-              pending={updateClass.isPending}
+              pending={classImage.uploading || updateClass.isPending}
               subtitle={item.description}
               summary={item.name}
             >
@@ -144,17 +153,17 @@ export function OfferingPanel({ data }: { data: CmsData }) {
                   />
                 </Field>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Image URL">
-                  <Input defaultValue={item.imageUrl ?? ""} name="imageUrl" />
-                </Field>
-                <Field label="WhatsApp message">
-                  <Input
-                    defaultValue={item.whatsappMessage ?? ""}
-                    name="whatsappMessage"
-                  />
-                </Field>
-              </div>
+              <ImageField
+                base="image"
+                label="Class photo"
+                url={item.imageUrl}
+              />
+              <Field label="WhatsApp message">
+                <Input
+                  defaultValue={item.whatsappMessage ?? ""}
+                  name="whatsappMessage"
+                />
+              </Field>
               <ZhFields
                 fields={TRANSLATABLE.classes}
                 multiline={["description", "whatsappMessage"]}

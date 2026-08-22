@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-08-22",
+    "macrostructure": "Stat-Led (route-scoped: public /invoice/[id])",
+    "theme": "Sport (locked brand system \u2014 not rotated)",
+    "theme_axes": "light / display-condensed / warm-red",
+    "enrichment": "none",
+    "nav": "none \u2014 standalone document",
+    "footer": "colophon single line (Ft2)",
+    "brief": "Public invoice page redesigned as a paper document: ruled masthead, amount-as-hero + rubber stamp, parties grid, line-item ledger, bank terms, print styles"
+  },
+  {
     "date": "2026-08-17",
     "macrostructure": "n/a \u2014 admin app surface, not a marketing page",
     "theme": "admin system (preserved: stone ground, white cards, red-700 primary)",

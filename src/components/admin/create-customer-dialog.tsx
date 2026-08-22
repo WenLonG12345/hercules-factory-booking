@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { SOURCE_LABEL, today } from "@/app/admin/(portal)/admin-format";
 import { readTrialFields, TrialFields } from "@/components/admin/trial-fields";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,6 @@ import {
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { CUSTOMER_SOURCES, GENDERS } from "@/db/schema";
 import { api } from "@/lib/trpc";
-import { SOURCE_LABEL, today } from "../admin-format";
 
 /**
  * Customer intake. Ticking “came from a trial class” books the one-seat trial

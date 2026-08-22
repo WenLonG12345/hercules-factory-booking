@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
       hint: `${data.todayClasses} class · ${data.todayPt} PT · ${data.todayTrials} trial`,
     },
     {
-      href: "/admin/customers",
+      href: "/admin/invoices",
       label: "Customers",
       icon: Users,
       value: data.totalCustomers,
