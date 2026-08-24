@@ -176,17 +176,16 @@ export const PRICING_ITEMS: {
     },
   },
   {
-    name: "TRIAL CLASS",
+    name: "MUAY THAI FOR EVERYONE",
     priceCents: 2_000,
-    unit: "person",
-    features: "Perfect for beginners\nNo experience required",
+    unit: null,
+    features: "Beginners. Fitness. Fighters.\nNo experience needed.",
     highlight: true,
     whatsappMessage:
       "Hi! I'd like to book the RM20 trial class at Hercules Factory. 😊",
     zh: {
-      name: "体验课",
-      unit: "位",
-      features: "最适合新手\n零经验也可以",
+      name: "泰拳，人人都能练",
+      features: "新手、健身、备赛都适合。\n零经验也可以。",
       whatsappMessage: "你好！我想预约 Hercules Factory RM20 的体验课。😊",
     },
   },

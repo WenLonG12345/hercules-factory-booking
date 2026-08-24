@@ -32,6 +32,20 @@ import {
 } from "@/server/validators/cms";
 import { idSchema } from "@/server/validators/common";
 
+/** Alt text is never typed by hand — describe the photo from what we already
+ * know about it: the visitor's caption, else its category, else the fallback. */
+const galleryAlt = (image: {
+  caption?: string | null;
+  category?: string | null;
+  submittedBy?: string | null;
+}) =>
+  image.caption?.trim() ||
+  (image.category?.trim()
+    ? `${image.category.trim()} at Hercules Factory`
+    : image.submittedBy?.trim()
+      ? `Training photo shared by ${image.submittedBy.trim()}`
+      : "Muay Thai training at Hercules Factory");
+
 /**
  * The landing page is ISR'd (`revalidate = 300` in `src/app/[locale]/page.tsx`),
  * so without this an edit here would sit behind a stale page for up to five
@@ -410,11 +424,12 @@ export const cmsRouter = createTRPCRouter({
   }),
 
   gallery: createTRPCRouter({
-    create: cmsProcedure
-      .input(galleryImageInput)
-      .mutation(({ ctx, input }) =>
-        ctx.db.insert(galleryImages).values(input).returning(),
-      ),
+    create: cmsProcedure.input(galleryImageInput).mutation(({ ctx, input }) =>
+      ctx.db
+        .insert(galleryImages)
+        .values({ ...input, alt: galleryAlt(input) })
+        .returning(),
+    ),
     update: cmsProcedure
       .input(galleryImageInput.extend({ id: z.uuid() }))
       .mutation(({ ctx, input: { id, ...values } }) =>

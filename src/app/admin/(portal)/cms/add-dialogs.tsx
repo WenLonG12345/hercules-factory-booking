@@ -299,7 +299,7 @@ export function PricingFields({
           />
         </Field>
       </div>
-      <Field label="Features — one per line">
+      <Field label="Features — one per line (highlighted plan: line one is the tagline, the rest print under the price)">
         <Textarea
           defaultValue={plan?.features ?? ""}
           name="features"
@@ -372,7 +372,6 @@ export function AddGalleryDialog({ sortOrder }: { sortOrder: number }) {
         const add = (imageUrl: string) =>
           create.mutate({
             imageUrl,
-            alt: String(fd.get("alt")),
             category: String(fd.get("category") ?? "") || undefined,
             sortOrder,
             isActive: true,
@@ -402,15 +401,16 @@ export function AddGalleryDialog({ sortOrder }: { sortOrder: number }) {
       setOpen={setOpen}
       submitLabel={uploading ? "Uploading…" : "Add photo"}
     >
-      <ImageFileUpload className="max-w-md" name="imageFile" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Alt text">
-          <Input name="alt" required />
-        </Field>
-        <Field label="Category">
-          <Input name="category" placeholder="Group class / PT / Sparring" />
-        </Field>
-      </div>
+      {/* Square preview because the landing page crops gallery photos square
+          (every third one 4:5) — portrait uploads are fine, they get centred. */}
+      <ImageFileUpload
+        className="max-w-xs"
+        name="imageFile"
+        previewClassName="aspect-square w-full object-cover"
+      />
+      <Field label="Category">
+        <Input name="category" placeholder="Group class / PT / Sparring" />
+      </Field>
     </Shell>
   );
 }

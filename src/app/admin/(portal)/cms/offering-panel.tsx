@@ -176,7 +176,7 @@ export function OfferingPanel({ data }: { data: CmsData }) {
       </Card>
 
       <SectionHeader
-        hint="Rows render as the ruled rate card. Tick “Highlight” on exactly one plan — that one is lifted out of the list and runs as the red trial band underneath it."
+        hint="Rows render as the ruled rate card. Tick “Highlight” on exactly one plan — that one is lifted out of the list and runs as the centred red trial band underneath it: name as the headline, feature line one as the tagline, then the price and the remaining lines."
         id="pricing"
         title="Pricing"
       />

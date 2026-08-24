@@ -36,6 +36,13 @@ export default async function HomePage({
   const trial = pricing.find((plan) => plan.highlight);
   const plans = pricing.filter((plan) => !plan.highlight);
 
+  // Trial copy: line one of the CMS features is the tagline under the name,
+  // every line after it prints as a note under the price.
+  const [trialTagline, ...trialNotes] = (trial?.features ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
   const averageRating = reviews.length
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
@@ -284,65 +291,72 @@ export default async function HomePage({
 
         {/* 3.6 — Trial: the one plan flagged in the CMS, lifted out of the
             ledger onto an accent ground. It is the only red band on the page,
-            so it reads as the offer rather than as another price row. */}
+            so it reads as the offer rather than as another price row.
+            The CMS feature lines split in two: the first is the tagline under
+            the name, the rest print as notes under the price. */}
         {trial ? (
           <div className="grain relative overflow-hidden bg-accent text-accent-ink">
             <Reveal
               as="section"
-              className="mx-auto grid max-w-6xl gap-10 px-4 py-20 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:px-8 md:py-24"
+              className="mx-auto max-w-4xl px-4 py-20 text-center md:px-8 md:py-24"
             >
-              <div className="min-w-0">
+              <h2
+                className="display text-(length:--text-h2) leading-[0.92]"
+                data-reveal
+                id="trial"
+              >
+                {trial.name}
+              </h2>
+              {trialTagline ? (
                 <p
-                  className="font-black text-sm uppercase tracking-[0.32em] opacity-80"
+                  className="mt-4 text-(length:--text-lead) opacity-90"
                   data-reveal
-                >
-                  {t("trialKicker")}
-                </p>
-                <h2
-                  className="display mt-4 text-(length:--text-h2) leading-[0.92]"
-                  data-reveal
-                  id="trial"
                   style={{ "--i": 1 } as React.CSSProperties}
                 >
-                  {trial.name}
-                </h2>
+                  {trialTagline}
+                </p>
+              ) : null}
+              <p
+                className="display mt-10 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 leading-none tabular-nums"
+                data-reveal
+                style={{ "--i": 2 } as React.CSSProperties}
+              >
+                <span aria-hidden="true" className="not-italic">
+                  🥊
+                </span>
+                <span className="text-(length:--text-h3)">
+                  {t("trialPriceLabel")}
+                </span>
+                <span className="text-(length:--text-price)">
+                  {price(trial.priceCents)}
+                </span>
+                {trial.unit ? (
+                  <span className="font-normal text-(length:--text-body) normal-case tracking-normal opacity-80">
+                    / {trial.unit}
+                  </span>
+                ) : null}
+              </p>
+              {trialNotes.length ? (
                 <ul
-                  className="mt-6 grid gap-2 text-(length:--text-lead)"
+                  className="mt-4 grid gap-1 text-(length:--text-lead) opacity-90"
                   data-reveal
-                  style={{ "--i": 2 } as React.CSSProperties}
+                  style={{ "--i": 3 } as React.CSSProperties}
                 >
-                  {featureLines(trial.features).map((line) => (
-                    <li
-                      key={line}
-                      className="before:me-2 before:content-['✨']"
-                    >
-                      {line}
-                    </li>
+                  {trialNotes.map((line) => (
+                    <li key={line}>{line}</li>
                   ))}
                 </ul>
-              </div>
-              <div
-                className="md:text-end"
+              ) : null}
+              <a
+                className="cta cta-invert mt-10"
                 data-reveal
-                style={{ "--i": 3 } as React.CSSProperties}
+                href={wa(trial.whatsappMessage)}
+                rel="noreferrer"
+                style={{ "--i": 4 } as React.CSSProperties}
+                target="_blank"
               >
-                <p className="display flex items-baseline gap-2 text-(length:--text-price) leading-none tabular-nums md:justify-end">
-                  {price(trial.priceCents)}
-                  {trial.unit ? (
-                    <span className="font-normal text-(length:--text-body) normal-case tracking-normal opacity-80">
-                      / {trial.unit}
-                    </span>
-                  ) : null}
-                </p>
-                <a
-                  className="cta cta-invert mt-8"
-                  href={wa(trial.whatsappMessage)}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {t("trialCta")}
-                </a>
-              </div>
+                {t("trialCta", { price: price(trial.priceCents) })}
+              </a>
             </Reveal>
           </div>
         ) : null}
