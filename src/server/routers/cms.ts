@@ -33,15 +33,15 @@ import {
 import { idSchema } from "@/server/validators/common";
 
 /** Alt text is never typed by hand — describe the photo from what we already
- * know about it: the visitor's caption, else its category, else the fallback. */
+ * know about it: the visitor's caption, else its label, else the fallback. */
 const galleryAlt = (image: {
   caption?: string | null;
-  category?: string | null;
+  label?: string | null;
   submittedBy?: string | null;
 }) =>
   image.caption?.trim() ||
-  (image.category?.trim()
-    ? `${image.category.trim()} at Hercules Factory`
+  (image.label?.trim()
+    ? `${image.label.trim()} at Hercules Factory`
     : image.submittedBy?.trim()
       ? `Training photo shared by ${image.submittedBy.trim()}`
       : "Muay Thai training at Hercules Factory");
@@ -404,12 +404,13 @@ export const cmsRouter = createTRPCRouter({
       .mutation(({ ctx, input }) =>
         ctx.db.insert(promotions).values(input).returning(),
       ),
-    update: cmsProcedure
-      .input(promotionInput.extend({ id: z.uuid() }))
-      .mutation(({ ctx, input: { id, ...values } }) =>
+    /** Inline title edit from the CMS promotions grid. */
+    setTitle: cmsProcedure
+      .input(z.object({ id: z.uuid(), title: z.string().trim().min(2) }))
+      .mutation(({ ctx, input: { id, title } }) =>
         ctx.db
           .update(promotions)
-          .set({ ...values, updatedAt: new Date() })
+          .set({ title, updatedAt: new Date() })
           .where(eq(promotions.id, id))
           .returning(),
       ),
@@ -430,15 +431,27 @@ export const cmsRouter = createTRPCRouter({
         .values({ ...input, alt: galleryAlt(input) })
         .returning(),
     ),
-    update: cmsProcedure
-      .input(galleryImageInput.extend({ id: z.uuid() }))
-      .mutation(({ ctx, input: { id, ...values } }) =>
-        ctx.db
+    /** Inline label edit from the CMS gallery grid. Alt text is derived from
+     * the label, so it has to be recomputed off the stored row. */
+    setLabel: cmsProcedure
+      .input(z.object({ id: z.uuid(), label: z.string().trim().max(60) }))
+      .mutation(async ({ ctx, input }) => {
+        const [row] = await ctx.db
+          .select()
+          .from(galleryImages)
+          .where(eq(galleryImages.id, input.id));
+        if (!row) return [];
+        const label = input.label || null;
+        return ctx.db
           .update(galleryImages)
-          .set({ ...values, updatedAt: new Date() })
-          .where(eq(galleryImages.id, id))
-          .returning(),
-      ),
+          .set({
+            label,
+            alt: galleryAlt({ ...row, label }),
+            updatedAt: new Date(),
+          })
+          .where(eq(galleryImages.id, input.id))
+          .returning();
+      }),
     /** Publishes a visitor submission. Rejecting one is just `delete`. */
     approve: cmsProcedure
       .input(idSchema)

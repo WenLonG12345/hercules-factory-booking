@@ -250,10 +250,10 @@ export const GALLERY_ITEMS = [
   ["1583473848882-f9a5bc7fd2ee", "Clinch practice", "Clinch"],
   ["1517649763962-0c623066013b", "Bag work conditioning", "Conditioning"],
   ["1546483875-ad9014c88eba", "Gym floor and ring", "The Gym"],
-].map(([imageId, alt, category]) => ({
+].map(([imageId, alt, label]) => ({
   imageUrl: `${UNSPLASH}-${imageId}?auto=format&fit=crop&w=1200&q=70`,
   alt,
-  category,
+  label,
 }));
 
 export const demoLanding = {

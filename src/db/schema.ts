@@ -482,7 +482,7 @@ export const galleryImages = sqliteTable("gallery_images", {
   id: id(),
   imageUrl: text("image_url").notNull(),
   alt: text("alt").notNull(),
-  category: text("category"),
+  label: text("label"),
   caption: text("caption"),
   submittedBy: text("submitted_by"),
   sortOrder: integer("sort_order").default(0).notNull(),

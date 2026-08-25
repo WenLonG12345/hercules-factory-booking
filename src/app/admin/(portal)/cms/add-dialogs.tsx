@@ -372,7 +372,7 @@ export function AddGalleryDialog({ sortOrder }: { sortOrder: number }) {
         const add = (imageUrl: string) =>
           create.mutate({
             imageUrl,
-            category: String(fd.get("category") ?? "") || undefined,
+            label: String(fd.get("label") ?? "") || undefined,
             sortOrder,
             isActive: true,
           });
@@ -408,8 +408,8 @@ export function AddGalleryDialog({ sortOrder }: { sortOrder: number }) {
         name="imageFile"
         previewClassName="aspect-square w-full object-cover"
       />
-      <Field label="Category">
-        <Input name="category" placeholder="Group class / PT / Sparring" />
+      <Field label="Label">
+        <Input name="label" placeholder="Group class / PT / Sparring" />
       </Field>
     </Shell>
   );

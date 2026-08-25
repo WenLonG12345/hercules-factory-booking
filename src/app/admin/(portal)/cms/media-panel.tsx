@@ -6,6 +6,7 @@ import { PhotoProvider, PhotoView } from "@/components/photo-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/form";
 import { api } from "@/lib/trpc";
 import { AddGalleryDialog, AddPromoDialog } from "./add-dialogs";
 import {
@@ -33,6 +34,14 @@ export function MediaPanel({ data }: { data: CmsData }) {
   });
   const reorderGallery = api.cms.gallery.reorder.useMutation({
     onSuccess: onSuccess("Gallery order saved."),
+    onError,
+  });
+  const labelGallery = api.cms.gallery.setLabel.useMutation({
+    onSuccess: onSuccess("Label saved."),
+    onError,
+  });
+  const titlePromo = api.cms.promos.setTitle.useMutation({
+    onSuccess: onSuccess("Title saved."),
     onError,
   });
 
@@ -173,33 +182,49 @@ export function MediaPanel({ data }: { data: CmsData }) {
                   src={image.imageUrl}
                 />
               </PhotoView>
-              <figcaption className="flex items-center justify-between gap-1 px-2 py-1.5">
-                <button
-                  aria-label={`Move photo ${index + 1} of ${orderedPhotos.length}. Arrow keys reorder.`}
-                  className="shrink-0 rounded p-1 text-stone-400 transition hover:bg-stone-100 hover:text-stone-700 focus-visible:ring-4 focus-visible:ring-red-600/20"
-                  onKeyDown={(event) => {
-                    const step =
-                      event.key === "ArrowLeft"
-                        ? -1
-                        : event.key === "ArrowRight"
-                          ? 1
-                          : 0;
-                    if (!step) return;
-                    event.preventDefault();
-                    moveTo(image.id, index + step);
-                  }}
-                  type="button"
-                >
-                  <GripVertical className="size-4" />
-                </button>
-                <Badge tone="gray">
-                  {image.submittedBy
-                    ? `by ${image.submittedBy}`
-                    : (image.category ?? "—")}
-                </Badge>
-                <DeleteButton
-                  onClick={() => deleteGallery.mutate({ id: image.id })}
-                />
+              <figcaption className="grid gap-1 px-2 py-1.5">
+                <div className="flex items-center justify-between gap-1">
+                  <button
+                    aria-label={`Move photo ${index + 1} of ${orderedPhotos.length}. Arrow keys reorder.`}
+                    className="shrink-0 rounded p-1 text-stone-400 transition hover:bg-stone-100 hover:text-stone-700 focus-visible:ring-4 focus-visible:ring-red-600/20"
+                    onKeyDown={(event) => {
+                      const step =
+                        event.key === "ArrowLeft"
+                          ? -1
+                          : event.key === "ArrowRight"
+                            ? 1
+                            : 0;
+                      if (!step) return;
+                      event.preventDefault();
+                      moveTo(image.id, index + step);
+                    }}
+                    type="button"
+                  >
+                    <GripVertical className="size-4" />
+                  </button>
+                  <Input
+                    className="h-8 flex-1 border-transparent px-1.5 text-xs"
+                    defaultValue={image.label ?? ""}
+                    // Not draggable, or the browser hands the tile's drag to the
+                    // text selection instead of letting the caret move.
+                    draggable={false}
+                    onDragStart={(event: React.DragEvent) =>
+                      event.stopPropagation()
+                    }
+                    onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
+                      const next = event.target.value.trim();
+                      if (next !== (image.label ?? ""))
+                        labelGallery.mutate({ id: image.id, label: next });
+                    }}
+                    placeholder="Label"
+                  />
+                  <DeleteButton
+                    onClick={() => deleteGallery.mutate({ id: image.id })}
+                  />
+                </div>
+                {image.submittedBy ? (
+                  <Badge tone="gray">{`by ${image.submittedBy}`}</Badge>
+                ) : null}
               </figcaption>
             </figure>
           ))}
@@ -238,9 +263,16 @@ export function MediaPanel({ data }: { data: CmsData }) {
                   <Badge tone="gray">Queued</Badge>
                 )}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-xs font-semibold">
-                    {promo.title}
-                  </span>
+                  <Input
+                    className="h-8 flex-1 border-transparent px-1.5 text-xs font-semibold"
+                    defaultValue={promo.title}
+                    onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
+                      const next = event.target.value.trim();
+                      if (next.length >= 2 && next !== promo.title)
+                        titlePromo.mutate({ id: promo.id, title: next });
+                    }}
+                    placeholder="Title"
+                  />
                   <DeleteButton
                     onClick={() => deletePromo.mutate({ id: promo.id })}
                   />

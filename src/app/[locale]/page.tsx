@@ -455,9 +455,9 @@ export default async function HomePage({
                       src={image.imageUrl}
                     />
                   </PhotoView>
-                  {image.category || image.submittedBy ? (
+                  {image.label || image.submittedBy ? (
                     <figcaption className="on-dark pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-scrim to-transparent px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-ink">
-                      {image.category}
+                      {image.label}
                       {image.submittedBy ? (
                         <span className="block font-normal normal-case tracking-normal text-ink-dim">
                           {t("sharedBy", { name: image.submittedBy })}

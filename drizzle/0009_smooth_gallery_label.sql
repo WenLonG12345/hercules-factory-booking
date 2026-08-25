@@ -1,0 +1,1 @@
+ALTER TABLE `gallery_images` RENAME COLUMN `category` TO `label`;

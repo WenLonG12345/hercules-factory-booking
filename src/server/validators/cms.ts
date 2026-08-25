@@ -101,7 +101,7 @@ export const faqItemInput = z.object({
 // Alt text is system-generated in the gallery router — never typed by hand.
 export const galleryImageInput = z.object({
   imageUrl: z.string().min(4),
-  category: z.string().optional(),
+  label: z.string().optional(),
   caption: z.string().optional(),
   submittedBy: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
