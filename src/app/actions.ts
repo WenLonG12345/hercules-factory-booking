@@ -55,7 +55,6 @@ export async function submitPhotoAction(
         imageUrl,
         alt: caption ?? `Training photo shared by ${name}`,
         caption,
-        category: "Community",
         submittedBy: name,
         isActive: false,
       });
