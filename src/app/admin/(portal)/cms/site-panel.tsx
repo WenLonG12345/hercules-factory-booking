@@ -241,7 +241,9 @@ export function SitePanel({ data }: { data: CmsData }) {
                 <span className="font-normal text-stone-500">{item.url}</span>
               </span>
               <DeleteButton
+                label="Delete link"
                 onClick={() => deleteSocial.mutate({ id: item.id })}
+                pending={deleteSocial.isPending}
               />
             </li>
           ))}

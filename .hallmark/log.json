@@ -1,52 +1,62 @@
 [
   {
+    "date": "2026-08-28",
+    "macrostructure": "component-scope — CMS Media tile controls",
+    "theme": "admin system (preserved: stone ground, white cards, red-700 primary)",
+    "theme_axes": "light / grotesk-sans / warm-red",
+    "enrichment": "none",
+    "nav": "n/a (component-scope)",
+    "footer": "n/a (component-scope)",
+    "brief": "CMS Media tab: delete button was clipped below 1280px (input min-width:auto vs overflow-hidden tile) -> controls row above a full-width label input; DeleteButton rebuilt with 8 states + two-step arm; grip handle -> touch-reachable chevron MoveButtons; grid breakpoints made monotonic against the lg sidebar"
+  },
+  {
     "date": "2026-08-22",
     "macrostructure": "Stat-Led (route-scoped: public /invoice/[id])",
-    "theme": "Sport (locked brand system \u2014 not rotated)",
+    "theme": "Sport (locked brand system — not rotated)",
     "theme_axes": "light / display-condensed / warm-red",
     "enrichment": "none",
-    "nav": "none \u2014 standalone document",
+    "nav": "none — standalone document",
     "footer": "colophon single line (Ft2)",
     "brief": "Public invoice page redesigned as a paper document: ruled masthead, amount-as-hero + rubber stamp, parties grid, line-item ledger, bank terms, print styles"
   },
   {
     "date": "2026-08-17",
-    "macrostructure": "n/a \u2014 admin app surface, not a marketing page",
+    "macrostructure": "n/a — admin app surface, not a marketing page",
     "theme": "admin system (preserved: stone ground, white cards, red-700 primary)",
     "theme_axes": "light / grotesk-sans / warm-red",
     "enrichment": "none",
-    "nav": "tab strip (4 hash-routed workspaces) \u2014 shell owns the app nav",
+    "nav": "tab strip (4 hash-routed workspaces) — shell owns the app nav",
     "footer": "n/a",
     "brief": "Admin CMS page: 11 stacked sections + anchor-chip row -> Site / Offering / Media / Words workspaces, one panel mounted at a time; page.tsx split into four panel files + shared cms-ui"
   },
   {
     "date": "2026-08-15",
-    "macrostructure": "component-scope \u2014 Why section marks",
+    "macrostructure": "component-scope — Why section marks",
     "theme": "Sport",
     "theme_axes": "light / display-condensed / warm-red",
     "enrichment": "Game Icons silhouettes (react-icons/gi), emoji-keyed, accent-filled",
     "nav": "n/a (component-scope)",
     "footer": "n/a (component-scope)",
-    "brief": "Why section: Game Icons marks keyed off the CMS emoji column, then flat ruled rows \u2192 hard-edged plate cards (square corners, 2px ink, accent top slab) to stay distinct from the rounded Classes grid"
+    "brief": "Why section: Game Icons marks keyed off the CMS emoji column, then flat ruled rows → hard-edged plate cards (square corners, 2px ink, accent top slab) to stay distinct from the rounded Classes grid"
   },
   {
     "date": "2026-08-15",
-    "macrostructure": "Marquee Hero (banded) \u2014 section-scope redesign",
+    "macrostructure": "Marquee Hero (banded) — section-scope redesign",
     "theme": "Sport",
     "theme_axes": "light / display-condensed / warm-red",
     "enrichment": "none",
     "nav": "unchanged (N5)",
     "footer": "unchanged (Ft5)",
-    "brief": "Why section: emoji-disc card grid \u2192 F-index-rows ruled ordinal ledger; also fixed text-(--text-*) \u2192 text-(length:--text-*) page-wide"
+    "brief": "Why section: emoji-disc card grid → F-index-rows ruled ordinal ledger; also fixed text-(--text-*) → text-(length:--text-*) page-wide"
   },
   {
     "date": "2026-08-15",
     "macrostructure": "Marquee Hero (banded)",
     "theme": "Sport",
     "theme_axes": "light / display-condensed / warm-red",
-    "enrichment": "none \u2014 user-owned hero photograph",
+    "enrichment": "none — user-owned hero photograph",
     "nav": "N5 floating pill (dark, persistent)",
     "footer": "Ft5 statement (statement moved into the closing CTA band)",
-    "brief": "Hercules Factory \u00b7 Muay Thai gym landing \u2014 lift off the all-dark theme, keep hero photo, enlarge CTA type"
+    "brief": "Hercules Factory · Muay Thai gym landing — lift off the all-dark theme, keep hero photo, enlarge CTA type"
   }
 ]

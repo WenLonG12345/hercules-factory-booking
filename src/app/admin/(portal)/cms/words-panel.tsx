@@ -55,7 +55,9 @@ export function WordsPanel({ data }: { data: CmsData }) {
                 <span className="block text-stone-500">{item.quote}</span>
               </span>
               <DeleteButton
+                label="Delete review"
                 onClick={() => deleteReview.mutate({ id: item.id })}
+                pending={deleteReview.isPending}
               />
             </li>
           ))}
