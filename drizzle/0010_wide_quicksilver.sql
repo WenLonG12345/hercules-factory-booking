@@ -1,0 +1,2 @@
+ALTER TABLE `landing_page_content` ADD `hero_image_mobile_url` text;--> statement-breakpoint
+ALTER TABLE `landing_page_content` ADD `google_review_url` text DEFAULT 'https://share.google/yVQOvfu12G2piV8Yi';

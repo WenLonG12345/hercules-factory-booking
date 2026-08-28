@@ -41,6 +41,7 @@ export const landingPageContentInput = z.object({
   heroHeadline: z.string().min(4),
   heroSubtitle: z.string().min(4),
   heroImageUrl: z.string().optional(),
+  heroImageMobileUrl: z.string().optional(),
   primaryCtaText: z.string().min(2),
   whatsappPhone: z.string().min(8),
   whatsappMessage: z.string().min(4),
@@ -53,6 +54,7 @@ export const landingPageContentInput = z.object({
   faqTitle: z.string().min(2),
   locationTitle: z.string().min(2),
   locationAddress: z.string().min(5),
+  googleReviewUrl: z.string().optional(),
   mapEmbedUrl: z.string().optional(),
   zh: zhInput,
 });

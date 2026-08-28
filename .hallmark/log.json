@@ -1,6 +1,16 @@
 [
   {
     "date": "2026-08-28",
+    "macrostructure": "component-scope — SiteFab speed-dial action",
+    "theme": "Sport (locked brand system — not rotated)",
+    "theme_axes": "light / display-condensed / warm-red",
+    "enrichment": "none — FcGoogle brand mark on a paper disc",
+    "nav": "n/a (component-scope)",
+    "footer": "n/a (component-scope)",
+    "brief": "Google review CTA moved out of the reviews section (stray outline pill) into the FAB speed dial as a third action, ranked between Share photo and WhatsApp; the three pills now share one ACTION class with whitespace-nowrap + active:translate-y-0"
+  },
+  {
+    "date": "2026-08-28",
     "macrostructure": "component-scope — CMS Media tile controls",
     "theme": "admin system (preserved: stone ground, white cards, red-700 primary)",
     "theme_axes": "light / grotesk-sans / warm-red",

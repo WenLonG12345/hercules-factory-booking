@@ -397,6 +397,9 @@ export const landingPageContent = sqliteTable("landing_page_content", {
   heroHeadline: text("hero_headline").notNull(),
   heroSubtitle: text("hero_subtitle").notNull(),
   heroImageUrl: text("hero_image_url"),
+  // Art-direction crop for phones — the wide hero photo loses its subject when
+  // squeezed into a portrait viewport.
+  heroImageMobileUrl: text("hero_image_mobile_url"),
   primaryCtaText: text("primary_cta_text").default("BOOK A CLASS").notNull(),
   whatsappPhone: text("whatsapp_phone").notNull(),
   whatsappMessage: text("whatsapp_message").notNull(),
@@ -409,6 +412,9 @@ export const landingPageContent = sqliteTable("landing_page_content", {
     .default("What members say")
     .notNull(),
   faqTitle: text("faq_title").default("FAQ").notNull(),
+  googleReviewUrl: text("google_review_url").default(
+    "https://share.google/yVQOvfu12G2piV8Yi",
+  ),
   locationTitle: text("location_title").notNull(),
   locationAddress: text("location_address").notNull(),
   mapEmbedUrl: text("map_embed_url"),

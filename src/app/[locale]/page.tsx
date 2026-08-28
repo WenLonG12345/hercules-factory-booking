@@ -71,15 +71,24 @@ export default async function HomePage({
       <main>
         {/* 1 — Hero */}
         <section className="on-dark grain relative flex min-h-[92svh] items-end overflow-hidden bg-paper">
-          {content?.heroImageUrl ? (
-            <Image
-              alt=""
-              className="ken-burns absolute inset-0 size-full object-cover"
-              fill
-              priority
-              sizes="100vw"
-              src={content.heroImageUrl}
-            />
+          {content?.heroImageUrl || content?.heroImageMobileUrl ? (
+            // ponytail: plain <picture>, not next/image — art direction needs
+            // two sources behind a media query, which <Image> cannot express,
+            // and a hidden second <Image> would still be downloaded.
+            <picture>
+              {content.heroImageMobileUrl ? (
+                <source
+                  media="(max-width: 767px)"
+                  srcSet={content.heroImageMobileUrl}
+                />
+              ) : null}
+              <img
+                alt=""
+                className="ken-burns absolute inset-0 size-full object-cover"
+                fetchPriority="high"
+                src={content.heroImageUrl ?? content.heroImageMobileUrl ?? ""}
+              />
+            </picture>
           ) : null}
           <div className="absolute inset-0 bg-linear-to-t from-paper via-paper/70 to-paper/30" />
 
@@ -623,7 +632,10 @@ export default async function HomePage({
         </Reveal>
       </main>
 
-      <SiteFab whatsappHref={wa()} />
+      <SiteFab
+        googleReviewHref={content?.googleReviewUrl ?? undefined}
+        whatsappHref={wa()}
+      />
       <PublicFooter social={social} />
     </>
   );

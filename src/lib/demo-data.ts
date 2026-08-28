@@ -263,6 +263,7 @@ export const demoLanding = {
     heroHeadline: "MUAY THAI FOR EVERYONE",
     heroSubtitle: "Beginners. Fitness. Fighters.",
     heroImageUrl: `${UNSPLASH}-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=2000&q=70`,
+    heroImageMobileUrl: null as string | null,
     primaryCtaText: "BOOK A CLASS",
     whatsappPhone: "60162723083",
     whatsappMessage:
@@ -277,6 +278,7 @@ export const demoLanding = {
     locationTitle: "Find us",
     locationAddress:
       "Jalan Cerdas, Taman Connaught, 56000 Kuala Lumpur, Wilayah Persekutuan Kuala Lumpur",
+    googleReviewUrl: "https://share.google/yVQOvfu12G2piV8Yi" as string | null,
     mapEmbedUrl: GOOGLE_MAP_EMBED as string | null,
     zh: {
       heroHeadline: "人人都能练泰拳",

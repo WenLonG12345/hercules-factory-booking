@@ -4,6 +4,7 @@ import { Camera, Check, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { FaWhatsapp } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import { submitPhotoAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +17,23 @@ import {
 import { ImageFileUpload } from "@/components/ui/file-upload";
 import { Field, Input } from "@/components/ui/form";
 
-/** Speed-dial FAB: WhatsApp the gym, or send in a training photo. */
-export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
+/**
+ * One pill per speed-dial action: label on the left, a round mark on the
+ * right that carries the action's own colour — accent for ours, the brand's
+ * own for WhatsApp and Google. `whitespace-nowrap` keeps every label on one
+ * line down to a 320px viewport.
+ */
+const ACTION =
+  "lift flex items-center gap-3 whitespace-nowrap rounded-full bg-paper-2 py-2.5 pl-5 pr-2.5 text-xs font-black uppercase tracking-[0.14em] shadow-lg ring-1 ring-hairline active:translate-y-0";
+
+/** Speed-dial FAB: WhatsApp the gym, leave a review, or send in a photo. */
+export function SiteFab({
+  googleReviewHref,
+  whatsappHref,
+}: {
+  googleReviewHref?: string;
+  whatsappHref: string;
+}) {
   const t = useTranslations("Fab");
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,7 +52,7 @@ export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
           }`}
         >
           <button
-            className="lift flex items-center gap-3 rounded-full bg-paper-2 py-2.5 pl-5 pr-2.5 text-xs font-black uppercase tracking-[0.14em] shadow-lg ring-1 ring-hairline"
+            className={ACTION}
             onClick={() => {
               setOpen(false);
               setSent(false);
@@ -51,8 +67,22 @@ export function SiteFab({ whatsappHref }: { whatsappHref: string }) {
             </span>
           </button>
 
+          {googleReviewHref ? (
+            <a
+              className={ACTION}
+              href={googleReviewHref}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {t("googleReview")}
+              <span className="grid size-10 place-items-center rounded-full bg-paper ring-1 ring-hairline">
+                <FcGoogle className="size-5" />
+              </span>
+            </a>
+          ) : null}
+
           <a
-            className="lift flex items-center gap-3 rounded-full bg-paper-2 py-2.5 pl-5 pr-2.5 text-xs font-black uppercase tracking-[0.14em] shadow-lg ring-1 ring-hairline"
+            className={ACTION}
             href={whatsappHref}
             rel="noreferrer"
             target="_blank"
