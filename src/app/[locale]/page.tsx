@@ -8,6 +8,7 @@ import { Reveal } from "@/components/reveal";
 import { SiteFab } from "@/components/site-fab";
 import { WhyIcon } from "@/components/why-icon";
 import type { Locale } from "@/i18n/routing";
+import { jsonLdScript, landingJsonLd } from "@/lib/structured-data";
 import { whatsappLink } from "@/lib/utils";
 import { getLandingData } from "@/server/services/queries";
 
@@ -20,6 +21,8 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
   const t = await getTranslations("Home");
+  const meta = await getTranslations("Metadata");
+  const data = await getLandingData(locale);
   const {
     content,
     why,
@@ -30,7 +33,7 @@ export default async function HomePage({
     promo,
     reviews,
     social,
-  } = await getLandingData(locale);
+  } = data;
 
   // The one flagged row runs as the band below the ledger; the rest are rows.
   const trial = pricing.find((plan) => plan.highlight);
@@ -61,8 +64,22 @@ export default async function HomePage({
   const featureLines = (features?: string | null) =>
     (features ?? "").split("\n").filter((line) => line.trim());
 
+  const graph = landingJsonLd({
+    data,
+    locale,
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+    title: meta("title"),
+    description: meta("description"),
+  });
+
   return (
     <>
+      {/* JSON-LD has no React equivalent — a script tag is the only carrier. */}
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: serialized JSON-LD, escaped by `jsonLdScript`
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(graph) }}
+        type="application/ld+json"
+      />
       <PublicHeader
         ctaHref={wa()}
         ctaText={content?.primaryCtaText ?? "BOOK A CLASS"}
