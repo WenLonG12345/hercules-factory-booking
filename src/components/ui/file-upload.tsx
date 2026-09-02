@@ -2,6 +2,7 @@
 
 import { ImagePlus, RefreshCw, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { downscaleImage } from "@/lib/image-resize";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,17 +27,32 @@ export function ImageFileUpload({
   const [preview, setPreview] = useState<string | null>(initialPreview ?? null);
   const [filename, setFilename] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [preparing, setPreparing] = useState(false);
 
-  function handleFile(file: File | null | undefined) {
-    if (!file) return;
-    setFilename(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
-
+  function setInputFile(file: File) {
     const dt = new DataTransfer();
     dt.items.add(file);
     if (inputRef.current) inputRef.current.files = dt.files;
+  }
+
+  async function handleFile(file: File | null | undefined) {
+    if (!file) return;
+    setFilename(file.name);
+    // The original goes on the input first, so submitting during the shrink
+    // still sends a file rather than nothing.
+    setInputFile(file);
+    setPreparing(true);
+    try {
+      const small = await downscaleImage(file);
+      if (small !== file) setInputFile(small);
+      // Preview the shrunk copy — a data URL of an 8MB original is ~11MB of
+      // base64 sitting in state on a tablet.
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target?.result as string);
+      reader.readAsDataURL(small);
+    } finally {
+      setPreparing(false);
+    }
   }
 
   function clear() {
@@ -54,7 +70,7 @@ export function ImageFileUpload({
         className="sr-only"
         name={name}
         type="file"
-        onChange={(e) => handleFile(e.target.files?.[0])}
+        onChange={(e) => void handleFile(e.target.files?.[0])}
       />
 
       {preview ? (
@@ -63,11 +79,12 @@ export function ImageFileUpload({
           <img alt="Preview" className={previewClassName} src={preview} />
           <div className="flex items-center justify-between gap-2 border-t border-stone-200 bg-white px-3 py-2">
             <p className="truncate text-xs text-stone-500">
-              {filename ?? "Current image"}
+              {preparing ? "Preparing…" : (filename ?? "Current image")}
             </p>
             <div className="flex shrink-0 items-center gap-1">
               <button
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-stone-600 transition hover:bg-stone-100"
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-stone-600 transition hover:bg-stone-100 disabled:opacity-50"
+                disabled={preparing}
                 onClick={() => inputRef.current?.click()}
                 type="button"
               >
@@ -93,6 +110,7 @@ export function ImageFileUpload({
               ? "border-red-400 bg-red-50"
               : "border-stone-200 hover:border-stone-300 hover:bg-stone-50",
           )}
+          disabled={preparing}
           type="button"
           onClick={() => inputRef.current?.click()}
           onDragLeave={() => setDragging(false)}
@@ -103,17 +121,28 @@ export function ImageFileUpload({
           onDrop={(e) => {
             e.preventDefault();
             setDragging(false);
-            handleFile(e.dataTransfer.files[0]);
+            void handleFile(e.dataTransfer.files[0]);
           }}
         >
           <div className="grid size-10 place-items-center rounded-full bg-stone-100">
             <ImagePlus className="size-4.5 text-stone-400" />
           </div>
           <p className="text-sm font-semibold text-stone-700">
-            Click to upload
-            <span className="font-normal text-stone-400"> or drag & drop</span>
+            {preparing ? (
+              "Preparing…"
+            ) : (
+              <>
+                Click to upload
+                <span className="font-normal text-stone-400">
+                  {" "}
+                  or drag &amp; drop
+                </span>
+              </>
+            )}
           </p>
-          <p className="text-xs text-stone-400">PNG, JPG, WEBP — up to 8 MB</p>
+          <p className="text-xs text-stone-400">
+            PNG, JPG, WEBP — big photos are shrunk for you
+          </p>
         </button>
       )}
     </div>

@@ -145,11 +145,9 @@ export function useImageUpload(base: string, prefix: string) {
     upload.set("imageFile", file);
     upload.set("prefix", prefix);
     startUpload(async () => {
-      try {
-        next(await uploadImageAction(upload));
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Upload failed");
-      }
+      const result = await uploadImageAction(upload);
+      if (result.url) next(result.url);
+      else toast.error(result.error ?? "Upload failed.");
     });
   };
   return { uploading, withImage };
@@ -383,13 +381,9 @@ export function AddGalleryDialog({ sortOrder }: { sortOrder: number }) {
           upload.set("imageFile", file);
           upload.set("prefix", "gallery");
           startUpload(async () => {
-            try {
-              add(await uploadImageAction(upload));
-            } catch (error) {
-              toast.error(
-                error instanceof Error ? error.message : "Upload failed",
-              );
-            }
+            const result = await uploadImageAction(upload);
+            if (result.url) add(result.url);
+            else toast.error(result.error ?? "Upload failed.");
           });
           return;
         }
@@ -440,13 +434,9 @@ export function AddPromoDialog({ sortOrder }: { sortOrder: number }) {
           upload.set("imageFile", file);
           upload.set("prefix", "promotions");
           startUpload(async () => {
-            try {
-              add(await uploadImageAction(upload));
-            } catch (error) {
-              toast.error(
-                error instanceof Error ? error.message : "Upload failed",
-              );
-            }
+            const result = await uploadImageAction(upload);
+            if (result.url) add(result.url);
+            else toast.error(result.error ?? "Upload failed.");
           });
           return;
         }

@@ -9,6 +9,9 @@ import { photoSubmissionInput } from "@/server/validators/cms";
 const MAX_BYTES = 8 * 1024 * 1024;
 const COOLDOWN_MS = 60_000;
 
+/** Some Android gallery pickers hand back an empty `File.type`. */
+const IMAGE_EXTENSION = /\.(jpe?g|png|webp|gif|avif|heic|heif)$/i;
+
 // ponytail: in-memory per-IP cooldown, good enough for one instance. Move it to
 // a database lookup if the app ever scales out or someone actually tries to
 // flood the bucket.
@@ -35,8 +38,10 @@ export async function submitPhotoAction(
   const file = formData.get("photo");
   if (!(file instanceof File) || file.size === 0)
     return { error: "Choose a photo first." };
-  if (!file.type.startsWith("image/"))
-    return { error: "That is not an image." };
+  const looksLikeImage = file.type
+    ? file.type.startsWith("image/")
+    : IMAGE_EXTENSION.test(file.name);
+  if (!looksLikeImage) return { error: "That is not an image." };
   if (file.size > MAX_BYTES) return { error: "Photo is larger than 8 MB." };
 
   const ip =
