@@ -1,9 +1,21 @@
 import type { Metadata } from "next";
 import { Archivo, Inter_Tight } from "next/font/google";
+import Script from "next/script";
 import { NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
+
+/**
+ * Public site only — this layout does not wrap `/admin`, so the admin's own
+ * clicking never lands in the property. Production only, so `bun dev` and
+ * preview deploys stay out of it too.
+ *
+ * ponytail: the measurement ID is public (it ships in the page source), so it
+ * lives here rather than in an env var nobody would ever change.
+ */
+const GA_ID = "G-4T76Z3D9XB";
+const analytics = process.env.NODE_ENV === "production";
 
 const display = Archivo({
   subsets: ["latin"],
@@ -125,6 +137,20 @@ export default async function LocaleLayout({
     >
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        {analytics ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="gtag-init" strategy="afterInteractive">
+              {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_ID}');`}
+            </Script>
+          </>
+        ) : null}
       </body>
     </html>
   );
