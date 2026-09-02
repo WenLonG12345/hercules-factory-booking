@@ -89,6 +89,9 @@ export async function generateMetadata({
       apple: [{ url: "/apple-touch-icon.png" }],
     },
     manifest: "/site.webmanifest",
+    verification: {
+      google: "2_P5uZsJdbfU6DsTIxqv9KdwW86y1czS-vUFLVEdc7Q",
+    },
     robots: {
       index: true,
       follow: true,
