@@ -105,12 +105,8 @@
           "name": "auth_account_user_id_auth_user_id_fk",
           "tableFrom": "auth_account",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -182,9 +178,7 @@
       "indexes": {
         "auth_session_token_unique": {
           "name": "auth_session_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         }
       },
@@ -193,12 +187,8 @@
           "name": "auth_session_user_id_auth_user_id_fk",
           "tableFrom": "auth_session",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -272,9 +262,7 @@
       "indexes": {
         "auth_user_email_unique": {
           "name": "auth_user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -599,16 +587,12 @@
       "indexes": {
         "customer_packages_customer_idx": {
           "name": "customer_packages_customer_idx",
-          "columns": [
-            "customer_id"
-          ],
+          "columns": ["customer_id"],
           "isUnique": false
         },
         "customer_packages_expiry_idx": {
           "name": "customer_packages_expiry_idx",
-          "columns": [
-            "expiry_date"
-          ],
+          "columns": ["expiry_date"],
           "isUnique": false
         }
       },
@@ -617,12 +601,8 @@
           "name": "customer_packages_customer_id_customers_id_fk",
           "tableFrom": "customer_packages",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -630,12 +610,8 @@
           "name": "customer_packages_plan_id_package_plans_id_fk",
           "tableFrom": "customer_packages",
           "tableTo": "package_plans",
-          "columnsFrom": [
-            "plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -728,23 +704,17 @@
       "indexes": {
         "customers_phone_idx": {
           "name": "customers_phone_idx",
-          "columns": [
-            "phone"
-          ],
+          "columns": ["phone"],
           "isUnique": true
         },
         "customers_name_idx": {
           "name": "customers_name_idx",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": false
         },
         "customers_date_joined_idx": {
           "name": "customers_date_joined_idx",
-          "columns": [
-            "date_joined"
-          ],
+          "columns": ["date_joined"],
           "isUnique": false
         }
       },
@@ -1038,30 +1008,22 @@
       "indexes": {
         "invoices_invoice_number_unique": {
           "name": "invoices_invoice_number_unique",
-          "columns": [
-            "invoice_number"
-          ],
+          "columns": ["invoice_number"],
           "isUnique": true
         },
         "invoices_customer_idx": {
           "name": "invoices_customer_idx",
-          "columns": [
-            "customer_id"
-          ],
+          "columns": ["customer_id"],
           "isUnique": false
         },
         "invoices_paid_date_idx": {
           "name": "invoices_paid_date_idx",
-          "columns": [
-            "paid_date"
-          ],
+          "columns": ["paid_date"],
           "isUnique": false
         },
         "invoices_status_idx": {
           "name": "invoices_status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         }
       },
@@ -1070,12 +1032,8 @@
           "name": "invoices_customer_id_customers_id_fk",
           "tableFrom": "invoices",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1083,12 +1041,8 @@
           "name": "invoices_package_id_customer_packages_id_fk",
           "tableFrom": "invoices",
           "tableTo": "customer_packages",
-          "columnsFrom": [
-            "package_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["package_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1343,24 +1297,17 @@
       "indexes": {
         "ledger_categories_slug_unique": {
           "name": "ledger_categories_slug_unique",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         },
         "ledger_categories_name_idx": {
           "name": "ledger_categories_name_idx",
-          "columns": [
-            "direction",
-            "name"
-          ],
+          "columns": ["direction", "name"],
           "isUnique": true
         },
         "ledger_categories_direction_idx": {
           "name": "ledger_categories_direction_idx",
-          "columns": [
-            "direction"
-          ],
+          "columns": ["direction"],
           "isUnique": false
         }
       },
@@ -1467,30 +1414,22 @@
       "indexes": {
         "ledger_entries_invoice_id_unique": {
           "name": "ledger_entries_invoice_id_unique",
-          "columns": [
-            "invoice_id"
-          ],
+          "columns": ["invoice_id"],
           "isUnique": true
         },
         "ledger_entries_date_idx": {
           "name": "ledger_entries_date_idx",
-          "columns": [
-            "date"
-          ],
+          "columns": ["date"],
           "isUnique": false
         },
         "ledger_entries_direction_idx": {
           "name": "ledger_entries_direction_idx",
-          "columns": [
-            "direction"
-          ],
+          "columns": ["direction"],
           "isUnique": false
         },
         "ledger_entries_category_idx": {
           "name": "ledger_entries_category_idx",
-          "columns": [
-            "category_id"
-          ],
+          "columns": ["category_id"],
           "isUnique": false
         }
       },
@@ -1499,12 +1438,8 @@
           "name": "ledger_entries_category_id_ledger_categories_id_fk",
           "tableFrom": "ledger_entries",
           "tableTo": "ledger_categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1512,12 +1447,8 @@
           "name": "ledger_entries_customer_id_customers_id_fk",
           "tableFrom": "ledger_entries",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1525,12 +1456,8 @@
           "name": "ledger_entries_coach_id_coaches_id_fk",
           "tableFrom": "ledger_entries",
           "tableTo": "coaches",
-          "columnsFrom": [
-            "coach_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["coach_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1538,12 +1465,8 @@
           "name": "ledger_entries_invoice_id_invoices_id_fk",
           "tableFrom": "ledger_entries",
           "tableTo": "invoices",
-          "columnsFrom": [
-            "invoice_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["invoice_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1887,17 +1810,12 @@
       "indexes": {
         "session_attendees_unique_idx": {
           "name": "session_attendees_unique_idx",
-          "columns": [
-            "session_id",
-            "customer_id"
-          ],
+          "columns": ["session_id", "customer_id"],
           "isUnique": true
         },
         "session_attendees_customer_idx": {
           "name": "session_attendees_customer_idx",
-          "columns": [
-            "customer_id"
-          ],
+          "columns": ["customer_id"],
           "isUnique": false
         }
       },
@@ -1906,12 +1824,8 @@
           "name": "session_attendees_session_id_sessions_id_fk",
           "tableFrom": "session_attendees",
           "tableTo": "sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1919,12 +1833,8 @@
           "name": "session_attendees_customer_id_customers_id_fk",
           "tableFrom": "session_attendees",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1932,12 +1842,8 @@
           "name": "session_attendees_package_id_customer_packages_id_fk",
           "tableFrom": "session_attendees",
           "tableTo": "customer_packages",
-          "columnsFrom": [
-            "package_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["package_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2046,18 +1952,12 @@
       "indexes": {
         "sessions_date_idx": {
           "name": "sessions_date_idx",
-          "columns": [
-            "date"
-          ],
+          "columns": ["date"],
           "isUnique": false
         },
         "sessions_coach_slot_idx": {
           "name": "sessions_coach_slot_idx",
-          "columns": [
-            "date",
-            "start_time",
-            "coach_id"
-          ],
+          "columns": ["date", "start_time", "coach_id"],
           "isUnique": true
         }
       },
@@ -2066,12 +1966,8 @@
           "name": "sessions_coach_id_coaches_id_fk",
           "tableFrom": "sessions",
           "tableTo": "coaches",
-          "columnsFrom": [
-            "coach_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["coach_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
