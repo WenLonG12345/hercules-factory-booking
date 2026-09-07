@@ -6,13 +6,15 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 
+// Rooted at `/`, not bare fragments — the header also sits on the landing
+// pages under `/[slug]`, where `#classes` would scroll to nothing.
 const LINKS = [
-  { href: "#why", key: "why" },
-  { href: "#classes", key: "classes" },
-  { href: "#pricing", key: "pricing" },
-  { href: "#gallery", key: "gallery" },
-  { href: "#reviews", key: "reviews" },
-  { href: "#faq", key: "faq" },
+  { href: "/#why", key: "why" },
+  { href: "/#classes", key: "classes" },
+  { href: "/#pricing", key: "pricing" },
+  { href: "/#gallery", key: "gallery" },
+  { href: "/#reviews", key: "reviews" },
+  { href: "/#faq", key: "faq" },
 ] as const;
 
 /**

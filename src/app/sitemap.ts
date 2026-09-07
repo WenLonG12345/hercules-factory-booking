@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
 import { routing } from "@/i18n/routing";
+import { landingPageSlugs } from "@/lib/landing-pages";
+import { siteUrl } from "@/lib/site";
 import { getLandingData } from "@/server/services/queries";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const data = await getLandingData();
 
   // A `new Date()` here restamps every URL on every build, which teaches Google
@@ -31,11 +32,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "x-default": href(routing.defaultLocale),
   };
 
-  return routing.locales.map((locale) => ({
+  const home = routing.locales.map((locale) => ({
     url: href(locale),
     lastModified,
     changeFrequency: "weekly" as const,
     priority: locale === routing.defaultLocale ? 1 : 0.8,
     alternates: { languages },
   }));
+
+  // The search-landing pages. Their copy lives in the repo rather than the CMS,
+  // so the build date is genuinely their last edit — unlike the homepage above,
+  // stamping it here does not lie to Google.
+  const pages = landingPageSlugs.flatMap((slug) =>
+    routing.locales.map((locale) => ({
+      url: `${href(locale)}/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: locale === routing.defaultLocale ? 0.9 : 0.7,
+      alternates: {
+        languages: {
+          ...Object.fromEntries(
+            routing.locales.map((l) => [l, `${href(l)}/${slug}`]),
+          ),
+          "x-default": `${href(routing.defaultLocale)}/${slug}`,
+        },
+      },
+    })),
+  );
+
+  return [...home, ...pages];
 }

@@ -4,6 +4,7 @@ import Script from "next/script";
 import { NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import { siteUrl } from "@/lib/site";
 import "../globals.css";
 
 /**
@@ -43,9 +44,7 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: "Metadata" });
 
   return {
-    metadataBase: new URL(
-      process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-    ),
+    metadataBase: new URL(siteUrl),
     title: {
       default: t("title"),
       template: "%s | Hercules Factory",
@@ -57,14 +56,17 @@ export async function generateMetadata({
     publisher: "Hercules Factory",
     keywords: [
       "Hercules Factory",
-      "Muay Thai Malaysia",
-      "Muay Thai gym",
-      "Muay Thai classes",
-      "kickboxing",
-      "martial arts training",
-      "Muay Thai booking",
+      "Muay Thai Cheras",
+      "Muay Thai KL",
+      "Muay Thai Kuala Lumpur",
+      "Muay Thai Taman Connaught",
+      "Muay Thai gym Cheras",
+      "kids Muay Thai KL",
+      "Muay Thai for beginners KL",
+      "kickboxing Cheras",
       "泰拳",
       "吉隆坡泰拳",
+      "蕉赖泰拳",
     ],
     alternates: {
       canonical: locale === routing.defaultLocale ? "/" : `/${locale}`,

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
+import { siteHost } from "@/lib/site";
 
 const intlProxy = createMiddleware(routing);
 
@@ -11,6 +12,24 @@ const intlProxy = createMiddleware(routing);
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Vercel keeps serving the production `.vercel.app` alias at 200 alongside
+  // the real domain, and unlike branch previews it carries no `noindex`. That
+  // is a whole duplicate site for Google to split our signals across, so send
+  // it home. Branch previews (`*-git-*.vercel.app`) are left alone — they are
+  // noindexed already and still need to be browsable.
+  const host = request.headers.get("host");
+  if (
+    process.env.NODE_ENV === "production" &&
+    host?.endsWith(".vercel.app") &&
+    !host.includes("-git-")
+  ) {
+    const canonical = new URL(request.url);
+    canonical.host = siteHost;
+    canonical.protocol = "https:";
+    canonical.port = "";
+    return NextResponse.redirect(canonical, 308);
+  }
 
   if (pathname.startsWith("/admin")) {
     if (pathname === "/admin/login") {

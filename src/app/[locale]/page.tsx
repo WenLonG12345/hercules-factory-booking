@@ -8,6 +8,7 @@ import { Reveal } from "@/components/reveal";
 import { SiteFab } from "@/components/site-fab";
 import { WhyIcon } from "@/components/why-icon";
 import type { Locale } from "@/i18n/routing";
+import { siteUrl } from "@/lib/site";
 import { jsonLdScript, landingJsonLd } from "@/lib/structured-data";
 import { whatsappLink } from "@/lib/utils";
 import { getLandingData } from "@/server/services/queries";
@@ -67,7 +68,7 @@ export default async function HomePage({
   const graph = landingJsonLd({
     data,
     locale,
-    siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+    siteUrl,
     title: meta("title"),
     description: meta("description"),
   });
