@@ -77,7 +77,8 @@ export default function OnboardPage() {
       const age = String(fd.get("age") ?? "");
       const [customer] = await createCustomer.mutateAsync({
         name: String(fd.get("name")),
-        phone: String(fd.get("phone")),
+        phone: String(fd.get("phone") ?? "") || undefined,
+        ic: String(fd.get("ic") ?? "") || undefined,
         age: age ? Number(age) : undefined,
         gender:
           (String(fd.get("gender")) as (typeof GENDERS)[number] | "") ||
@@ -175,8 +176,13 @@ export default function OnboardPage() {
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="WhatsApp phone">
-              <Input name="phone" required />
+              <Input name="phone" />
             </Field>
+            <Field label="IC / company reg. no.">
+              <Input name="ic" />
+            </Field>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Age">
               <Input max={100} min={3} name="age" type="number" />
             </Field>

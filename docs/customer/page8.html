@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta name="google-tag-id" content="G-94RVVM6B3L">
+
+  <script
+    src="https://assets.invoicehome.com/assets/google_tag-de6ab6ea1d5745bc8e90b19ed1589d4bab5b1e137e3c1fb9c688562a0649e019.js"></script>
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-94RVVM6B3L"></script>
+
+  <meta name="clarity-project-id" content="a8pgo2cj6x">
+
+  <script
+    src="https://assets.invoicehome.com/assets/microsoft_clarity-73d9fd60cb3b6abf281baf0781653c94a443dd2dc5293a4db05076870cc930be.js"></script>
+
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta name="google" content="nopagereadaloud">
+
+  <title>My Customers - Invoice Home</title>
+  <meta name="description"
+    content="Create and download professional PDF invoices in seconds with the invoice template gallery, send invoices via email, get paid by card." />
+
+  <link rel="icon" type="image/png" href="https://assets.invoicehome.com/favicon-usd.png">
+  <meta name="csrf-param" content="authenticity_token" />
+  <meta name="csrf-token"
+    content="-70DOyngOyAlIcXZT5OLb7VHKAXcgFJJ1D23fZbQQe4yIXTwSKQ0zCX_mAS38QKULyIrljh0ecnBUisosNk__g" />
+
+
+  <link rel="stylesheet"
+    href="https://assets.invoicehome.com/assets/application-1d4776002f608214e16dfecbd98203a7ef8dc1d2186949d9b2c510e2b1ed8a91.css"
+    media="all" />
+  <link rel="stylesheet"
+    href="https://assets.invoicehome.com/assets/themes/light-3d506cd59cd509ddff47c8717fbe63beb3cb3768375c38ce22c72d650afea5b0.css"
+    media="all" />
+
+
+
+  <script src="https://js.stripe.com/v3/"></script>
+
+  <script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@id": "https://www.invoicehome.com#corporation",
+        "@type": "Corporation",
+        "legalName":["Invoice Home Inc.","Invoice Home"],
+        "description" :  "Invoice Home is an American web-based software as a service that provides billing and invoicing for small businesses and freelancers. Create, send, and manage invoices, receipts, estimates, and other document types, and accept online payments from customers.",
+        "disambiguatingDescription" : "Invoice Home is a web application developed and operated by Invoice Home Inc. primarily for small and medium-sized businesses. It is a web-based software as a service model that can be accessed through a desktop or mobile device. Invoice Home Inc. was founded in 2011 and launched the Invoice Home web application in 2014, and is based in Austin, Texas.",
+        "url" : "https://www.invoicehome.com",
+        "address": {
+            "@type":   "PostalAddress",
+            "addressLocality": "Austin",
+            "addressCountry": "US",
+            "postalCode": "78701",
+            "streetAddress" : "600 Congress Ave"
+            },
+        "logo":"https://assets.invoicehome.com/invoicehome-logo.svg",
+        "image": [
+            "https://assets.invoicehome.com/assets/laptop_phone_invoice-0cd24c4a7070fc3899455dde45acbe88ae7a15e98655b2c0e2c4792b084d6444.png",
+            "https://assets.invoicehome.com/assets/laptop_phone_invoice-fdbdd2d85d0cdedb6df82ae3d5c732a96e1a3ac9cded322159d133bfb1fd2e5b.webp"
+        ],
+        "isAccessibleForFree": false, 
+        "hasPart": {
+            "@type": "WebPageElement",
+            "isAccessibleForFree": false,
+            "cssSelector" : ".paywall"
+            },
+        "sameAs": [
+            "https://www.facebook.com/invoicehome/", 
+            "https://www.instagram.com/invoice_home/",
+            "https://twitter.com/invoicehome",
+            "https://www.pinterest.com/invoicehome/",
+            "https://www.linkedin.com/company/invoice-home/",
+            "https://www.youtube.com/c/Invoicehome-invoice-templates/"
+            ],
+    }
+</script>
+
+</head>
+
+<body class="invoicehome paywall">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <nav class="navbar navbar-expand-md navbar-light">
+
+    <div class="container-xl">
+
+      <div class="me-auto col-4 col-lg-3">
+        <a class="navbar-brand" href="/"><img alt="Invoice Home" class=""
+            src="https://assets.invoicehome.com/assets/invoicehome-logo-4ee1266465652e01a9b0efda885a2f0abd8603008e02b6bcc502785427f1816d.png"
+            width="165" height="30" /></a>
+      </div>
+
+      <div class="ms-auto">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".to-be-collapsed"
+          aria-controls=".to-be-collapsed" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+
+      <div class="collapse navbar-collapse justify-content-center to-be-collapsed col-4 col-lg-6">
+        <form role="form" class="d-flex p-2 col-12" style="max-width: 500px" action="/customers" accept-charset="UTF-8"
+          method="get">
+          <input type="hidden" name="business_id" id="business_id" />
+          <div class="input-group input-group-sm">
+            <span class="input-group-text background-color font-color navbar-search-icon"><i
+                class="fa fa-search"></i></span>
+            <input type="search" name="q" id="q" maxlength="100" class="form-control form-control-sm"
+              placeholder="Search by Customer, Address, or Item" aria-label="Search by Customer, Address, or Item" />
+            <button class="btn btn-primary btn-sm" type="submit">Search</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="collapse navbar-collapse justify-content-end to-be-collapsed col-4 col-lg-3">
+        <ul class="nav navbar-nav my-2">
+
+          <li class="dropdown my-auto">
+
+            <a id="user-nav-dropdown" href="#"
+              class="dropdown-toggle black border-0 outline-color-none text-decoration-none" data-bs-toggle="dropdown">
+
+              <img src="https://assets.invoicehome.com/assets/flags/flags-iso/flat/32/MY.png" width="16" height="16" />
+
+              <span class="text-decoration-underline text-break text-wrap">
+                leeleexander@gmail.com
+              </span>
+
+              <i class="fa fa-fw fa-cog font-color"></i>
+              <b class="caret"></b>
+            </a>
+
+            <ul class="dropdown-menu dropdown-menu-end border-sm-none">
+              <li>
+                <h6 class="dropdown-header">Languages</h6>
+              </li>
+
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 d-block text-decoration-none" href="/languages/en">
+                  <img class="align-middle me-1 icon-flag"
+                    src="https://assets.invoicehome.com/assets/flags/flags-iso/flat/32/MY.png" width="16"
+                    height="16" />&nbsp;English
+                  <span class="float-end"><i class="far fa-check background-font-color"></i></span>
+                </a>
+              </li>
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 d-block text-decoration-none" href="/languages/es">
+                  <img class="align-middle me-1 icon-flag"
+                    src="https://assets.invoicehome.com/assets/flags/flags-iso/flat/32/ES.png" width="16"
+                    height="16" />&nbsp;Español
+                </a>
+              </li>
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 d-block text-decoration-none" href="/languages/fr">
+                  <img class="align-middle me-1 icon-flag"
+                    src="https://assets.invoicehome.com/assets/flags/flags-iso/flat/32/FR.png" width="16"
+                    height="16" />&nbsp;Français
+                </a>
+              </li>
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 d-block text-decoration-none" href="/languages/de">
+                  <img class="align-middle me-1 icon-flag"
+                    src="https://assets.invoicehome.com/assets/flags/flags-iso/flat/32/DE.png" width="16"
+                    height="16" />&nbsp;Deutsch
+                </a>
+              </li>
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 d-block text-decoration-none" href="/languages/it">
+                  <img class="align-middle me-1 icon-flag"
+                    src="https://assets.invoicehome.com/assets/flags/flags-iso/flat/32/IT.png" width="16"
+                    height="16" />&nbsp;Italiano
+                </a>
+              </li>
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 d-block text-decoration-none" href="/languages/pt">
+                  <img class="align-middle me-1 icon-flag"
+                    src="https://assets.invoicehome.com/assets/flags/flags-iso/flat/32/PT.png" width="16"
+                    height="16" />&nbsp;Português
+                </a>
+              </li>
+
+              <li class="dropdown-divider me-0"></li>
+
+              <li>
+                <h6 class="dropdown-header">Themes</h6>
+              </li>
+
+
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 d-block text-decoration-none" data-method="get" href="/themes/light">
+                  <i class="far fa-circle fa-fw me-1" style="color: black"></i>&nbsp;Light
+                  <span class="float-end"><i class="far fa-check background-font-color fa-fw"></i></span>
+                </a>
+              </li>
+
+
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 d-block text-decoration-none" data-method="get" href="/themes/dark">
+                  <i class="fas fa-circle fa-fw me-1" style="color: #292929"></i>&nbsp;Dark
+                </a>
+              </li>
+
+
+
+
+
+
+
+
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 text-decoration-none d-block" href="/themes">
+                  <i class="fad fa-fw fa-palette icon-settings-themes me-1"></i>&nbsp;More Themes
+                  <span class="float-end"><i class="far fa-chevron-right background-font-color fa-fw"></i></span>
+                </a>
+              </li>
+
+              <li class="dropdown-divider me-0"></li>
+
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 text-decoration-none d-block" href="/settings">
+                  <i class="fas fa-fw fa-cog font-color me-1"></i>&nbsp;Settings
+                </a>
+              </li>
+
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 text-decoration-none d-block" href="/mobile">
+                  <i class='fas fa-fw fa-tablet-alt icon-mobile me-1'></i>&nbsp;Switch to Mobile version
+                </a>
+              </li>
+
+
+              <li class="dropdown-divider me-0"></li>
+
+              <li class="dropdown-item my-0 py-0">
+                <a class="border-0 py-1 text-decoration-none d-block" href="/signout">
+                  <i class='fas fa-fw fa-power-off me-1'></i>&nbsp;Sign Out
+                </a>
+              </li>
+
+            </ul>
+
+          </li>
+
+        </ul>
+      </div>
+
+    </div>
+
+  </nav>
+
+
+  <div class="container-xl">
+
+    <div class="row pb-4">
+
+
+      <div class="col-lg-10 col-md-11 mx-auto">
+
+        <div
+          class="text-center m-4 fs-6 semibold no-underline-links link-underline-on-hover lh-lg background-font-color">
+
+          <a class="text-decoration-none" rel="nofollow" href="/invoice/new">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width='38' height='38' class='icon-add'>
+              <!--!Font Awesome Pro v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2026 Fonticons, Inc.-->
+              <path
+                d="M320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM296 408L296 344L232 344C218.7 344 208 333.3 208 320C208 306.7 218.7 296 232 296L296 296L296 232C296 218.7 306.7 208 320 208C333.3 208 344 218.7 344 232L344 296L408 296C421.3 296 432 306.7 432 320C432 333.3 421.3 344 408 344L344 344L344 408C344 421.3 333.3 432 320 432C306.7 432 296 421.3 296 408z" />
+            </svg>
+          </a>
+
+
+          <a id="switch-to-invoice" href="/invoice/new">Invoice</a>
+          <span class="mx-1">·</span>
+          <a id="switch-to-tax-invoice" href="/tax-invoice/new">Tax Invoice</a>
+          <span class="mx-1">·</span>
+          <a id="switch-to-proforma-invoice" href="/proforma-invoice/new">Proforma Invoice</a>
+          <span class="mx-1">·</span>
+          <a id="switch-to-receipt" href="/receipt/new">Receipt</a>
+          <span class="mx-1">·</span>
+          <a id="switch-to-sales-receipt" href="/sales-receipt/new">Sales Receipt</a>
+          <span class="mx-1">·</span>
+          <a id="switch-to-cash-receipt" href="/cash-receipt/new">Cash Receipt</a>
+
+          <br>
+
+          <a id="switch-to-quote" href="/quote/new">Quote</a>
+          <span class="mx-1">·</span>
+
+          <a id="switch-to-estimate" href="/estimate/new">Estimate</a>
+          <span class="mx-1">·</span>
+
+          <a id="switch-to-credit-memo" href="/credit-memo/new">Credit Memo</a>
+          <span class="mx-1">·</span>
+
+          <a id="switch-to-credit-note" href="/credit-note/new">Credit Note</a>
+          <span class="mx-1">·</span>
+
+          <a id="switch-to-purchase-order" href="/purchase-order/new">Purchase Order</a>
+          <span class="mx-1">·</span>
+
+          <a id="switch-to-purchase-order" href="/delivery-note/new">Delivery Note</a>
+
+        </div>
+
+        <div class="level-1-tabs ">
+
+          <ul class="nav nav-tabs">
+
+            <li class="nav-item">
+              <a class="nav-link " aria-current="page" href="/">
+                <i class="fa fa-fw fa-list-ul background-font-color"></i>&nbsp;My Invoices
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link active" aria-current="page" href="/customers">
+                <i class="fa fa-fw fa-user-tie background-font-color"></i>&nbsp;My Customers
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link " aria-current="page" href="/reports">
+                <i class='fa fa-fw fa-calendar-alt background-font-color'></i>&nbsp;My Reports
+              </a>
+            </li>
+
+
+
+
+
+
+          </ul>
+
+        </div>
+
+        <div class="level-1-page p-4">
+
+
+          <div class="level-2-tabs">
+
+
+            <ul class="nav nav-tabs">
+
+
+
+              <li class="nav-item">
+                <a class="nav-link active" href="/customers">
+                  All Customers&nbsp;<span class='badge rounded-pill bg-primary'>217</span>
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link " href="/customers/overdue">
+                  Overdue&nbsp;<span class='badge rounded-pill bg-danger'>0</span>
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link " href="/customers/unpaid">
+                  Unpaid&nbsp;<span class='badge rounded-pill bg-warning'>0</span>
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link " href="/customers/partially-paid">
+                  Partially Paid&nbsp;<span class='badge rounded-pill bg-grabber'>0</span>
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link " href="/customers/paid">
+                  Paid&nbsp;<span class='badge rounded-pill bg-success'>217</span>
+                </a>
+              </li>
+
+
+            </ul>
+
+
+
+          </div>
+
+          <div class="level-2-page p-4">
+
+
+
+
+
+
+
+
+
+            <div class="table-responsive">
+
+              <table class="table table-hover my-2">
+
+                <thead class="text-uppercase">
+                  <tr>
+                    <th scope="col">
+                      <a href="/customers?direction=desc&amp;order=1">Customer</a>
+                      <a href="/customers?direction=asc&amp;order=1"><i class="fa fa-sort "></i></a>
+                    </th>
+
+                    <th scope="col" class="text-center">
+                      <a href="/customers?direction=asc&amp;order=2">Documents</a>
+                      <a href="/customers?direction=asc&amp;order=2"><i class="fa fa-sort "></i></a>
+                    </th>
+
+                    <th scope="col" class="text-center">
+                      <a href="/customers?direction=asc&amp;order=3">Payments</a>
+                      <a href="/customers?direction=asc&amp;order=3"><i class="fa fa-sort "></i></a>
+                    </th>
+
+                    <th scope="col" class="text-end">
+                      <a href="/customers?direction=asc&amp;order=4">Paid Amount</a>
+                      <a href="/customers?direction=asc&amp;order=4"><i class="fa fa-sort "></i></a>
+                    </th>
+
+                    <th scope="col" class="text-end">
+                      <a href="/customers?direction=asc&amp;order=5">Total</a>
+                      <a href="/customers?direction=asc&amp;order=5"><i class="fa fa-sort "></i></a>
+                    </th>
+
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  <tr>
+
+                    <td>
+                      <a href="/customers/144958351">ZENG YU SHENG, 014-745 0848</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/144958351">1</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/144958351">
+                        <span class="paid semibold p-0">Paid</span>
+                      </a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/144958351">RM 150.00</a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/144958351">RM 150.00</a>
+                    </td>
+
+                  </tr>
+
+                  <tr>
+
+                    <td>
+                      <a href="/customers/200817397">ZHI XIN, 018-232 3388</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/200817397">1</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/200817397">
+                        <span class="paid semibold p-0">Paid</span>
+                      </a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/200817397">RM 150.00</a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/200817397">RM 150.00</a>
+                    </td>
+
+                  </tr>
+
+                  <tr>
+
+                    <td>
+                      <a href="/customers/183537963">ZIHIM, 018-329 1004</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/183537963">2</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/183537963">
+                        <span class="paid semibold p-0">Paid</span>
+                      </a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/183537963">RM 300.00</a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/183537963">RM 300.00</a>
+                    </td>
+
+                  </tr>
+
+                  <tr>
+
+                    <td>
+                      <a href="/customers/137141797">周云露, 0187771239</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/137141797">1</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/137141797">
+                        <span class="paid semibold p-0">Paid</span>
+                      </a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/137141797">RM 150.00</a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/137141797">RM 150.00</a>
+                    </td>
+
+                  </tr>
+
+                  <tr>
+
+                    <td>
+                      <a href="/customers/144957515">安妮</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/144957515">1</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/144957515">
+                        <span class="paid semibold p-0">Paid</span>
+                      </a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/144957515">RM 1,500.00</a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/144957515">RM 1,500.00</a>
+                    </td>
+
+                  </tr>
+
+                  <tr>
+
+                    <td>
+                      <a href="/customers/200028620">时悦, 012－221 2113</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/200028620">2</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/200028620">
+                        <span class="paid semibold p-0">Paid</span>
+                      </a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/200028620">RM 300.00</a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/200028620">RM 300.00</a>
+                    </td>
+
+                  </tr>
+
+                  <tr>
+
+                    <td>
+                      <a href="/customers/150365199">李旦, 01172516643</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/150365199">2</a>
+                    </td>
+
+                    <td class="text-center">
+                      <a href="/customers/150365199">
+                        <span class="paid semibold p-0">Paid</span>
+                      </a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/150365199">RM 880.00</a>
+                    </td>
+
+                    <td class="text-end">
+                      <a href="/customers/150365199">RM 880.00</a>
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+
+            <table class="table text-uppercase semibold">
+
+              <tfoot>
+
+                <tr>
+                  <td>
+                    <a class="" href="/reports">Total</a>
+                  </td>
+
+                  <td class="text-end">
+                    <a href="/reports">
+                      127,155.00 MYR<br />
+                    </a>
+                  </td>
+
+                </tr>
+
+                <tr>
+                  <td>
+                    <a class="" href="/reports">Paid Amount</a>
+                  </td>
+
+                  <td class="text-end">
+                    <a href="/reports">
+                      127,378.00 MYR<br />
+                    </a>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <a class="" href="/reports">Balance Due</a>
+                  </td>
+
+                  <td class="text-end">
+                    <a href="/reports">
+                      -223.00 MYR<br />
+                    </a>
+                  </td>
+                </tr>
+
+              </tfoot>
+
+            </table>
+
+
+
+            <div class="d-flex justify-content-center my-3">
+              <div role="navigation" aria-label="Pagination" class="pagination"><a class="previous_page"
+                  aria-label="Previous page" rel="prev" href="/customers?page=7">&#8592; Previous</a> <a
+                  aria-label="Page 1" href="/customers?page=1">1</a> <a aria-label="Page 2"
+                  href="/customers?page=2">2</a> <a aria-label="Page 3" href="/customers?page=3">3</a> <a
+                  aria-label="Page 4" href="/customers?page=4">4</a> <a aria-label="Page 5"
+                  href="/customers?page=5">5</a> <a aria-label="Page 6" href="/customers?page=6">6</a> <a rel="prev"
+                  aria-label="Page 7" href="/customers?page=7">7</a> <em class="current" aria-label="Page 8"
+                  aria-current="page">8</em> <span class="next_page disabled" aria-label="Next page">Next &#8594;</span>
+              </div>
+            </div>
+
+
+
+
+          </div>
+
+
+
+
+
+        </div>
+
+        <style>
+          .list-inline-item:not(:last-child) {
+            margin-right: 0;
+          }
+
+          .list-inline-item:not(:last-child):after {
+            content: "·";
+            margin-right: 0.1rem;
+            color: #6e6e6e;
+            vertical-align: middle;
+          }
+        </style>
+
+        <footer class="my-5">
+          <div class="row text-center">
+            <div class="col">
+              <ul class="list-inline">
+                <li class="list-inline-item">
+                  <a href="/" title="Home" class="btn-link text-muted lh-lg">Home</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="/templates/invoice" title="Invoice Templates" class="btn-link text-muted lh-lg">Invoice
+                    Templates</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="/features" title="Features" class="btn-link text-muted lh-lg">Features</a>
+                </li>
+
+
+                <li class="list-inline-item">
+                  <a href="/terms" title="Terms" rel='nofollow' class="btn-link text-muted lh-lg">Terms</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="/sitemap" title="Sitemap" class="btn-link text-muted lh-lg">Sitemap</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="/privacy" title="Privacy" rel='nofollow' class="btn-link text-muted lh-lg">Privacy</a>
+                </li>
+
+
+                <li class="list-inline-item">
+                  <a href="/faq" title="FAQ" class="btn-link text-muted lh-lg">FAQ</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="/contact" title="Contact Us" class="btn-link text-muted lh-lg">Contact Us</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="https://www.facebook.com/invoicehome" title="Facebook" target="_blank" rel="noreferrer"
+                    class="btn-link text-muted lh-lg">Facebook</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="https://twitter.com/InvoiceHome" title="Twitter" target="_blank" rel="noreferrer"
+                    class="btn-link text-muted lh-lg">Twitter</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="https://www.youtube.com/channel/UCe2AUob8Lw3yvKFC7TjFBzg" title="YouTube" target="_blank"
+                    rel="noreferrer" class="btn-link text-muted lh-lg">YouTube</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="https://www.pinterest.com/invoicehome" title="Pinterest" target="_blank" rel="noreferrer"
+                    class="btn-link text-muted lh-lg">Pinterest</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="https://www.instagram.com/invoice_home" title="Instagram" target="_blank" rel="noreferrer"
+                    class="btn-link text-muted lh-lg">Instagram</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="https://www.linkedin.com/company/invoice-home" title="LinkedIn" target="_blank"
+                    rel="noreferrer" class="btn-link text-muted lh-lg">LinkedIn</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="/blog" title="Blog" class="btn-link text-muted lh-lg">Blog</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="/about-us" title="About Us" class="btn-link text-muted lh-lg">About Us</a>
+                </li>
+
+                <li class="list-inline-item">
+                  <a href="/press" title="Press" class="btn-link text-muted lh-lg">Press</a>
+                </li>
+
+              </ul>
+            </div>
+          </div>
+
+          <div class="row text-center lh-lg">
+            <div class="col">
+
+              <div class="row text-center" style="padding: 1em 0;">
+                <div class="col-md-12">
+                  <a
+                    href='https://play.google.com/store/apps/details?id=com.invoicehome.invoicehome&utm_source=homepage&utm_campaign=googleplay&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img
+                      alt="Get it on Google Play" title="Get it on Google Play"
+                      src="https://assets.invoicehome.com/assets/googleplay.en-9f56a859a380a285f28919e1f9518dbd392ef6180136d742628062935bd39e01.png"
+                      width="162" height="63" /></a>
+                  <a href="https://itunes.apple.com/app/pdf-invoice-maker-estimates/id1435778692?mt=8"><img
+                      alt="Download on the App Store" title="Download on the App Store"
+                      src="https://assets.invoicehome.com/assets/appstore.en-db46d2f467c3f42080850adf2f2b30d458a11d1fb6277bab234e10d8ea127c31.png"
+                      width="131" height="44" /></a>
+                </div>
+              </div>
+
+              Copyright © 2026&nbsp;&nbsp;·&nbsp;&nbsp;Invoice Home Inc.
+
+            </div>
+          </div>
+
+          <div class="row text-center">
+            <div class="col">
+              Account Email: leeleexander@gmail.com
+            </div>
+          </div>
+        </footer>
+
+
+      </div>
+
+    </div>
+
+
+  </div>
+
+  <script
+    src="https://assets.invoicehome.com/assets/application-a80c7dd4630b6fddd571be49fdc75bc6c06859e88bb53994369bceb2f1a8b31f.js"></script>
+
+
+
+
+</body>
+
+</html>

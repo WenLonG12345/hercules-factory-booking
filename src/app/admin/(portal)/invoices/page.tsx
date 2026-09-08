@@ -88,7 +88,7 @@ export default function InvoicesPage() {
     if (!term) return true;
     return (
       invoice.customer?.name.toLowerCase().includes(term) ||
-      invoice.customer?.phone.includes(term) ||
+      invoice.customer?.phone?.includes(term) ||
       invoice.invoiceNumber.toLowerCase().includes(term)
     );
   });
@@ -118,7 +118,7 @@ export default function InvoicesPage() {
               {row.original.customer.name}
             </Link>
             <p className="mt-0.5 text-xs text-stone-500">
-              {row.original.customer.phone}
+              {row.original.customer.phone ?? "—"}
             </p>
           </>
         ) : (
@@ -222,7 +222,7 @@ export default function InvoicesPage() {
                     <option value="">Select a customer…</option>
                     {customers.map((customer) => (
                       <option key={customer.id} value={customer.id}>
-                        {customer.name} — {customer.phone}
+                        {customer.name} — {customer.phone ?? customer.ic ?? "—"}
                       </option>
                     ))}
                   </Select>

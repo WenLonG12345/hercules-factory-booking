@@ -8,7 +8,10 @@ import {
 
 export const customerInput = z.object({
   name: z.string().min(2),
-  phone: z.string().min(8),
+  // Optional because a few customers only ever gave an IC or a company
+  // registration number — `ic` holds either.
+  phone: z.string().min(8).optional(),
+  ic: z.string().optional(),
   age: z.coerce.number().int().min(3).max(100).optional(),
   gender: genderSchema.optional(),
   emergencyContact: z.string().optional(),

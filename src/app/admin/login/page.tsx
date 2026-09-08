@@ -29,7 +29,13 @@ export default function LoginPage() {
     setPending(false);
 
     if (result.error) {
-      setError("Invalid admin email or password.");
+      // Surface the real reason (rate limit, server misconfig) instead of
+      // blaming the credentials for every failure.
+      setError(
+        result.error.status === 429
+          ? "Too many attempts. Wait a minute and try again."
+          : (result.error.message ?? "Invalid admin email or password."),
+      );
     } else {
       router.push("/admin");
     }

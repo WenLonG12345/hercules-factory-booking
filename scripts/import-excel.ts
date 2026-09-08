@@ -6,7 +6,8 @@
  *   bun run db:import -- --dir ./import
  *
  * Expected files (any that are missing are skipped):
- *   customers.csv  name, phone, age, gender, emergency_contact, date_joined, source, notes
+ *   customers.csv  name, phone, ic, age, gender, emergency_contact, date_joined, source, notes
+ *                  (phone or ic — a customer needs at least one of the two)
  *   packages.csv   phone, type, start_date, expiry_date, total_credits, used_credits, amount_paid, payment_method
  *   invoices.csv   invoice_number, phone, description, subtotal, discount, status, payment_method, issue_date, paid_date
  *   ledger.csv     date, direction (income|expense), category, amount, vendor, notes
@@ -130,6 +131,7 @@ export function toCents(value: string): number | null {
 }
 
 export function normalisePhone(value: string) {
+  if (value.trim().startsWith("+")) return value.trim();
   const digits = value.replace(/\D/g, "");
   if (digits.startsWith("60")) return digits;
   if (digits.startsWith("0")) return `6${digits}`;
@@ -157,28 +159,37 @@ async function main() {
   console.log(`Importing from ${dir}${dryRun ? " (dry run)" : ""}\n`);
   const db = connect();
 
-  // 1. Customers — deduped on phone.
+  // 1. Customers — deduped on name + identifier (phone, or IC when the
+  //    customer never gave a number). Phones are not unique: siblings and
+  //    couples share one, so the name has to be part of the key.
   const customerRows = readSheet("customers");
   const phoneToId = new Map<string, string>();
+  const identityToId = new Map<string, string>();
+  const identity = (name: string, phone?: string | null, ic?: string | null) =>
+    `${name.trim().toLowerCase()}|${phone || ic || ""}`;
 
   for (const row of await db.select().from(customers)) {
-    phoneToId.set(row.phone, row.id);
+    if (row.phone) phoneToId.set(row.phone, row.id);
+    identityToId.set(identity(row.name, row.phone, row.ic), row.id);
   }
 
   let created = 0;
   for (const [index, row] of customerRows.entries()) {
     const phone = normalisePhone(row.phone ?? "");
+    const ic = (row.ic ?? "").trim();
     const name = row.name?.trim();
-    if (!phone || !name) {
-      fail("customers", index, "missing name or phone", row);
+    if (!name) {
+      fail("customers", index, "missing name", row);
       continue;
     }
-    if (phoneToId.has(phone)) continue;
+    const key = identity(name, phone, ic);
+    if (identityToId.has(key)) continue;
 
     const age = row.age ? Number(row.age) : undefined;
     const values = {
       name,
-      phone,
+      phone: phone || null,
+      ic: ic || null,
       age: Number.isFinite(age) ? age : undefined,
       gender: matchEnum(row.gender ?? "", ["male", "female", "other"] as const),
       emergencyContact: row.emergency_contact || undefined,
@@ -190,9 +201,11 @@ async function main() {
 
     if (!dryRun) {
       const [inserted] = await db.insert(customers).values(values).returning();
-      phoneToId.set(phone, inserted.id);
+      identityToId.set(key, inserted.id);
+      if (phone && !phoneToId.has(phone)) phoneToId.set(phone, inserted.id);
     } else {
-      phoneToId.set(phone, `dry-${index}`);
+      identityToId.set(key, `dry-${index}`);
+      if (phone && !phoneToId.has(phone)) phoneToId.set(phone, `dry-${index}`);
     }
     created++;
   }

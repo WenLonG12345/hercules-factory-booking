@@ -139,17 +139,19 @@ export default function CustomerProfilePage({
     <>
       <PageHeader eyebrow="Customer" title={customer.name}>
         <div className="flex flex-wrap gap-2">
-          <a
-            className="inline-flex h-11 items-center rounded-md border border-stone-200 bg-white px-4 text-sm font-semibold text-emerald-700"
-            href={whatsappLink(
-              customer.phone,
-              `Hi ${customer.name}, this is Hercules Factory 👊`,
-            )}
-            rel="noreferrer"
-            target="_blank"
-          >
-            WhatsApp
-          </a>
+          {customer.phone ? (
+            <a
+              className="inline-flex h-11 items-center rounded-md border border-stone-200 bg-white px-4 text-sm font-semibold text-emerald-700"
+              href={whatsappLink(
+                customer.phone,
+                `Hi ${customer.name}, this is Hercules Factory 👊`,
+              )}
+              rel="noreferrer"
+              target="_blank"
+            >
+              WhatsApp
+            </a>
+          ) : null}
           <BookTrialDialog
             customerId={customer.id}
             customerName={customer.name}
@@ -172,7 +174,8 @@ export default function CustomerProfilePage({
       <Card>
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Phone", customer.phone],
+            ["Phone", customer.phone ?? "—"],
+            ["IC / company reg. no.", customer.ic ?? "—"],
             ["Age", customer.age ?? "—"],
             ["Gender", customer.gender ?? "—"],
             ["Emergency contact", customer.emergencyContact ?? "—"],

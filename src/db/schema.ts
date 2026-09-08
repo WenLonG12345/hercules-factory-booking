@@ -156,7 +156,11 @@ export const customers = sqliteTable(
   {
     id: id(),
     name: text("name").notNull(),
-    phone: text("phone").notNull(),
+    // Nullable: some customers only ever gave an IC or a company registration
+    // number (the `ic` column), never a mobile. Both are optional, but the
+    // customer form requires at least one.
+    phone: text("phone"),
+    ic: text("ic"),
     age: integer("age"),
     gender: text("gender", { enum: GENDERS }),
     emergencyContact: text("emergency_contact"),
@@ -166,7 +170,8 @@ export const customers = sqliteTable(
     ...timestamps,
   },
   (table) => [
-    uniqueIndex("customers_phone_idx").on(table.phone),
+    // Not unique: siblings and couples share one number, and both need a row.
+    index("customers_phone_idx").on(table.phone),
     index("customers_name_idx").on(table.name),
     index("customers_date_joined_idx").on(table.dateJoined),
   ],

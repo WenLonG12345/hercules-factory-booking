@@ -184,18 +184,22 @@ export default function InvoicePage({
               >
                 {customer.name}
               </Link>
-              <p className="mt-1 text-sm text-stone-600">{customer.phone}</p>
-              <a
-                className="mt-3 inline-flex text-sm font-semibold text-emerald-700"
-                href={whatsappLink(
-                  customer.phone,
-                  `Hi ${customer.name}, this is Hercules Factory 👊`,
-                )}
-                rel="noreferrer"
-                target="_blank"
-              >
-                WhatsApp
-              </a>
+              <p className="mt-1 text-sm text-stone-600">
+                {customer.phone ?? customer.ic ?? "—"}
+              </p>
+              {customer.phone ? (
+                <a
+                  className="mt-3 inline-flex text-sm font-semibold text-emerald-700"
+                  href={whatsappLink(
+                    customer.phone,
+                    `Hi ${customer.name}, this is Hercules Factory 👊`,
+                  )}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  WhatsApp
+                </a>
+              ) : null}
             </>
           ) : (
             <p className="mt-1 text-sm text-stone-600">—</p>

@@ -63,7 +63,8 @@ export function CreateCustomerDialog({
             const age = String(fd.get("age") ?? "");
             createCustomer.mutate({
               name: String(fd.get("name")),
-              phone: String(fd.get("phone")),
+              phone: String(fd.get("phone") ?? "") || undefined,
+              ic: String(fd.get("ic") ?? "") || undefined,
               age: age ? Number(age) : undefined,
               gender:
                 (String(fd.get("gender")) as (typeof GENDERS)[number] | "") ||
@@ -85,13 +86,16 @@ export function CreateCustomerDialog({
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="WhatsApp phone">
-              <Input name="phone" required />
+              <Input name="phone" />
             </Field>
-            <Field label="Age">
-              <Input max={100} min={3} name="age" type="number" />
+            <Field label="IC / company reg. no.">
+              <Input name="ic" />
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Age">
+              <Input max={100} min={3} name="age" type="number" />
+            </Field>
             <Field label="Gender">
               <Select defaultValue="" name="gender">
                 <option value="">Not set</option>
@@ -102,6 +106,8 @@ export function CreateCustomerDialog({
                 ))}
               </Select>
             </Field>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Date joined">
               <Input
                 defaultValue={today()}
@@ -110,8 +116,6 @@ export function CreateCustomerDialog({
                 type="date"
               />
             </Field>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Emergency contact">
               <Input name="emergencyContact" />
             </Field>

@@ -22,6 +22,10 @@ export function formatDate(date: Date | string) {
 }
 
 export function formatWhatsAppPhone(phone: string) {
+  // A number stored with a leading "+" already carries its own country code —
+  // a handful of customers are on +86, not +60.
+  if (phone.trim().startsWith("+")) return phone.replace(/\D/g, "");
+
   const digits = phone.replace(/\D/g, "");
 
   if (digits.startsWith("60")) {

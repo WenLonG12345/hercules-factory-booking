@@ -248,7 +248,7 @@ export default function SessionDetailPage({
               .filter((customer) => !onRoster.has(customer.id))
               .map((customer) => (
                 <option key={customer.id} value={customer.id}>
-                  {customer.name} — {customer.phone}
+                  {customer.name} — {customer.phone ?? customer.ic ?? "—"}
                 </option>
               ))}
           </Select>
