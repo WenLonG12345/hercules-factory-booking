@@ -30,10 +30,30 @@
   --shadow-pill: 0 8px 30px oklch(22% 0.02 45 / 18%);
   --shadow-fab: 0 10px 30px oklch(22% 0.02 45 / 26%);
 
+  /* WhatsApp green. Dark ink rides on it, never white — white on this green
+     is about 1.9:1 and fails AA outright. */
+  --color-whatsapp: oklch(76% 0.19 151);
+  --color-whatsapp-ink: oklch(18% 0.02 150);
+
+  /* Instagram's own mark colours. Every action disc in the speed dial carries
+     its destination's brand (WhatsApp green, Google's four), so Instagram gets
+     its gradient — as a named token, never inlined at the call site. */
+  --gradient-instagram: linear-gradient(
+    135deg,
+    oklch(72% 0.17 55) 0%,
+    oklch(62% 0.24 15) 45%,
+    oklch(52% 0.24 320) 75%,
+    oklch(52% 0.22 275) 100%
+  );
+
   /* 320px floor: Archivo Black caps run ~0.68em, so 3.125rem keeps an 8-letter
      word inside 288px without mid-word breaking. */
   --text-display: clamp(3.125rem, 13vw, 9rem);
   --text-h2: clamp(1.5rem, 4vw, 3rem);
+  /* Landing-page H1. The homepage headline is three words on a photograph;
+     these run 19–36 characters over paper, so they sit between the hero
+     display size and a section head rather than at either extreme. */
+  --text-h1-page: clamp(2rem, 5.5vw, 3.75rem);
   --text-h3: clamp(1rem, 2.6vw, 1.9375rem);
   /* The trial band's figure — louder than a heading, quieter than the hero. */
   --text-price: clamp(2.75rem, 8vw, 5rem);
@@ -67,6 +87,8 @@
 
 @theme inline {
   --color-background: var(--color-paper);
+  --color-whatsapp: var(--color-whatsapp);
+  --color-whatsapp-ink: var(--color-whatsapp-ink);
   --color-foreground: var(--color-ink);
   --color-paper: var(--color-paper);
   --color-paper-2: var(--color-paper-2);
@@ -403,4 +425,142 @@ body {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
+}
+
+/* ---- Search-landing pages ------------------------------------------------
+ * Hallmark · genre: editorial · macrostructure: Split Studio
+ *   (route-scoped: /[slug] — muay-thai-cheras, -kuala-lumpur, kids-, beginners-)
+ * theme: Sport (locked — brand system, not rotated) · paper band: light
+ * display: display-condensed (roman) · accent hue: warm red
+ * nav: N5 floating pill (shared chrome, unchanged) · footer: Ft5 (unchanged)
+ * hero: H2 split diptych · proof: T3 single huge quote (live CMS review)
+ * enrichment: none — panels use the gym's own photographs
+ * motion: reveal-stagger · hover-lift · accordion-expand (no fourth primitive)
+ * pre-emit critique: P5 H5 E4 S5 R5 V4
+ *
+ * Why Split Studio and not Long Document: these pages carry 600–750 words of
+ * prose each, and a single measure of it reads as a wall. The diptych pairs
+ * every block with a panel of real material — the gym's photographs, the
+ * timetable, a member's review — so the eye has somewhere to land between
+ * paragraphs without a single word being cut.
+ */
+
+/* The hard-edged plate: square corners, 2px ink edge, accent slab on top.
+ * Generalised from the Why cards on the homepage so the two read as one
+ * family — the landing pages are the same gym, not a microsite. */
+.plate {
+  background: var(--color-paper-2);
+  border: 2px solid var(--color-ink);
+  border-top: 6px solid var(--color-accent);
+}
+
+/* Photographs get the ink edge and a hard offset instead of a soft shadow —
+ * the brand has no blur in it anywhere except the nav pill's backdrop. */
+.photo-plate {
+  border: 2px solid var(--color-ink);
+  box-shadow: 10px 10px 0 var(--color-accent);
+}
+
+@media (width < 40rem) {
+  .photo-plate {
+    box-shadow: 6px 6px 0 var(--color-accent);
+  }
+}
+
+/* Fact rows: label and value on one baseline, dotted leader between, so a
+ * timetable reads as a timetable rather than as another paragraph. */
+.fact-row {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-block: 0.6875rem;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.fact-row:last-child {
+  border-bottom: 0;
+}
+
+/* Checklist marks: a drawn accent tick, not an emoji and not an icon import. */
+.tick-list li {
+  position: relative;
+  padding-inline-start: 1.75rem;
+}
+
+.tick-list li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.42em;
+  width: 0.7rem;
+  height: 0.4rem;
+  border-inline-start: 2.5px solid var(--color-accent);
+  border-bottom: 2.5px solid var(--color-accent);
+  rotate: -45deg;
+}
+
+/* ---- Site FAB -----------------------------------------------------------
+ * Hallmark · component: speed-dial FAB · genre: editorial · theme: Sport
+ * states: default · hover · focus-visible · active · disabled · loading ·
+ *   error · success  (the last four apply only to the photo dialog's submit —
+ *   the dial's own actions are links and a disclosure, which cannot enter them)
+ * contrast: pass
+ *
+ * WhatsApp was the third item inside a closed menu — the gym's only conversion
+ * path, two taps deep, behind a red button that opened a utility list. The
+ * hierarchy is now inverted: WhatsApp is the accent, always visible, labelled;
+ * the dial that holds Instagram / Google / photo-share is the quiet one.
+ */
+/* WhatsApp's own green rather than the site accent — the gym asked for the
+ * mark to be recognisable at a glance. It is the one place on the site where a
+ * second loud colour sits near the accent red, so it stays the only one. */
+.fab-primary {
+  background: var(--color-whatsapp);
+  color: var(--color-whatsapp-ink);
+  box-shadow: var(--shadow-fab);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.fab-primary:hover {
+  transform: translateY(-2px);
+  background: color-mix(in oklab, var(--color-whatsapp) 90%, black);
+}
+
+.fab-primary:active {
+  transform: translateY(0);
+}
+
+/* The disclosure. Paper ground and an ink ring — present, not shouting. */
+.fab-quiet {
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-pill);
+  --tw-ring-color: var(--color-hairline);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.fab-quiet:hover {
+  transform: translateY(-2px);
+  background: var(--color-paper-3);
+}
+
+.fab-quiet:active {
+  transform: translateY(0);
+}
+
+.mark-instagram {
+  background: var(--gradient-instagram);
+  color: oklch(99% 0.005 85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab-primary:hover,
+  .fab-quiet:hover {
+    transform: none;
+  }
 }

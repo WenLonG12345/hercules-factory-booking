@@ -1,5 +1,35 @@
 [
   {
+    "date": "2026-09-08",
+    "macrostructure": "component-scope — homepage gallery grid",
+    "theme": "Sport (locked brand system — not rotated)",
+    "theme_axes": "light / display-condensed / warm-red",
+    "enrichment": "none — the gym's own photographs",
+    "nav": "n/a (component-scope)",
+    "footer": "n/a (component-scope)",
+    "brief": "Gallery rows were ragged: auto-fit columns with the tile aspect ratio chosen by index (4/5 on every third, square otherwise), so each row was as tall as whichever ratio landed in it. Regridded to uniform square cells on a fixed 2/3/4-column dense grid, with the rhythm carried by one deliberate 2x2 feature tile (first photo, sm: and up only — on a two-column phone grid a 2x2 spans the full width and its rows have no single-unit sibling to size them). next/image sizes split for the feature vs the rest; Instagram card padding and mark step down at one square unit on phones. No new CSS."
+  },
+  {
+    "date": "2026-09-08",
+    "macrostructure": "component-scope — SiteFab trigger cluster + gallery Instagram tile",
+    "theme": "Sport (locked brand system — not rotated)",
+    "theme_axes": "light / display-condensed / warm-red",
+    "enrichment": "none — WhatsApp and Instagram brand marks (react-icons)",
+    "nav": "n/a (component-scope)",
+    "footer": "n/a (component-scope)",
+    "brief": "WhatsApp was the third item inside a closed speed dial — the gym's only booking path, two taps deep. Pulled out as its own always-visible control — an icon-only green disc, no label; the dial went quiet (paper + ink ring) and gained Instagram as its third action. Per the gym's call the WhatsApp control carries WhatsApp green (--color-whatsapp token). The glyph stays dark ink: with the label removed it is the only thing carrying the control's meaning, and white on this green is ~1.9:1 rather than the site accent, and the two triggers stack vertically with WhatsApp on the bottom rung, nearest the thumb. Also: accent Instagram tile closing the homepage gallery grid (handle derived from the CMS social row), and /llms.txt reading classes + prices live from the CMS."
+  },
+  {
+    "date": "2026-09-08",
+    "macrostructure": "Split Studio (route-scoped: /[slug] search-landing pages)",
+    "theme": "Sport (locked brand system — not rotated)",
+    "theme_axes": "light / display-condensed / warm-red",
+    "enrichment": "none — proof panels use the gym's own CMS photographs",
+    "nav": "N5 floating pill (shared chrome, unchanged)",
+    "footer": "Ft5 statement (shared chrome, unchanged) + landing-page link row",
+    "brief": "Four SEO landing pages read as a flat h2+paragraph wall -> Split Studio: H2 split-diptych hero (words left, gallery photo right), prose rows alternating against real proof panels (photo / fact table / tick list), one full-measure section per page as the rhythm break, T3 single huge quote from a live CMS review, pricing+FAQ paired in one row, address-vs-map closing diptych. Added .plate / .photo-plate / .fact-row / .tick-list and --text-h1-page to globals.css; LandingPageAside union added to landing-pages.ts. Prose word count rose 725 -> 820, SEO structure unchanged."
+  },
+  {
     "date": "2026-09-04",
     "macrostructure": "component-scope — social card (1200×630 opengraph-image)",
     "theme": "Sport (locked brand system — not rotated)",

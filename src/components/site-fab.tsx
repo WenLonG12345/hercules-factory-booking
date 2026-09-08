@@ -3,7 +3,7 @@
 import { Camera, Check, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { FaWhatsapp } from "react-icons/fa";
+import { FaInstagram, FaWhatsapp } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { submitPhotoAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
@@ -26,12 +26,22 @@ import { Field, Input } from "@/components/ui/form";
 const ACTION =
   "lift flex items-center gap-3 whitespace-nowrap rounded-full bg-paper-2 py-2.5 pl-5 pr-2.5 text-xs font-black uppercase tracking-[0.14em] shadow-lg ring-1 ring-hairline active:translate-y-0";
 
-/** Speed-dial FAB: WhatsApp the gym, leave a review, or send in a photo. */
+/**
+ * The corner cluster: a standalone WhatsApp button plus a speed dial holding
+ * the things people do less often — follow on Instagram, leave a Google
+ * review, send in a photo.
+ *
+ * WhatsApp used to live inside the dial. It is the only way anyone books a
+ * class, so it is now its own always-visible control and carries the accent;
+ * the dial has gone quiet behind it. See the stamp in `globals.css`.
+ */
 export function SiteFab({
   googleReviewHref,
+  instagramHref,
   whatsappHref,
 }: {
   googleReviewHref?: string;
+  instagramHref?: string;
   whatsappHref: string;
 }) {
   const t = useTranslations("Fab");
@@ -81,32 +91,52 @@ export function SiteFab({
             </a>
           ) : null}
 
+          {instagramHref ? (
+            <a
+              className={ACTION}
+              href={instagramHref}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {t("instagram")}
+              <span className="mark-instagram grid size-10 place-items-center rounded-full">
+                <FaInstagram className="size-5" />
+              </span>
+            </a>
+          ) : null}
+        </div>
+
+        {/* Stacked, not side by side: the disclosure sits directly under the
+            actions it reveals, and WhatsApp takes the bottom rung — closest to
+            the thumb, which is where the one action that books a class belongs. */}
+        <div className="flex flex-col items-end gap-3">
+          <button
+            aria-expanded={open}
+            aria-label={open ? t("close") : t("open")}
+            className="fab-quiet grid size-14 place-items-center rounded-full ring-1"
+            onClick={() => setOpen((value) => !value)}
+            type="button"
+          >
+            <Plus
+              className={`size-7 transition-transform duration-200 ${
+                open ? "rotate-45" : ""
+              }`}
+            />
+          </button>
+
+          {/* Disc, no label — the mark is doing the work. That is also why the
+              glyph stays dark: with the wording gone it is the only thing
+              carrying the meaning, and white on this green is ~1.9:1. */}
           <a
-            className={ACTION}
+            aria-label={t("whatsapp")}
+            className="fab-primary grid size-14 place-items-center rounded-full"
             href={whatsappHref}
             rel="noreferrer"
             target="_blank"
           >
-            {t("whatsapp")}
-            <span className="grid size-10 place-items-center rounded-full bg-[#25D366] text-stone-950">
-              <FaWhatsapp className="size-5" />
-            </span>
+            <FaWhatsapp aria-hidden className="size-7" color="white" />
           </a>
         </div>
-
-        <button
-          aria-expanded={open}
-          aria-label={open ? t("close") : t("open")}
-          className="grid size-14 place-items-center rounded-full bg-accent text-accent-ink shadow-fab transition hover:brightness-110"
-          onClick={() => setOpen((value) => !value)}
-          type="button"
-        >
-          <Plus
-            className={`size-7 transition-transform duration-200 ${
-              open ? "rotate-45" : ""
-            }`}
-          />
-        </button>
       </div>
 
       <Dialog onOpenChange={setDialogOpen} open={dialogOpen}>

@@ -22,6 +22,7 @@
     "enquire": "Enquire",
     "galleryBlurb": "Trained with us? Send us your photo with the button in the corner — we'll put it up here.",
     "sharedBy": "Shared by {name}",
+    "instagramCard": "See this week's training",
     "trialPriceLabel": "First trial only",
     "trialCta": "Book your {price} trial",
     "promoCta": "Claim this offer",
@@ -35,6 +36,7 @@
   },
   "Fab": {
     "googleReview": "Review on Google",
+    "instagram": "Follow on Instagram",
     "sharePhoto": "Share your photo",
     "whatsapp": "WhatsApp us",
     "open": "Open quick actions",

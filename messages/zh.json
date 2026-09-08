@@ -22,6 +22,7 @@
     "enquire": "咨询",
     "galleryBlurb": "在我们这里训练过？用右下角的按钮把照片发给我们，我们会放上来。",
     "sharedBy": "由 {name} 分享",
+    "instagramCard": "看看本周的训练",
     "trialPriceLabel": "首次体验价",
     "trialCta": "预约 {price} 体验课",
     "promoCta": "立即领取优惠",
@@ -35,6 +36,7 @@
   },
   "Fab": {
     "googleReview": "写 Google 评价",
+    "instagram": "关注 Instagram",
     "sharePhoto": "分享你的照片",
     "whatsapp": "WhatsApp 联系我们",
     "open": "打开快捷操作",

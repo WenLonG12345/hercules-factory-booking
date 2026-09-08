@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
+import { FaInstagram } from "react-icons/fa";
 import { FaqAccordion } from "@/components/faq-accordion";
 import { PhotoProvider, PhotoView } from "@/components/photo-viewer";
 import { PublicFooter } from "@/components/public-footer";
@@ -46,6 +47,13 @@ export default async function HomePage({
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+
+  // The CMS keeps social links as free rows; Instagram is the one the gym
+  // actually posts to, so it gets surfaced beyond the footer list.
+  const instagram = social.find((link) => link.url.includes("instagram"));
+  const instagramHandle = instagram
+    ? `@${new URL(instagram.url).pathname.replaceAll("/", "")}`
+    : null;
 
   const averageRating = reviews.length
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
@@ -462,13 +470,21 @@ export default async function HomePage({
           >
             {t("galleryBlurb")}
           </p>
-          <div className="mt-12 grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4">
+          {/* Every cell is a square of either one or two units, so the rows
+              are flush at every breakpoint — the old grid gave each tile its
+              own aspect ratio by index, which left each row as tall as
+              whichever ratio happened to land in it. The rhythm now comes from
+              one deliberate 2x2 feature tile instead, and `dense` backfills the
+              hole it would otherwise leave. The span starts at sm: on a
+              two-column phone grid a 2x2 tile is the whole width, and its rows
+              would have no single-unit sibling to take their height from. */}
+          <div className="mt-12 grid grid-flow-row-dense grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4">
             <PhotoProvider maskOpacity={0.9}>
               {gallery.map((image, index) => (
                 <figure
                   key={image.id}
-                  className={`lift relative overflow-hidden rounded-xl border border-hairline ${
-                    index % 3 === 0 ? "aspect-4/5" : "aspect-square"
+                  className={`lift relative aspect-square overflow-hidden rounded-xl border border-hairline ${
+                    index === 0 ? "sm:col-span-2 sm:row-span-2" : ""
                   }`}
                   data-reveal
                   style={{ "--i": index } as React.CSSProperties}
@@ -478,7 +494,11 @@ export default async function HomePage({
                       alt={image.alt}
                       className="cursor-zoom-in object-cover"
                       fill
-                      sizes="(min-width: 768px) 33vw, 100vw"
+                      sizes={
+                        index === 0
+                          ? "(min-width: 64rem) 50vw, (min-width: 40rem) 67vw, 50vw"
+                          : "(min-width: 64rem) 25vw, (min-width: 40rem) 33vw, 50vw"
+                      }
                       src={image.imageUrl}
                     />
                   </PhotoView>
@@ -495,6 +515,29 @@ export default async function HomePage({
                 </figure>
               ))}
             </PhotoProvider>
+
+            {instagram ? (
+              <a
+                className="lift relative flex aspect-square flex-col justify-between overflow-hidden rounded-xl bg-accent p-4 text-accent-ink md:p-6"
+                data-reveal
+                href={instagram.url}
+                rel="noreferrer"
+                style={{ "--i": gallery.length } as React.CSSProperties}
+                target="_blank"
+              >
+                <FaInstagram aria-hidden className="size-7 md:size-9" />
+                <span>
+                  <span className="display block text-(length:--text-h3) leading-tight">
+                    {t("instagramCard")}
+                  </span>
+                  {instagramHandle ? (
+                    <span className="mt-2 block text-xs font-black uppercase tracking-[0.16em] opacity-90">
+                      {instagramHandle}
+                    </span>
+                  ) : null}
+                </span>
+              </a>
+            ) : null}
           </div>
         </Reveal>
 
@@ -652,6 +695,7 @@ export default async function HomePage({
 
       <SiteFab
         googleReviewHref={content?.googleReviewUrl ?? undefined}
+        instagramHref={instagram?.url}
         whatsappHref={wa()}
       />
       <PublicFooter social={social} />

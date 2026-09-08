@@ -18,9 +18,27 @@ import type { Locale } from "@/i18n/routing";
  * carry the words that are unique to each search. Keep them unique: four pages
  * repeating one paragraph is one page as far as Google is concerned.
  */
+/**
+ * The proof panel that sits opposite a section's prose in the diptych.
+ *
+ * Everything here has to be *true* — the panels exist to break the column, not
+ * to pad it. `facts` and `checklist` carry authored content that restates what
+ * the section's own prose already claims; `photo` and the review pull-quote are
+ * resolved from live CMS rows at render time. There is deliberately no "stat"
+ * kind: the gym publishes no member counts or success rates, and inventing one
+ * to fill a panel is exactly the tell this redesign exists to avoid.
+ */
+export type LandingPageAside =
+  | { kind: "photo" }
+  | { kind: "facts"; title: string; rows: [string, string][] }
+  | { kind: "checklist"; title: string; items: string[] };
+
 export type LandingPageSection = {
   heading: string;
   body: string[];
+  /** Omitted on purpose for one or two sections per page — a full-measure
+   *  paragraph run is the rhythm break that keeps the diptych from droning. */
+  aside?: LandingPageAside;
 };
 
 export type LandingPage = {
@@ -52,6 +70,7 @@ const en: LandingPage[] = [
     sections: [
       {
         heading: "A neighbourhood gym, not a chain",
+        aside: { kind: "photo" },
         body: [
           "Cheras is big, and most people looking for Muay Thai here end up scrolling through franchise timetables in Mid Valley or Bukit Bintang — thirty minutes of traffic each way before you have thrown a single kick. That commute is the reason most people quit in month two.",
           "We are in Taman Connaught, the same neighbourhood as the MRT station of that name, on the Kajang Line. If you live in Cheras, Taman Segar, Taman Midah, Bandar Tun Razak or anywhere along Jalan Cheras, training here is a short drive rather than an evening out. There is street parking outside.",
@@ -68,6 +87,17 @@ const en: LandingPage[] = [
       },
       {
         heading: "What an evening looks like",
+        aside: {
+          kind: "checklist",
+          title: "The hour, in order",
+          items: [
+            "Wrap up, skip, warm up",
+            "Technique — one or two things, drilled slow",
+            "Pad rounds with a coach",
+            "Bag work",
+            "Conditioning, if there's any left in you",
+          ],
+        },
         body: [
           "Wrap up, skip, warm up. Then technique — one or two things, drilled properly, rather than a highlight reel you forget by Thursday. Then rounds on the pads with a coach, then bag work, then conditioning if there is time left in you.",
           "You leave soaked. Most people find the first two weeks brutal and the third week is where it clicks, which is roughly when the fitness arrives without you noticing it happen.",
@@ -76,6 +106,18 @@ const en: LandingPage[] = [
       },
       {
         heading: "Finding us",
+        aside: {
+          kind: "facts",
+          title: "The essentials",
+          rows: [
+            ["Address", "Jalan Cerdas, Taman Connaught, 56000 KL"],
+            ["Group classes", "Mon · Tue · Thu · Fri, 7–10pm"],
+            ["Kids class", "Sunday"],
+            ["Personal training", "By appointment"],
+            ["Gloves", "Provided — nothing to buy first"],
+            ["Parking", "Street parking outside"],
+          ],
+        },
         body: [
           "Jalan Cerdas, Taman Connaught, 56000 Kuala Lumpur. The map at the bottom of this page will route you door to door.",
           "Group classes run Monday, Tuesday, Thursday and Friday evenings, 7pm to 10pm — late enough to make it after work from the city, KLCC or Bangsar without sprinting. The kids class runs on Sunday, and personal training is by appointment on any day.",
@@ -121,6 +163,7 @@ const en: LandingPage[] = [
     sections: [
       {
         heading: "Why train Muay Thai in KL at all",
+        aside: { kind: "photo" },
         body: [
           "Muay Thai is the most efficient hour of exercise most people will ever do — it works your legs, your core and your lungs at the same time, and it holds your attention in a way a stationary bike never will. You are learning something, so you keep turning up. That is the entire trick to fitness that lasts.",
           "It is also genuinely useful. Eight points of contact, footwork, distance, timing, and the composure that comes from having stood in front of someone who is trying to hit you. None of that is theoretical.",
@@ -129,6 +172,16 @@ const en: LandingPage[] = [
       },
       {
         heading: "What makes us different from a big-box gym",
+        aside: {
+          kind: "checklist",
+          title: "What that buys you",
+          items: [
+            "The same coach every week",
+            "Pad rounds with a coach, not a queue behind one",
+            "No lock-in contract",
+            "Every price published in full",
+          ],
+        },
         body: [
           "Class sizes stay small enough that everybody gets real pad rounds with a coach, not a queue behind one. The coach is the same face every week, so your corrections carry over from one session to the next instead of resetting.",
           "There is no lock-in contract designed to keep charging you after you stop coming. There is a trial, single sessions, credit packs and an unlimited pass. Pick what matches how often you will realistically train — the prices are on this page and on the homepage, in full, with nothing to unlock in a sales call.",
@@ -137,6 +190,17 @@ const en: LandingPage[] = [
       },
       {
         heading: "Getting here from around the city",
+        aside: {
+          kind: "facts",
+          title: "Getting here",
+          rows: [
+            ["Neighbourhood", "Taman Connaught, off Jalan Cheras"],
+            ["MRT", "Kajang Line — Taman Connaught"],
+            ["Easy from", "Cheras · Balakong · Sungai Long · Kajang"],
+            ["Classes start", "7pm"],
+            ["Parking", "Street parking outside"],
+          ],
+        },
         body: [
           "The gym is on Jalan Cerdas in Taman Connaught, off Jalan Cheras — south-east of the city centre and easy to reach against the evening traffic rather than into it. The MRT Kajang Line runs to Taman Connaught station.",
           "That puts us in comfortable range of Cheras, Bandar Tun Razak, Sungai Besi, Seri Kembangan, Balakong, Bandar Sungai Long and Kajang, and reachable from the city centre, Ampang and Bangsar on the way home.",
@@ -189,6 +253,7 @@ const en: LandingPage[] = [
     sections: [
       {
         heading: "What kids actually get out of it",
+        aside: { kind: "photo" },
         body: [
           "Attention span, mostly. A Muay Thai class asks a child to stand still, listen, and then do a specific thing on command — repeatedly, for an hour. That is a skill, and it transfers to school in a way parents notice before the kids do.",
           "Then the physical side: balance, coordination, real cardiovascular fitness, and a body that knows where it is in space. Kids who play no other sport catch up quickly here because the entry requirement is zero.",
@@ -197,6 +262,17 @@ const en: LandingPage[] = [
       },
       {
         heading: "How the class is run",
+        aside: {
+          kind: "checklist",
+          title: "How the hour runs",
+          items: [
+            "Warm-up",
+            "Technique, corrected child by child",
+            "Pad work",
+            "Games that are conditioning in disguise",
+            "Bow in, listen, no swinging between rounds",
+          ],
+        },
         body: [
           "Coach-led, start to finish, with a warm-up, technique, pad work and games that are really conditioning in disguise. Children are corrected individually rather than left to copy whatever the child in front is doing.",
           "Contact is controlled and age-appropriate. Nobody is put into hard sparring. The pads take the power, and partner work is supervised the whole way through.",
@@ -205,6 +281,18 @@ const en: LandingPage[] = [
       },
       {
         heading: "Practical questions parents ask",
+        aside: {
+          kind: "facts",
+          title: "For parents",
+          rows: [
+            ["When", "Sunday — WhatsApp for this week's time"],
+            ["Where", "Jalan Cerdas, Taman Connaught, Cheras"],
+            ["Kit", "Shorts, t-shirt, water bottle"],
+            ["Gloves", "Provided"],
+            ["Feet", "Barefoot on the mats"],
+            ["Parents", "Welcome to stay and watch"],
+          ],
+        },
         body: [
           "Nothing to buy. Gloves are here. Shorts, a t-shirt and a water bottle is the whole kit list, and bare feet on the mats.",
           "Parents are welcome to stay and watch. Most do for the first few weeks and then stop, which is usually a good sign.",
@@ -262,6 +350,7 @@ const en: LandingPage[] = [
       },
       {
         heading: "What actually happens in your first class",
+        aside: { kind: "photo" },
         body: [
           "You arrive, someone shows you where to put your things and how to wrap your hands — you will not be left to figure that out. Then a warm-up: skipping, movement, nothing complicated.",
           "Then technique. On night one that is usually the stance, the jab, and the teep or the round kick. One or two things, drilled slowly. You will not be handed a twelve-strike combination and told to keep up.",
@@ -271,6 +360,17 @@ const en: LandingPage[] = [
       },
       {
         heading: "What to bring",
+        aside: {
+          kind: "checklist",
+          title: "Your kit list",
+          items: [
+            "Shorts or leggings",
+            "A t-shirt",
+            "A bottle of water",
+            "Nothing else — gloves are here",
+            "No shoes; training is barefoot on the mats",
+          ],
+        },
         body: [
           "Shorts or leggings, a t-shirt, and a bottle of water. That is genuinely all.",
           "Gloves are provided for your trial, so do not buy anything yet. When you have been a few weeks and know you are staying, ask a coach what to get — you will spend your money better with their advice than with a shopping search.",
@@ -279,6 +379,17 @@ const en: LandingPage[] = [
       },
       {
         heading: "Where and when",
+        aside: {
+          kind: "facts",
+          title: "Where and when",
+          rows: [
+            ["Address", "Jalan Cerdas, Taman Connaught, 56000 KL"],
+            ["Beginner classes", "Mon · Tue · Thu · Fri, 7–10pm"],
+            ["One-to-one", "By appointment, any day"],
+            ["First night", "Come ten minutes early"],
+            ["Booking", "WhatsApp — say it's your first time"],
+          ],
+        },
         body: [
           "Hercules Factory, Jalan Cerdas, Taman Connaught, 56000 Kuala Lumpur — in Cheras, near the Taman Connaught MRT station.",
           "Beginner-friendly group classes run Monday, Tuesday, Thursday and Friday from 7pm to 10pm. If you would rather have your first hour one-to-one before joining a group, personal training is available by appointment — some people much prefer starting that way, and it is a completely reasonable thing to ask for.",
@@ -336,6 +447,7 @@ const zh: LandingPage[] = [
     sections: [
       {
         heading: "社区拳馆，不是连锁品牌",
+        aside: { kind: "photo" },
         body: [
           "蕉赖很大。大部分想学泰拳的人，最后都在看 Mid Valley 或武吉免登的连锁课表——来回塞车一小时，才踢得到第一脚。这段车程，就是多数人练两个月就放弃的真正原因。",
           "我们在康乐花园，和 MRT 加影线的 Taman Connaught 站同一个社区。住在蕉赖、Taman Segar、Taman Midah、Bandar Tun Razak 或 Jalan Cheras 沿线，来这里只是几分钟车程。门口有路边停车位。",
@@ -352,6 +464,17 @@ const zh: LandingPage[] = [
       },
       {
         heading: "一堂课长什么样",
+        aside: {
+          kind: "checklist",
+          title: "一小时的顺序",
+          items: [
+            "缠手带、跳绳、热身",
+            "技术——一两个动作，慢慢练",
+            "跟教练打靶",
+            "打沙包",
+            "还有力气的话，做体能",
+          ],
+        },
         body: [
           "缠手带、跳绳、热身。接着技术——一两个动作反复练扎实，而不是塞给你一堆隔天就忘的花式。然后跟教练打靶、打沙包，还有力气的话再做体能。",
           "你会全身湿透地离开。多数人觉得头两周很难熬，第三周开始「通」了——体能通常也是在那时候不知不觉出现的。",
@@ -360,6 +483,18 @@ const zh: LandingPage[] = [
       },
       {
         heading: "地点与时间",
+        aside: {
+          kind: "facts",
+          title: "基本资料",
+          rows: [
+            ["地址", "Jalan Cerdas, Taman Connaught, 56000 KL"],
+            ["团体课", "一 · 二 · 四 · 五　晚上 7–10 点"],
+            ["儿童班", "星期日"],
+            ["私人教练课", "需预约"],
+            ["拳套", "馆内提供，第一次不用买"],
+            ["停车", "门口路边停车位"],
+          ],
+        },
         body: [
           "Jalan Cerdas, Taman Connaught, 56000 Kuala Lumpur。页面下方的地图可以直接导航到门口。",
           "团体课：星期一、二、四、五晚上 7 点到 10 点——从市中心、KLCC 或 Bangsar 下班后赶得上。儿童班在星期日，私人教练课任何一天都可以预约。",
@@ -405,6 +540,7 @@ const zh: LandingPage[] = [
     sections: [
       {
         heading: "为什么在吉隆坡练泰拳",
+        aside: { kind: "photo" },
         body: [
           "泰拳大概是多数人能做到最有效率的一小时运动——同时练腿、核心和心肺，而且它会抓住你的注意力，健身脚踏车做不到这点。因为你在「学东西」，所以你会继续来。长期坚持的秘诀就只有这个。",
           "它也真的实用。八个攻击点、步法、距离、时机，以及站在一个要打你的人面前还能保持冷静——这些都不是纸上谈兵。",
@@ -413,6 +549,16 @@ const zh: LandingPage[] = [
       },
       {
         heading: "和连锁健身房的差别",
+        aside: {
+          kind: "checklist",
+          title: "这带来什么",
+          items: [
+            "每周都是同一位教练",
+            "真的轮得到跟教练打靶，不用排队",
+            "没有绑约",
+            "所有价格公开",
+          ],
+        },
         body: [
           "班级人数控制得住，每个人都真的轮得到跟教练打靶，而不是排队等一个教练。教练每周都是同一个人，所以上周纠正你的东西这周会继续跟进，不会归零。",
           "没有那种你不来了还在扣钱的绑约。有体验课、单堂、次数配套和无限畅打配套。照你实际会来的频率选就好——价格全部公开在这个页面和主页上，不需要先来听一场销售简报。",
@@ -421,6 +567,17 @@ const zh: LandingPage[] = [
       },
       {
         heading: "从市内各区怎么来",
+        aside: {
+          kind: "facts",
+          title: "怎么来",
+          rows: [
+            ["社区", "康乐花园，Jalan Cheras 旁"],
+            ["MRT", "加影线 — Taman Connaught 站"],
+            ["方便前来", "蕉赖 · Balakong · Sungai Long · 加影"],
+            ["开课时间", "晚上 7 点"],
+            ["停车", "门口路边停车位"],
+          ],
+        },
         body: [
           "拳馆在康乐花园 Jalan Cerdas，Jalan Cheras 旁，位于市中心东南方——傍晚是逆车流方向，比往市区容易多了。MRT 加影线可到 Taman Connaught 站。",
           "对蕉赖、Bandar Tun Razak、Sungai Besi、Seri Kembangan、Balakong、Bandar Sungai Long 和加影都很方便，从市中心、安邦或 Bangsar 下班顺路也到得了。",
@@ -473,6 +630,7 @@ const zh: LandingPage[] = [
     sections: [
       {
         heading: "孩子真正学到的东西",
+        aside: { kind: "photo" },
         body: [
           "首先是专注力。一堂泰拳课要求孩子站好、听指令，然后按指令做出一个具体动作，重复一小时。这是一种能力，而且会迁移到课业上——通常家长比孩子先察觉到。",
           "然后是身体面：平衡、协调、真正的心肺能力，以及对自己身体位置的掌握。没有玩其他运动的孩子在这里追得很快，因为门槛是零。",
@@ -481,6 +639,17 @@ const zh: LandingPage[] = [
       },
       {
         heading: "课怎么上",
+        aside: {
+          kind: "checklist",
+          title: "一小时怎么过",
+          items: [
+            "热身",
+            "技术——一个一个纠正",
+            "打靶",
+            "包装成游戏的体能训练",
+            "上下课行礼、听教练说话、回合之间不乱挥",
+          ],
+        },
         body: [
           "教练全程带班：热身、技术、打靶，加上包装成游戏的体能训练。孩子是一个一个被纠正的，不是让他们照着前面那个小孩乱比。",
           "接触强度受控、按年龄调整，不会安排激烈对打。力量都打在靶和沙包上，对练全程有人看着。",
@@ -489,6 +658,18 @@ const zh: LandingPage[] = [
       },
       {
         heading: "家长常问的实际问题",
+        aside: {
+          kind: "facts",
+          title: "给家长",
+          rows: [
+            ["时间", "星期日——请 WhatsApp 确认本周时间"],
+            ["地点", "蕉赖康乐花园 Jalan Cerdas"],
+            ["装备", "短裤、T 恤、水壶"],
+            ["拳套", "馆内提供"],
+            ["鞋", "垫上光脚训练"],
+            ["家长", "可全程观课"],
+          ],
+        },
         body: [
           "什么都不用买。拳套我们有。短裤、T 恤、一瓶水就是全部装备，在垫上光脚训练。",
           "家长可以留下来看。多数人前几周会看，之后就不看了——这通常是好现象。",
@@ -544,6 +725,7 @@ const zh: LandingPage[] = [
       },
       {
         heading: "第一堂课实际会发生什么",
+        aside: { kind: "photo" },
         body: [
           "你到了，有人告诉你东西放哪、手带怎么缠——不会丢着让你自己研究。然后热身：跳绳、移动，没有复杂的东西。",
           "接着是技术。第一晚通常是基本站架、刺拳，加上前踢或扫踢。一两个动作，慢慢练。不会有人塞给你十二下的连招要你跟上。",
@@ -553,6 +735,17 @@ const zh: LandingPage[] = [
       },
       {
         heading: "要带什么",
+        aside: {
+          kind: "checklist",
+          title: "装备清单",
+          items: [
+            "运动短裤或紧身裤",
+            "一件 T 恤",
+            "一瓶水",
+            "其他都不用——拳套我们有",
+            "不用带鞋，垫上光脚训练",
+          ],
+        },
         body: [
           "运动短裤或紧身裤、一件 T 恤、一瓶水。真的就这些。",
           "体验课提供拳套，所以先别买任何装备。练几周确定要留下来之后，问教练该买什么——那比你自己上网搜好用得多。",
@@ -561,6 +754,17 @@ const zh: LandingPage[] = [
       },
       {
         heading: "地点与时间",
+        aside: {
+          kind: "facts",
+          title: "地点与时间",
+          rows: [
+            ["地址", "Jalan Cerdas, Taman Connaught, 56000 KL"],
+            ["新手团体课", "一 · 二 · 四 · 五　晚上 7–10 点"],
+            ["一对一", "任何一天，需预约"],
+            ["第一晚", "请提早十分钟到"],
+            ["预约", "WhatsApp——说你是第一次来"],
+          ],
+        },
         body: [
           "Hercules Factory，Jalan Cerdas, Taman Connaught, 56000 Kuala Lumpur——位于蕉赖，靠近 Taman Connaught MRT 站。",
           "适合新手的团体课在星期一、二、四、五晚上 7 点到 10 点。如果你想先一对一上完第一小时再进团体班，私人教练课可预约——不少人更喜欢这样开始，这也是完全合理的要求。",
