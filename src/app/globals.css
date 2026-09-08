@@ -31,7 +31,14 @@
   --shadow-fab: 0 10px 30px oklch(22% 0.02 45 / 26%);
 
   /* WhatsApp green. Dark ink rides on it, never white — white on this green
-     is about 1.9:1 and fails AA outright. */
+     is about 1.9:1 and fails AA outright.
+
+     Deliberately absent from `@theme inline` below: nothing uses a
+     `bg-whatsapp`/`text-whatsapp` utility, and registering it there emits
+     `--color-whatsapp: var(--color-whatsapp)` into `@layer theme`. That only
+     resolves because this unlayered block outranks the layer — the moment it
+     stops doing so the property is a cycle, invalid at computed-value time,
+     and the FAB paints transparent. */
   --color-whatsapp: oklch(76% 0.19 151);
   --color-whatsapp-ink: oklch(18% 0.02 150);
 
@@ -87,8 +94,6 @@
 
 @theme inline {
   --color-background: var(--color-paper);
-  --color-whatsapp: var(--color-whatsapp);
-  --color-whatsapp-ink: var(--color-whatsapp-ink);
   --color-foreground: var(--color-ink);
   --color-paper: var(--color-paper);
   --color-paper-2: var(--color-paper-2);
