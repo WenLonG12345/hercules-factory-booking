@@ -14,8 +14,11 @@
     "lint": "biome check",
     "format": "biome format --write",
     "db:import": "tsx --env-file=.env scripts/import-excel.ts",
+    "db:import-invoices": "tsx --env-file=.env scripts/import-invoicehome-invoices.ts",
     "test:import": "tsx scripts/import-excel.test.ts",
-    "test:business": "tsx scripts/business.test.ts"
+    "test:business": "tsx scripts/business.test.ts",
+    "db:import-ledger": "tsx --env-file=.env scripts/import-daily-ledger.ts",
+    "test:ledger-import": "tsx scripts/import-daily-ledger.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1110.0",
@@ -37,6 +40,7 @@
     "lucide-react": "^1.11.0",
     "next": "16.3.3",
     "next-intl": "^4.13.6",
+    "nuqs": "^2.10.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-icons": "^5.6.0",

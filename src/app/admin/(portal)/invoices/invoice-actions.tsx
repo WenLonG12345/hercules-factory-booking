@@ -304,6 +304,7 @@ export function InvoiceActions({
               (invoice.package
                 ? `${PACKAGE_TYPE_LABEL[invoice.package.type]} package`
                 : "Membership"),
+            paid: invoice.status === "paid",
             startDate:
               invoice.package?.startDate ?? invoice.validFrom ?? undefined,
             expiryDate:

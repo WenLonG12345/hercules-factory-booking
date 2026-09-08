@@ -1,6 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import {
+  debounce,
+  parseAsIndex,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryStates,
+} from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/admin-shell";
@@ -33,22 +40,46 @@ import { type Invoice, InvoiceActions } from "./invoice-actions";
 
 const helper = columnHelper<Invoice>();
 
+const STATUSES = ["all", "pending", "paid", "cancelled"] as const;
+
 const statusTone = {
   paid: "green",
   pending: "amber",
   cancelled: "gray",
 } as const;
 
+/** What the customer picker shows and matches on — unique per customer. */
+const customerLabel = (customer: {
+  name: string;
+  phone: string | null;
+  ic: string | null;
+}) => `${customer.name} — ${customer.phone ?? customer.ic ?? "—"}`;
+
+/** Match on this, not the raw text: a tablet keyboard capitalises and trims
+ *  as it pleases, and the typed label still has to find its customer. */
+const labelKey = (label: string) =>
+  label.trim().toLowerCase().replace(/\s+/g, " ");
+
 export default function InvoicesPage() {
   const utils = api.useUtils();
   const [open, setOpen] = useState(false);
   const [customerId, setCustomerId] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
   const [planId, setPlanId] = useState("");
   const [packageType, setPackageType] =
     useState<(typeof PACKAGE_TYPES)[number]>("credit");
   const [validFrom, setValidFrom] = useState(today());
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
+
+  // Filters live in the URL, so a filtered list can be bookmarked and shared.
+  const [{ q: search, status, page }, setFilters] = useQueryStates(
+    {
+      q: parseAsString.withDefault(""),
+      status: parseAsStringLiteral(STATUSES).withDefault("all"),
+      // 1-based in the URL, 0-based here — that is what parseAsIndex is for.
+      page: parseAsIndex.withDefault(0),
+    },
+    { history: "replace" },
+  );
 
   const { data: invoices = [], isLoading } = api.invoice.list.useQuery();
   const { data: customers = [] } = api.customer.list.useQuery();
@@ -65,6 +96,8 @@ export default function InvoicesPage() {
     onSuccess: () => {
       toast.success("Invoice created.");
       setOpen(false);
+      setCustomerId("");
+      setCustomerQuery("");
       invalidate();
     },
     onError: (error) => toast.error(error.message),
@@ -79,6 +112,9 @@ export default function InvoicesPage() {
     );
   }
 
+  const byLabel = new Map(
+    customers.map((c) => [labelKey(customerLabel(c)), c.id]),
+  );
   const plan = plans.find((item) => item.id === planId);
   const type = plan?.type ?? packageType;
 
@@ -158,15 +194,29 @@ export default function InvoicesPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Money in" title="Invoices">
+      <PageHeader title="Invoices">
         <div className="flex flex-wrap items-center gap-2">
           <Input
             className="w-56"
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) =>
+              setFilters(
+                { q: e.target.value || null, page: null },
+                // The keystrokes land in state at once; the URL catches up.
+                { limitUrlUpdates: debounce(300) },
+              )
+            }
             placeholder="Search name or phone"
             value={search}
           />
-          <Select onChange={(e) => setStatus(e.target.value)} value={status}>
+          <Select
+            onChange={(e) =>
+              setFilters({
+                status: e.target.value as (typeof STATUSES)[number],
+                page: null,
+              })
+            }
+            value={status}
+          >
             <option value="all">All statuses</option>
             <option value="pending">Pending</option>
             <option value="paid">Paid</option>
@@ -190,8 +240,12 @@ export default function InvoicesPage() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   const fd = new FormData(e.currentTarget);
+                  if (!customerId) {
+                    toast.error("Pick a customer from the list.");
+                    return;
+                  }
                   createInvoice.mutate({
-                    customerId: String(fd.get("customerId")),
+                    customerId,
                     planId: planId || undefined,
                     packageType: type,
                     totalCredits:
@@ -212,20 +266,34 @@ export default function InvoicesPage() {
                   });
                 }}
               >
+                {/* 200+ customers is more than a dropdown can show — the
+                    datalist filters as you type, for free and natively.
+                    ponytail: swap in a shadcn combobox only if the admin ever
+                    needs fuzzy matching or search on more than the label. */}
                 <Field label="Customer">
-                  <Select
-                    name="customerId"
-                    onChange={(e) => setCustomerId(e.target.value)}
+                  <Input
+                    autoCapitalize="off"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    list="invoice-customer-options"
+                    onChange={(e) => {
+                      setCustomerQuery(e.target.value);
+                      setCustomerId(
+                        byLabel.get(labelKey(e.target.value)) ?? "",
+                      );
+                    }}
+                    placeholder="Type a name, phone or IC…"
                     required
-                    value={customerId}
-                  >
-                    <option value="">Select a customer…</option>
+                    spellCheck={false}
+                    value={customerQuery}
+                  />
+                  <datalist id="invoice-customer-options">
                     {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name} — {customer.phone ?? customer.ic ?? "—"}
+                      <option key={customer.id} value={customerLabel(customer)}>
+                        {customer.name}
                       </option>
                     ))}
-                  </Select>
+                  </datalist>
                 </Field>
                 {/* Issuing the invoice sells the package — pick it off the
                     price list or set it by hand. */}
@@ -362,8 +430,12 @@ export default function InvoicesPage() {
       <DataTable
         columns={columns}
         data={rows}
+        defaultSort={{ id: "invoiceNumber", desc: true }}
         empty="No invoices found."
         getRowId={(invoice) => invoice.id}
+        onPageChange={(next) => setFilters({ page: next })}
+        pageIndex={page}
+        pageSize={25}
         sortable
       />
     </>

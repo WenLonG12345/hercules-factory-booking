@@ -136,6 +136,7 @@ export default async function InvoicePage({
               invoiceDate: invoice.issueDate,
               totalCents: invoice.totalCents,
               description,
+              paid: invoice.status === "paid",
               startDate: validFrom ?? undefined,
               expiryDate: validUntil ?? undefined,
             }}
