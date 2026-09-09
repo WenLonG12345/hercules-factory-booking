@@ -257,11 +257,8 @@ export default function OnboardPage() {
           </Field>
           {plans.length === 0 ? (
             <p className="text-sm text-stone-500">
-              No plans on the price list yet —{" "}
-              <Link className="font-semibold underline" href="/admin/packages">
-                add one
-              </Link>{" "}
-              to stop typing credits and prices by hand.
+              No plans on the price list yet — enter credits and price by hand
+              below.
             </p>
           ) : null}
           {plan ? (

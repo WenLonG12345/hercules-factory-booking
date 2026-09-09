@@ -1,12 +1,8 @@
 "use client";
 
 import {
-  CalendarDays,
-  Dumbbell,
   FileText,
   LayoutDashboard,
-  Tags,
-  TrendingUp,
   UserPlus,
   Wallet,
   WalletCards,
@@ -15,32 +11,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const dashboard = {
-  href: "/admin",
-  label: "Dashboard",
-  icon: LayoutDashboard,
-  exact: true,
-};
-
-const groups = [
-  {
-    label: "Front desk",
-    items: [
-      { href: "/admin/onboard", label: "New signup", icon: UserPlus },
-      { href: "/admin/invoices", label: "Invoices", icon: FileText },
-      { href: "/admin/daily-income", label: "Daily Income", icon: Wallet },
-      { href: "/admin/cms", label: "CMS", icon: WalletCards },
-    ],
-  },
-  {
-    label: "Management",
-    items: [
-      { href: "/admin/schedule", label: "Schedule", icon: CalendarDays },
-      { href: "/admin/packages", label: "Packages", icon: Tags },
-      { href: "/admin/coaches", label: "Coaches", icon: Dumbbell },
-      { href: "/admin/reports", label: "Reports", icon: TrendingUp },
-    ],
-  },
+const items = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/onboard", label: "New signup", icon: UserPlus },
+  { href: "/admin/invoices", label: "Invoices", icon: FileText },
+  { href: "/admin/daily-income", label: "Daily Income", icon: Wallet },
+  { href: "/admin/cms", label: "CMS", icon: WalletCards },
 ];
 
 type NavItem = {
@@ -84,28 +60,12 @@ function NavLink({
 export function AdminNav({ collapsed = false }: { collapsed?: boolean }) {
   const pathname = usePathname();
 
-  return (
-    <>
-      <NavLink collapsed={collapsed} item={dashboard} pathname={pathname} />
-      {groups.map((group) => (
-        <div className="grid gap-1" key={group.label}>
-          {collapsed ? (
-            <div className="mx-3 my-2 border-t border-white/10" />
-          ) : (
-            <p className="mt-3 px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-              {group.label}
-            </p>
-          )}
-          {group.items.map((item) => (
-            <NavLink
-              collapsed={collapsed}
-              item={item}
-              key={item.href}
-              pathname={pathname}
-            />
-          ))}
-        </div>
-      ))}
-    </>
-  );
+  return items.map((item) => (
+    <NavLink
+      collapsed={collapsed}
+      item={item}
+      key={item.href}
+      pathname={pathname}
+    />
+  ));
 }

@@ -4,12 +4,8 @@ import {
   AlertTriangle,
   ArrowUpRight,
   CalendarClock,
-  CalendarDays,
-  Dumbbell,
   FileText,
   Receipt,
-  Tags,
-  TrendingUp,
   UserPlus,
   Users,
   Wallet,
@@ -98,14 +94,19 @@ const trialColumns = trial.columns([
   trial.display({
     id: "customer",
     header: "Customer",
-    cell: ({ row }) => (
-      <Link
-        className="font-semibold text-red-700"
-        href={`/admin/schedule/${row.original.id}`}
-      >
-        {row.original.attendees[0]?.customer?.name ?? "—"}
-      </Link>
-    ),
+    cell: ({ row }) => {
+      const attendee = row.original.attendees[0];
+      return attendee?.customer ? (
+        <Link
+          className="font-semibold text-red-700"
+          href={`/admin/customers/${attendee.customer.id}`}
+        >
+          {attendee.customer.name}
+        </Link>
+      ) : (
+        "—"
+      );
+    },
   }),
 ]);
 
@@ -113,7 +114,7 @@ function DashboardSkeleton() {
   return (
     <div className="animate-pulse space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {["a", "b", "c", "d", "e", "f", "g", "h", "i"].map((k) => (
+        {["a", "b", "c", "d", "e"].map((k) => (
           <div key={k} className="h-24 rounded-lg bg-stone-200" />
         ))}
       </div>
@@ -131,8 +132,6 @@ export default function AdminDashboardPage() {
 
   if (isLoading || !data) return <DashboardSkeleton />;
 
-  const todaySessions = data.todayClasses + data.todayPt + data.todayTrials;
-
   /**
    * One tile per sidebar destination, in sidebar order — the tile is the
    * shortcut to that page, and its number is the thing the admin would open
@@ -147,29 +146,11 @@ export default function AdminDashboardPage() {
       hint: `${data.monthNewCustomers} joined this month`,
     },
     {
-      href: "/admin/schedule",
-      label: "Schedule",
-      icon: CalendarDays,
-      value: todaySessions,
-      hint: `${data.todayClasses} class · ${data.todayPt} PT · ${data.todayTrials} trial`,
-    },
-    {
       href: "/admin/invoices",
       label: "Customers",
       icon: Users,
       value: data.totalCustomers,
       hint: `${data.newCustomers} new today`,
-    },
-    {
-      href: "/admin/packages",
-      label: "Packages",
-      icon: Tags,
-      value: data.activePackages,
-      hint:
-        data.expiring.length > 0
-          ? `${data.expiring.length} expiring or nearly out`
-          : "Nothing expiring soon",
-      accent: data.expiring.length > 0,
     },
     {
       href: "/admin/invoices",
@@ -185,21 +166,6 @@ export default function AdminDashboardPage() {
       icon: Wallet,
       value: formatCurrency(data.todayIncomeCents),
       hint: `${formatCurrency(data.todayExpenseCents)} spent today`,
-    },
-    {
-      href: "/admin/coaches",
-      label: "Coaches",
-      icon: Dumbbell,
-      value: data.activeCoaches,
-      hint: "Active on the roster",
-    },
-    {
-      href: "/admin/reports",
-      label: "Reports",
-      icon: TrendingUp,
-      value: formatCurrency(data.monthNetCents),
-      hint: `${formatCurrency(data.monthIncomeCents)} in · ${formatCurrency(data.monthExpenseCents)} out`,
-      accent: data.monthNetCents < 0,
     },
     {
       href: "/admin/cms",
@@ -247,9 +213,7 @@ export default function AdminDashboardPage() {
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-black">
             <AlertTriangle className="size-4 text-amber-500" />
-            <Link className="hover:text-red-700" href="/admin/packages">
-              Expiring packages
-            </Link>
+            Expiring packages
           </h2>
           <DataTable
             columns={expiringColumns}
@@ -282,9 +246,7 @@ export default function AdminDashboardPage() {
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-black">
             <CalendarClock className="size-4 text-red-700" />
-            <Link className="hover:text-red-700" href="/admin/schedule">
-              Upcoming Trial
-            </Link>
+            Upcoming Trial
           </h2>
           <DataTable
             columns={trialColumns}

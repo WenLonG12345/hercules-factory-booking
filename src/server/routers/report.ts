@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@/db";
 import {
@@ -7,47 +7,14 @@ import {
   customers,
   galleryImages,
   invoices,
-  LEDGER_SYSTEM_CATEGORIES,
-  ledgerCategories,
   ledgerEntries,
-  sessionAttendees,
   sessions,
 } from "@/db/schema";
 import { addDays, toDateInputValue } from "@/lib/utils";
 import { adminProcedure, createTRPCRouter } from "@/server/trpc";
-import { monthSchema } from "@/server/validators/common";
 
 function monthBounds(month: string) {
   return { from: `${month}-01`, to: `${month}-31` };
-}
-
-/** Every money figure in reports comes from the ledger — one table, one truth. */
-function categoryTotals(
-  db: Db,
-  direction: "income" | "expense",
-  from: string,
-  to: string,
-) {
-  return db
-    .select({
-      categoryId: ledgerCategories.id,
-      category: ledgerCategories.name,
-      totalCents: sql<number>`coalesce(sum(${ledgerEntries.amountCents}), 0)`,
-    })
-    .from(ledgerEntries)
-    .innerJoin(
-      ledgerCategories,
-      eq(ledgerCategories.id, ledgerEntries.categoryId),
-    )
-    .where(
-      and(
-        eq(ledgerEntries.direction, direction),
-        gte(ledgerEntries.date, from),
-        lte(ledgerEntries.date, to),
-      ),
-    )
-    .groupBy(ledgerCategories.id, ledgerCategories.name)
-    .orderBy(desc(sql`sum(${ledgerEntries.amountCents})`));
 }
 
 function monthlyTotals(
@@ -187,132 +154,6 @@ export const reportRouter = createTRPCRouter({
       upcomingTrials,
     };
   }),
-
-  monthly: adminProcedure
-    .input(z.object({ month: monthSchema }))
-    .query(async ({ ctx, input }) => {
-      const { from, to } = monthBounds(input.month);
-
-      const [
-        incomeByCategory,
-        expenseByCategory,
-        newCustomers,
-        trials,
-        perCoach,
-        paidInvoices,
-      ] = await Promise.all([
-        categoryTotals(ctx.db, "income", from, to),
-        categoryTotals(ctx.db, "expense", from, to),
-        ctx.db
-          .select({ value: sql<number>`count(*)` })
-          .from(customers)
-          .where(
-            and(gte(customers.dateJoined, from), lte(customers.dateJoined, to)),
-          ),
-        ctx.db
-          .select({
-            status: sessionAttendees.status,
-            value: sql<number>`count(*)`,
-          })
-          .from(sessionAttendees)
-          .innerJoin(sessions, eq(sessions.id, sessionAttendees.sessionId))
-          .where(
-            and(
-              eq(sessions.type, "trial"),
-              gte(sessions.date, from),
-              lte(sessions.date, to),
-            ),
-          )
-          .groupBy(sessionAttendees.status),
-        ctx.db
-          .select({
-            coachId: coaches.id,
-            coachName: coaches.name,
-            sessionCount: sql<number>`count(distinct ${sessions.id})`,
-            headcount: sql<number>`count(${sessionAttendees.id})`,
-          })
-          .from(coaches)
-          .leftJoin(
-            sessions,
-            and(
-              eq(sessions.coachId, coaches.id),
-              gte(sessions.date, from),
-              lte(sessions.date, to),
-            ),
-          )
-          .leftJoin(
-            sessionAttendees,
-            and(
-              eq(sessionAttendees.sessionId, sessions.id),
-              eq(sessionAttendees.status, "attended"),
-            ),
-          )
-          .groupBy(coaches.id, coaches.name),
-        ctx.db.query.invoices.findMany({
-          where: and(
-            eq(invoices.status, "paid"),
-            gte(invoices.paidDate, from),
-            lte(invoices.paidDate, to),
-          ),
-          with: { customer: true },
-          orderBy: desc(invoices.paidDate),
-        }),
-      ]);
-
-      const salaries = await ctx.db
-        .select({
-          coachId: ledgerEntries.coachId,
-          totalCents: sql<number>`coalesce(sum(${ledgerEntries.amountCents}), 0)`,
-        })
-        .from(ledgerEntries)
-        .innerJoin(
-          ledgerCategories,
-          eq(ledgerCategories.id, ledgerEntries.categoryId),
-        )
-        .where(
-          and(
-            eq(ledgerCategories.slug, LEDGER_SYSTEM_CATEGORIES.coachSalary),
-            gte(ledgerEntries.date, from),
-            lte(ledgerEntries.date, to),
-          ),
-        )
-        .groupBy(ledgerEntries.coachId);
-
-      const totalIncomeCents = incomeByCategory.reduce(
-        (sum, row) => sum + Number(row.totalCents),
-        0,
-      );
-      const totalExpenseCents = expenseByCategory.reduce(
-        (sum, row) => sum + Number(row.totalCents),
-        0,
-      );
-      const trialsTotal = trials.reduce(
-        (sum, row) => sum + Number(row.value),
-        0,
-      );
-      const trialsConverted = Number(
-        trials.find((row) => row.status === "converted")?.value ?? 0,
-      );
-
-      return {
-        month: input.month,
-        totalIncomeCents,
-        totalExpenseCents,
-        netCents: totalIncomeCents - totalExpenseCents,
-        incomeByCategory,
-        expenseByCategory,
-        newCustomers: Number(newCustomers[0]?.value ?? 0),
-        trialsTotal,
-        trialsConverted,
-        perCoach: perCoach.map((coach) => ({
-          ...coach,
-          salaryCents: Number(
-            salaries.find((s) => s.coachId === coach.coachId)?.totalCents ?? 0,
-          ),
-        })),
-        paidInvoices,
-      };
-    }),
 
   annual: adminProcedure
     .input(z.object({ year: z.coerce.number().int().min(2000).max(2100) }))
