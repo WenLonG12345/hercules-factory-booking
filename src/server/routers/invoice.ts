@@ -1,5 +1,10 @@
 import { desc, eq } from "drizzle-orm";
-import { customerPackages, invoices, packagePlans } from "@/db/schema";
+import {
+  customerPackages,
+  customers,
+  invoices,
+  packagePlans,
+} from "@/db/schema";
 import {
   bookInvoiceIncome,
   nextInvoiceNumber,
@@ -23,8 +28,14 @@ export const invoiceRouter = createTRPCRouter({
   /**
    * Issuing an invoice IS selling the package — one act, one call. The package
    * row is written first so the invoice can point at it; the invoice's validity
-   * window is the package window. The income is booked only when the invoice is
-   * marked paid, same as every other invoice.
+   * window is the package window.
+   *
+   * The create page can hand over a name instead of a customer id, and the
+   * payment alongside it. A name opens the account here rather than in a
+   * detour the admin has to take first; a payment makes the invoice paid on
+   * arrival and books its income row in this same call, so the ledger is
+   * right without a second "mark paid" click. No payment and it lands
+   * pending, exactly as before.
    */
   create: adminProcedure
     .input(invoiceInput)
@@ -35,33 +46,53 @@ export const invoiceRouter = createTRPCRouter({
           })
         : undefined;
 
+      // Guaranteed by the validator's one-of refinement, but the customer row
+      // has to exist before either the package or the invoice can point at it.
+      const customerId =
+        input.customerId ??
+        (
+          await ctx.db
+            .insert(customers)
+            .values({
+              name: input.newCustomer?.name ?? "",
+              phone: input.newCustomer?.phone ?? null,
+              dateJoined: input.issueDate,
+            })
+            .returning()
+        )[0].id;
+
       const totalCents = input.subtotalCents - input.discountCents;
+      const paid = !!input.paymentMethod;
 
       const [pkg] = await ctx.db
         .insert(customerPackages)
         .values({
-          customerId: input.customerId,
+          customerId,
           planId: input.planId ?? null,
           type: input.packageType,
           startDate: input.validFrom,
           expiryDate: input.validUntil,
           totalCredits:
             input.packageType === "unlimited" ? null : input.totalCredits,
-          amountPaidCents: totalCents,
+          amountPaidCents: paid ? totalCents : 0,
+          paymentMethod: input.paymentMethod ?? null,
           notes: input.notes ?? null,
         })
         .returning();
 
-      return ctx.db
+      const rows = await ctx.db
         .insert(invoices)
         .values({
-          customerId: input.customerId,
+          customerId,
           packageId: pkg.id,
           description:
             input.description ?? plan?.name ?? `${input.packageType} package`,
           subtotalCents: input.subtotalCents,
           discountCents: input.discountCents,
           totalCents,
+          status: paid ? "paid" : "pending",
+          paymentMethod: input.paymentMethod ?? null,
+          paidDate: paid ? (input.paidDate ?? input.issueDate) : null,
           issueDate: input.issueDate,
           dueDate: input.dueDate ?? null,
           validFrom: input.validFrom,
@@ -70,6 +101,10 @@ export const invoiceRouter = createTRPCRouter({
           invoiceNumber: await nextInvoiceNumber(ctx.db),
         })
         .returning();
+
+      if (paid) await bookInvoiceIncome(ctx.db, rows[0]);
+
+      return rows;
     }),
   /**
    * Marking an invoice paid books the income row in the ledger; moving it back
@@ -129,9 +164,37 @@ export const invoiceRouter = createTRPCRouter({
 
       return invoice ? [invoice] : [];
     }),
-  delete: adminProcedure
-    .input(idSchema)
-    .mutation(({ ctx, input }) =>
-      ctx.db.delete(invoices).where(eq(invoices.id, input.id)).returning(),
-    ),
+  /**
+   * Deleting an invoice unwinds the whole sale. The ledger row goes first so
+   * the money stops being counted even where SQLite foreign keys are off, and
+   * the package sold by this invoice goes with it while it is still untouched
+   * — a package with burned credits is left standing, because attendance
+   * already happened against it.
+   *
+   * The number is freed by the delete itself: `nextInvoiceNumber` reads
+   * max(invoice_number), so removing the newest invoice hands its number back
+   * to the next one created.
+   */
+  delete: adminProcedure.input(idSchema).mutation(async ({ ctx, input }) => {
+    const invoice = await ctx.db.query.invoices.findFirst({
+      where: eq(invoices.id, input.id),
+      with: { package: true },
+    });
+    if (!invoice) return [];
+
+    await unbookInvoiceIncome(ctx.db, invoice.id);
+
+    const deleted = await ctx.db
+      .delete(invoices)
+      .where(eq(invoices.id, invoice.id))
+      .returning();
+
+    if (invoice.package && invoice.package.usedCredits === 0) {
+      await ctx.db
+        .delete(customerPackages)
+        .where(eq(customerPackages.id, invoice.package.id));
+    }
+
+    return deleted;
+  }),
 });

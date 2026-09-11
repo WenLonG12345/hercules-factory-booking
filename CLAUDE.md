@@ -147,6 +147,15 @@ export default function MyPage() {
 - For dialogs/child components that trigger mutations: pass an `onSuccess?: () => void` prop so the parent can invalidate the relevant query cache
 - Shared pure helpers live in `src/app/admin/(portal)/admin-format.ts` (labels, money conversion, package status, week maths, CSV export)
 - **Create actions are dialogs, never inline forms.** A list page shows the rows plus one "Add …" trigger; the create form lives in a `<Dialog>` that closes on success. Radix unmounts the dialog content, so the form resets itself — no `form.reset()`
+- **One exception: creating an invoice.** It is the admin's highest-volume job
+  and it needs a document preview, so it has its own route,
+  `src/app/admin/(portal)/invoices/new/`. The Invoices list links there instead
+  of opening a dialog. The page is a **workbench**: four rule-divided steps on
+  the left (customer → what they are paying for → payment method → paid date),
+  a sticky invoice sheet on the right (`invoice-draft-preview.tsx`) that fills
+  in as she types, and the Create button under the preview. On a phone the
+  sheet stacks below the steps, so the read-then-create order still holds.
+  Reach for a dialog for everything else
 - The CMS page follows this: every create form is a self-contained component in `src/app/admin/(portal)/cms/add-dialogs.tsx` (`AddWhyDialog`, `AddClassDialog`, `AddGalleryDialog`, `AddReviewDialog`, `AddFaqDialog`, `AddSocialDialog`), each owning its own open state and create mutation. `page.tsx` renders `<AddXDialog sortOrder={data.x.length} />` and keeps only the list/edit/delete UI. Editing an existing row stays inline in the collapsible `EditRow`
 
 ### Business Rules (preserve these)
@@ -166,7 +175,13 @@ All enforced in `src/server/services/business.ts`, covered by `bun test:business
   payment method, stamps `paidDate`, and inserts the matching ledger row;
   moving the invoice back to pending or cancelled removes it. The unique index
   on `ledger_entries.invoice_id` makes a double-click harmless. Rows carrying an
-  `invoiceId` are read-only in the ledger UI
+  `invoiceId` are read-only in the ledger UI. `invoice.create` takes the
+  payment too: given a `paymentMethod` it issues the invoice paid and books
+  that same row in one call, so the create page needs no second "mark paid"
+  click. Given none, the invoice lands pending and nothing is booked.
+  `invoice.create` also accepts `newCustomer: { name, phone? }` in place of a
+  `customerId` — exactly one of the two — and opens the account itself, so a
+  walk-in never has to be entered twice
 - **Categories are data, not an enum.** `ledger_categories` is admin-editable
   (add / rename / archive). A category in use can only be archived, and the two
   slugged rows — `package_sale`, `coach_salary` — are load-bearing: renameable,

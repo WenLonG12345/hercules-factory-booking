@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/admin-shell";
@@ -39,6 +40,7 @@ export default function InvoicePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const utils = api.useUtils();
 
   // ponytail: reads the same cached list the table uses instead of a byId
@@ -92,7 +94,14 @@ export default function InvoicePage({
   return (
     <>
       <PageHeader eyebrow="Invoice" title={invoice.invoiceNumber}>
-        <InvoiceActions invoice={invoice} onSuccess={invalidate} />
+        <InvoiceActions
+          invoice={invoice}
+          onDeleted={() => {
+            invalidate();
+            router.push("/admin/invoices");
+          }}
+          onSuccess={invalidate}
+        />
       </PageHeader>
 
       <div className="grid gap-6 lg:grid-cols-3">

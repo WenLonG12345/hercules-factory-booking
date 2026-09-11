@@ -11,6 +11,7 @@ import { createClient } from "@libsql/client";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "@/db/schema";
+import { invoiceRouter } from "@/server/routers/invoice";
 import { ledgerRouter } from "@/server/routers/ledger";
 import {
   assertSessionHasCapacity,
@@ -198,6 +199,29 @@ async function main() {
     "invoice numbers are sequential within the year",
   );
 
+  // Deleting the newest invoice hands its number straight back: the counter is
+  // max(invoice_number), not a stored sequence, so 0002 is issued again.
+  const [scratchInvoice] = await db
+    .insert(schema.invoices)
+    .values({
+      invoiceNumber: `HF-${year}-0002`,
+      customerId: customer.id,
+      subtotalCents: 10000,
+      discountCents: 0,
+      totalCents: 10000,
+      issueDate: today,
+    })
+    .returning();
+  assert.equal(await nextInvoiceNumber(anyDb), `HF-${year}-0003`);
+  await db
+    .delete(schema.invoices)
+    .where(eq(schema.invoices.id, scratchInvoice.id));
+  assert.equal(
+    await nextInvoiceNumber(anyDb),
+    `HF-${year}-0002`,
+    "deleting the newest invoice frees its number for the next one",
+  );
+
   // --- the daily ledger -------------------------------------------------------
   const ledger = createTRPCRouter({ ledger: ledgerRouter }).createCaller({
     db: anyDb,
@@ -245,6 +269,107 @@ async function main() {
     (await invoiceRows()).length,
     0,
     "un-paying an invoice removes its income row",
+  );
+
+  // --- creating an invoice that is already paid -------------------------------
+  // The create page collects the payment up front, so `create` has to do what
+  // "mark paid" does: issue the invoice paid AND book the income, in one call.
+  const invoiceApi = createTRPCRouter({ invoice: invoiceRouter }).createCaller({
+    db: anyDb,
+    session: { user: { role: "admin" } },
+  } as never);
+
+  const ledgerRowsFor = (invoiceId: string) =>
+    db
+      .select()
+      .from(schema.ledgerEntries)
+      .where(eq(schema.ledgerEntries.invoiceId, invoiceId));
+
+  const [paidOnCreate] = await invoiceApi.invoice.create({
+    // A name instead of an id: the account is opened by this same call.
+    newCustomer: { name: "Walk-in Wendy", phone: "0123456789" },
+    packageType: "credit",
+    totalCredits: 10,
+    description: "10 credit package",
+    subtotalCents: 30000,
+    discountCents: 5000,
+    issueDate: today,
+    validFrom: today,
+    validUntil: future,
+    paymentMethod: "cash",
+    paidDate: today,
+  });
+
+  assert.equal(
+    paidOnCreate.status,
+    "paid",
+    "a payment method on create issues the invoice paid",
+  );
+  assert.equal(
+    paidOnCreate.totalCents,
+    25000,
+    "total is subtotal minus discount",
+  );
+
+  const [bookedOnCreate] = await ledgerRowsFor(paidOnCreate.id);
+  assert.equal(
+    bookedOnCreate?.amountCents,
+    25000,
+    "creating a paid invoice books one income row for its total",
+  );
+  assert.equal(
+    bookedOnCreate.date,
+    today,
+    "the income lands on the date the money came in",
+  );
+
+  const [opened] = await db
+    .select()
+    .from(schema.customers)
+    .where(eq(schema.customers.id, paidOnCreate.customerId));
+  assert.equal(
+    opened?.name,
+    "Walk-in Wendy",
+    "a typed name opens the customer account with the invoice",
+  );
+
+  const [pendingOnCreate] = await invoiceApi.invoice.create({
+    customerId: customer.id,
+    packageType: "credit",
+    totalCredits: 10,
+    subtotalCents: 20000,
+    discountCents: 0,
+    issueDate: today,
+    validFrom: today,
+    validUntil: future,
+  });
+
+  assert.equal(
+    pendingOnCreate.status,
+    "pending",
+    "no payment method on create leaves the invoice pending",
+  );
+  assert.equal(
+    (await ledgerRowsFor(pendingOnCreate.id)).length,
+    0,
+    "a pending invoice books nothing to the ledger",
+  );
+
+  await assert.rejects(
+    () =>
+      invoiceApi.invoice.create({
+        customerId: customer.id,
+        newCustomer: { name: "Both At Once" },
+        packageType: "credit",
+        totalCredits: 10,
+        subtotalCents: 10000,
+        discountCents: 0,
+        issueDate: today,
+        validFrom: today,
+        validUntil: future,
+      }),
+    /existing customer or give a name/,
+    "an invoice takes a customer id or a new name, never both",
   );
 
   const categories = await ledger.ledger.categories.list();

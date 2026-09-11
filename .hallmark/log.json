@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-09-11",
+    "macrostructure": "Workbench (route-scoped: /admin/invoices/new)",
+    "theme": "admin system (preserved: stone ground, white cards, red-700 primary)",
+    "theme_axes": "light / grotesk-sans / warm-red",
+    "enrichment": "none — app surface, function carries the page",
+    "nav": "n/a — AdminShell owns the app nav",
+    "footer": "n/a",
+    "brief": "Create invoice moved out of the Invoices-list dialog onto its own route, at the admin's request. Workbench: left column is a four-rung ledger (customer -> what they are paying for -> payment method -> paid date), each rung ticked once answered; right column is a sticky invoice sheet drawn from the draft (masthead, bill-to, amount-as-hero, line item, totals, rotated PAID stamp) with the Create button under it. On phones the sheet stacks below the rungs, so her read-then-create order holds at every width. Rejected a 5-screen wizard: she issues many invoices and a wizard hides the preview until the end. Server side, create now opens the customer account from a typed name and, given a payment method, issues the invoice paid and books its ledger row in the same call."
+  },
+  {
     "date": "2026-09-08",
     "macrostructure": "component-scope — homepage gallery grid",
     "theme": "Sport (locked brand system — not rotated)",

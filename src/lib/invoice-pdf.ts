@@ -158,5 +158,15 @@ export async function exportInvoicePDF(data: InvoicePDFData): Promise<void> {
   doc.setFillColor(...NAVY);
   doc.rect(MARGIN, 286, W - MARGIN * 2, 7, "F");
 
-  doc.save(`invoice-${data.invoiceNumber}.pdf`);
+  // HF-YYYY-NNNN-<Name>.pdf — the invoice number already carries the
+  // HF-YYYY-NNNN shape; the name is squeezed to filesystem-safe characters.
+  const safeName = data.customerName
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/\s+/g, "-");
+  doc.save(
+    safeName
+      ? `${data.invoiceNumber}-${safeName}.pdf`
+      : `${data.invoiceNumber}.pdf`,
+  );
 }

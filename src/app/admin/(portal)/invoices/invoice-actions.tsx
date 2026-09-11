@@ -1,6 +1,6 @@
 "use client";
 
-import { FileDown, Pencil } from "lucide-react";
+import { FileDown, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import { toast } from "sonner";
@@ -250,13 +250,84 @@ export function EditInvoiceDialog({
   );
 }
 
-/** Mark paid · edit · WhatsApp · PDF — everything done to an invoice, shown
- *  the same way in the table row and on the invoice page. */
+/**
+ * Deleting an invoice unwinds the sale: the ledger row goes with it, so does
+ * the package it sold while no credits have been burned, and its number goes
+ * back in the pot — the next invoice created takes it again.
+ */
+export function DeleteInvoiceDialog({
+  invoice,
+  onDeleted,
+}: {
+  invoice: Invoice;
+  onDeleted?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const remove = api.invoice.delete.useMutation({
+    onSuccess: () => {
+      toast.success(`Invoice ${invoice.invoiceNumber} deleted.`);
+      setOpen(false);
+      onDeleted?.();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger asChild>
+        <button
+          className="inline-flex items-center gap-1 text-sm font-semibold text-red-700"
+          type="button"
+        >
+          <Trash2 className="size-4" />
+          Delete
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete invoice {invoice.invoiceNumber}?</DialogTitle>
+          <DialogDescription>
+            This cannot be undone.
+            {invoice.status === "paid"
+              ? " The income row it booked is removed from the daily ledger."
+              : ""}
+            {invoice.package
+              ? invoice.package.usedCredits === 0
+                ? " The package it sold is removed too."
+                : " The package it sold is kept — credits have already been used on it."
+              : ""}{" "}
+            Number {invoice.invoiceNumber} becomes free again for the next
+            invoice.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2">
+          <Button onClick={() => setOpen(false)} type="button" variant="quiet">
+            Cancel
+          </Button>
+          <Button
+            disabled={remove.isPending}
+            onClick={() => remove.mutate({ id: invoice.id })}
+            type="button"
+          >
+            {remove.isPending ? "Deleting…" : "Delete invoice"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Mark paid · edit · WhatsApp · PDF · delete — everything done to an
+ *  invoice, shown the same way in the table row and on the invoice page. */
 export function InvoiceActions({
   invoice,
+  onDeleted,
   onSuccess,
 }: {
   invoice: Invoice;
+  /** The invoice page navigates away instead of refetching a dead row. */
+  onDeleted?: () => void;
   onSuccess?: () => void;
 }) {
   return (
@@ -316,6 +387,10 @@ export function InvoiceActions({
         <FileDown className="size-4" />
         PDF
       </button>
+      <DeleteInvoiceDialog
+        invoice={invoice}
+        onDeleted={onDeleted ?? onSuccess}
+      />
     </div>
   );
 }

@@ -1,19 +1,12 @@
 "use client";
 
-import {
-  FileText,
-  LayoutDashboard,
-  UserPlus,
-  Wallet,
-  WalletCards,
-} from "lucide-react";
+import { FileText, LayoutDashboard, Wallet, WalletCards } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/onboard", label: "New signup", icon: UserPlus },
   { href: "/admin/invoices", label: "Invoices", icon: FileText },
   { href: "/admin/daily-income", label: "Daily Income", icon: Wallet },
   { href: "/admin/cms", label: "CMS", icon: WalletCards },

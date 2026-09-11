@@ -6,7 +6,6 @@ import {
   CalendarClock,
   FileText,
   Receipt,
-  UserPlus,
   Users,
   Wallet,
   WalletCards,
@@ -139,18 +138,11 @@ export default function AdminDashboardPage() {
    */
   const tiles = [
     {
-      href: "/admin/onboard",
-      label: "New signup",
-      icon: UserPlus,
-      value: data.newCustomers,
-      hint: `${data.monthNewCustomers} joined this month`,
-    },
-    {
       href: "/admin/invoices",
       label: "Customers",
       icon: Users,
       value: data.totalCustomers,
-      hint: `${data.newCustomers} new today`,
+      hint: `${data.newCustomers} new today · ${data.monthNewCustomers} this month`,
     },
     {
       href: "/admin/invoices",
@@ -185,7 +177,7 @@ export default function AdminDashboardPage() {
       <PageHeader eyebrow="Command center" title="Dashboard" />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {tiles.map((tile) => (
-          <Link key={tile.href} className="group block" href={tile.href}>
+          <Link key={tile.label} className="group block" href={tile.href}>
             <Card className="h-full p-4 transition group-hover:border-red-200 group-hover:shadow-md">
               <div className="flex items-center justify-between gap-2">
                 <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500">
