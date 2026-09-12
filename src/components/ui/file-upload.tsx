@@ -1,6 +1,7 @@
 "use client";
 
 import { ImagePlus, RefreshCw, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { downscaleImage } from "@/lib/image-resize";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ export function ImageFileUpload({
   onClear?: () => void;
   previewClassName?: string;
 }) {
+  const t = useTranslations("Upload");
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(initialPreview ?? null);
   const [filename, setFilename] = useState<string | null>(null);
@@ -76,10 +78,10 @@ export function ImageFileUpload({
       {preview ? (
         <div className="overflow-hidden rounded-lg border border-stone-200 bg-stone-50">
           {/* biome-ignore lint/performance/noImgElement: admin preview only */}
-          <img alt="Preview" className={previewClassName} src={preview} />
+          <img alt={t("preview")} className={previewClassName} src={preview} />
           <div className="flex items-center justify-between gap-2 border-t border-stone-200 bg-white px-3 py-2">
             <p className="truncate text-xs text-stone-500">
-              {preparing ? "Preparing…" : (filename ?? "Current image")}
+              {preparing ? t("preparing") : (filename ?? t("currentImage"))}
             </p>
             <div className="flex shrink-0 items-center gap-1">
               <button
@@ -89,7 +91,7 @@ export function ImageFileUpload({
                 type="button"
               >
                 <RefreshCw className="size-3.5" />
-                Replace
+                {t("replace")}
               </button>
               <button
                 className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50"
@@ -97,7 +99,7 @@ export function ImageFileUpload({
                 type="button"
               >
                 <X className="size-3.5" />
-                Remove
+                {t("remove")}
               </button>
             </div>
           </div>
@@ -129,20 +131,18 @@ export function ImageFileUpload({
           </div>
           <p className="text-sm font-semibold text-stone-700">
             {preparing ? (
-              "Preparing…"
+              t("preparing")
             ) : (
               <>
-                Click to upload
+                {t("clickToUpload")}
                 <span className="font-normal text-stone-400">
                   {" "}
-                  or drag &amp; drop
+                  {t("orDragDrop")}
                 </span>
               </>
             )}
           </p>
-          <p className="text-xs text-stone-400">
-            PNG, JPG, WEBP — big photos are shrunk for you
-          </p>
+          <p className="text-xs text-stone-400">{t("hint")}</p>
         </button>
       )}
     </div>

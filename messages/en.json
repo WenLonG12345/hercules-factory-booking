@@ -52,5 +52,15 @@
     "sending": "Sending…",
     "send": "Send photo",
     "consent": "By sending a photo you let Hercules Factory show it on this website. JPG, PNG or WEBP up to 8 MB."
+  },
+  "Upload": {
+    "preview": "Preview",
+    "preparing": "Preparing…",
+    "currentImage": "Current image",
+    "replace": "Replace",
+    "remove": "Remove",
+    "clickToUpload": "Click to upload",
+    "orDragDrop": "or drag & drop",
+    "hint": "PNG, JPG, WEBP — big photos are shrunk for you"
   }
 }

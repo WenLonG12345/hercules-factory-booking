@@ -52,5 +52,15 @@
     "sending": "发送中…",
     "send": "发送照片",
     "consent": "发送照片即表示你同意 Hercules Factory 在本网站展示该照片。支持 JPG、PNG 或 WEBP，最大 8 MB。"
+  },
+  "Upload": {
+    "preview": "预览",
+    "preparing": "处理中…",
+    "currentImage": "当前图片",
+    "replace": "更换",
+    "remove": "移除",
+    "clickToUpload": "点击上传",
+    "orDragDrop": "或拖放图片",
+    "hint": "支持 PNG、JPG、WEBP — 大图会自动压缩"
   }
 }
