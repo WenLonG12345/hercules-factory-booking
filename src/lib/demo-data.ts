@@ -4,6 +4,11 @@
 
 const UNSPLASH = "https://images.unsplash.com/photo";
 
+// Google's own reviews panel for the business — the "see all reviews" link
+// under the rating plate on the homepage.
+export const GOOGLE_REVIEWS_URL =
+  "https://www.google.com/search?q=hercules+factory+reviews";
+
 // Keyless Google Maps embed for the Google Business Profile address.
 export const GOOGLE_MAP_EMBED =
   "https://www.google.com/maps?q=HERCULES+FACTORY,+Jalan+Cerdas,+Taman+Connaught,+56000+Kuala+Lumpur&output=embed";

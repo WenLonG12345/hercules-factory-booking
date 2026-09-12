@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import type { Locale } from "@/i18n/routing";
 import { demoLanding } from "@/lib/demo-data";
+import { getGoogleReviews } from "@/lib/google-reviews";
 
 type Translatable = { zh?: Record<string, string> | null };
 
@@ -23,51 +24,65 @@ const localizeAll = <T extends Translatable>(rows: T[], locale: Locale) =>
  * site still renders.
  */
 export async function getLandingData(locale: Locale = "en") {
-  if (!db) return localizeLanding(demoLanding, locale);
+  if (!db) return localizeLanding({ ...demoLanding, google: null }, locale);
 
-  const [content, why, classes, pricing, faq, gallery, promo, reviews, social] =
-    await Promise.all([
-      db.query.landingPageContent.findFirst(),
-      db.query.whyItems.findMany({
-        where: (item, { eq }) => eq(item.isActive, true),
-        orderBy: (item, { asc }) => asc(item.sortOrder),
-      }),
-      db.query.classOfferings.findMany({
-        where: (item, { eq }) => eq(item.isActive, true),
-        orderBy: (item, { asc }) => asc(item.sortOrder),
-      }),
-      db.query.pricingPlans.findMany({
-        where: (plan, { eq }) => eq(plan.isActive, true),
-        orderBy: (plan, { asc }) => asc(plan.sortOrder),
-      }),
-      db.query.faqItems.findMany({
-        where: (item, { eq }) => eq(item.isActive, true),
-        orderBy: (item, { asc }) => asc(item.sortOrder),
-      }),
-      db.query.galleryImages.findMany({
-        where: (image, { eq }) => eq(image.isActive, true),
-        orderBy: (image, { asc }) => asc(image.sortOrder),
-      }),
-      // One promotion runs at a time — the newest active row wins, so adding a
-      // banner replaces the last one without any ordering UI.
-      db.query.promotions.findFirst({
-        where: (promo, { eq }) => eq(promo.isActive, true),
-        orderBy: (promo, { desc }) => desc(promo.createdAt),
-      }),
-      db.query.testimonials.findMany({
-        where: (review, { eq }) => eq(review.isActive, true),
-        orderBy: (review, { asc }) => asc(review.sortOrder),
-      }),
-      db.query.socialLinks.findMany({
-        where: (link, { eq }) => eq(link.isActive, true),
-        orderBy: (link, { asc }) => asc(link.sortOrder),
-      }),
-    ]);
+  const [
+    content,
+    why,
+    classes,
+    pricing,
+    faq,
+    gallery,
+    promo,
+    testimonials,
+    social,
+    google,
+  ] = await Promise.all([
+    db.query.landingPageContent.findFirst(),
+    db.query.whyItems.findMany({
+      where: (item, { eq }) => eq(item.isActive, true),
+      orderBy: (item, { asc }) => asc(item.sortOrder),
+    }),
+    db.query.classOfferings.findMany({
+      where: (item, { eq }) => eq(item.isActive, true),
+      orderBy: (item, { asc }) => asc(item.sortOrder),
+    }),
+    db.query.pricingPlans.findMany({
+      where: (plan, { eq }) => eq(plan.isActive, true),
+      orderBy: (plan, { asc }) => asc(plan.sortOrder),
+    }),
+    db.query.faqItems.findMany({
+      where: (item, { eq }) => eq(item.isActive, true),
+      orderBy: (item, { asc }) => asc(item.sortOrder),
+    }),
+    db.query.galleryImages.findMany({
+      where: (image, { eq }) => eq(image.isActive, true),
+      orderBy: (image, { asc }) => asc(image.sortOrder),
+    }),
+    // One promotion runs at a time — the newest active row wins, so adding a
+    // banner replaces the last one without any ordering UI.
+    db.query.promotions.findFirst({
+      where: (promo, { eq }) => eq(promo.isActive, true),
+      orderBy: (promo, { desc }) => desc(promo.createdAt),
+    }),
+    db.query.testimonials.findMany({
+      where: (review, { eq }) => eq(review.isActive, true),
+      orderBy: (review, { asc }) => asc(review.sortOrder),
+    }),
+    db.query.socialLinks.findMany({
+      where: (link, { eq }) => eq(link.isActive, true),
+      orderBy: (link, { asc }) => asc(link.sortOrder),
+    }),
+    getGoogleReviews(locale),
+  ]);
 
-  if (!content) return localizeLanding(demoLanding, locale);
+  if (!content)
+    return localizeLanding({ ...demoLanding, google: null }, locale);
 
   // Reviews, gallery captions and social labels stay as written — they are
   // real quotes and proper nouns, not copy the admin authors.
+  // Reviews come live from Google when the Places key is set; the CMS
+  // testimonials rows are the fallback.
   return localizeLanding(
     {
       content,
@@ -77,7 +92,8 @@ export async function getLandingData(locale: Locale = "en") {
       faq,
       gallery,
       promo: promo ?? null,
-      reviews,
+      reviews: google?.reviews.length ? google.reviews : testimonials,
+      google,
       social,
     },
     locale,

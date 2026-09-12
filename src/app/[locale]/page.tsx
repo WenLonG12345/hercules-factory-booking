@@ -1,14 +1,16 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { FaInstagram } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
 import { FaqAccordion } from "@/components/faq-accordion";
-import { PhotoProvider, PhotoView } from "@/components/photo-viewer";
+import { PhotoProvider, ZoomImage } from "@/components/photo-viewer";
 import { PublicFooter } from "@/components/public-footer";
 import { PublicHeader } from "@/components/public-header";
 import { Reveal } from "@/components/reveal";
 import { SiteFab } from "@/components/site-fab";
 import { WhyIcon } from "@/components/why-icon";
 import type { Locale } from "@/i18n/routing";
+import { GOOGLE_REVIEWS_URL } from "@/lib/demo-data";
 import { siteUrl } from "@/lib/site";
 import { jsonLdScript, landingJsonLd } from "@/lib/structured-data";
 import { whatsappLink } from "@/lib/utils";
@@ -34,6 +36,7 @@ export default async function HomePage({
     gallery,
     promo,
     reviews,
+    google,
     social,
   } = data;
 
@@ -55,9 +58,13 @@ export default async function HomePage({
     ? `@${new URL(instagram.url).pathname.replaceAll("/", "")}`
     : null;
 
-  const averageRating = reviews.length
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
-    : 0;
+  // Google's live rating when the Places key is set, else derived from the
+  // CMS rows on show.
+  const ratingValue =
+    google?.rating ??
+    (reviews.length
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+      : 0);
 
   const wa = (message?: string | null) =>
     whatsappLink(
@@ -407,17 +414,15 @@ export default async function HomePage({
             >
               <div className="promo-frame mx-auto w-full max-w-80 md:mx-0">
                 <PhotoProvider maskOpacity={0.9}>
-                  <PhotoView src={promo.imageUrl}>
-                    <Image
-                      alt={promo.title}
-                      className="promo-poster lift cursor-zoom-in"
-                      data-reveal
-                      height={1600}
-                      sizes="(min-width: 768px) 340px, 80vw"
-                      src={promo.imageUrl}
-                      width={900}
-                    />
-                  </PhotoView>
+                  <ZoomImage
+                    alt={promo.title}
+                    className="promo-poster lift cursor-zoom-in"
+                    data-reveal
+                    height={1600}
+                    sizes="(min-width: 768px) 340px, 80vw"
+                    src={promo.imageUrl}
+                    width={900}
+                  />
                 </PhotoProvider>
               </div>
               <div>
@@ -489,19 +494,29 @@ export default async function HomePage({
                   data-reveal
                   style={{ "--i": index } as React.CSSProperties}
                 >
-                  <PhotoView src={image.imageUrl}>
-                    <Image
-                      alt={image.alt}
-                      className="cursor-zoom-in object-cover"
-                      fill
-                      sizes={
-                        index === 0
-                          ? "(min-width: 64rem) 50vw, (min-width: 40rem) 67vw, 50vw"
-                          : "(min-width: 64rem) 25vw, (min-width: 40rem) 33vw, 50vw"
-                      }
-                      src={image.imageUrl}
-                    />
-                  </PhotoView>
+                  <ZoomImage
+                    alt={image.alt}
+                    className="cursor-zoom-in object-cover"
+                    fill
+                    sizes={
+                      index === 0
+                        ? "(min-width: 64rem) 50vw, (min-width: 40rem) 67vw, 50vw"
+                        : "(min-width: 64rem) 25vw, (min-width: 40rem) 33vw, 50vw"
+                    }
+                    src={image.imageUrl}
+                    overlay={
+                      image.label || image.submittedBy ? (
+                        <>
+                          {image.label}
+                          {image.submittedBy ? (
+                            <span className="block font-normal normal-case tracking-normal text-ink-dim">
+                              {t("sharedBy", { name: image.submittedBy })}
+                            </span>
+                          ) : null}
+                        </>
+                      ) : undefined
+                    }
+                  />
                   {image.label || image.submittedBy ? (
                     <figcaption className="on-dark pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-scrim to-transparent px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-ink">
                       {image.label}
@@ -541,65 +556,98 @@ export default async function HomePage({
           </div>
         </Reveal>
 
-        {/* 5 — Reviews */}
+        {/* 5 — Reviews. Rating plate + a ruled ledger of the newest five —
+            no cards, no avatars. The plate's figures are Google's live totals
+            when the Places key is set; otherwise they are derived from the
+            CMS rows on show. */}
         {reviews.length ? (
           <div className="bg-paper-3">
             <Reveal
               as="section"
               className="mx-auto max-w-6xl px-4 py-24 md:px-8"
             >
-              <div
-                className="flex flex-wrap items-end justify-between gap-4"
+              <h2
+                className="display section-head text-(length:--text-h2)"
                 data-reveal
+                id="reviews"
               >
-                <h2
-                  className="display section-head text-(length:--text-h2)"
-                  id="reviews"
+                {content?.testimonialsTitle ?? "What members say"}
+              </h2>
+
+              <div className="mt-12 grid gap-10 md:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] md:gap-16">
+                <aside
+                  className="plate self-start p-6 md:sticky md:top-28"
+                  data-reveal
                 >
-                  {content?.testimonialsTitle ?? "What members say"}
-                </h2>
-                <p className="text-sm font-black uppercase tracking-[0.16em] text-accent">
-                  {t("reviewsSummary", {
-                    rating: averageRating.toFixed(1),
-                    count: reviews.length,
-                  })}
-                </p>
-              </div>
-              <div className="mt-12 grid gap-6 md:grid-cols-3">
-                {reviews.map((review, index) => (
-                  <figure
-                    key={review.id}
-                    className="lift flex flex-col rounded-2xl border border-hairline bg-paper-2 p-6"
-                    data-reveal
-                    style={{ "--i": index } as React.CSSProperties}
-                  >
-                    <p className="text-accent">
-                      <span aria-hidden>{"★".repeat(review.rating)}</span>
-                      <span className="sr-only">
-                        {t("starsLabel", { rating: review.rating })}
-                      </span>
+                  <p className="display text-(length:--text-price) leading-none tabular-nums">
+                    {ratingValue.toFixed(1)}
+                  </p>
+                  <p className="mt-2 text-accent text-xl leading-none">
+                    <span aria-hidden>
+                      {"★".repeat(Math.round(ratingValue))}
+                    </span>
+                    <span className="sr-only">
+                      {t("starsLabel", { rating: ratingValue.toFixed(1) })}
+                    </span>
+                  </p>
+                  {google ? (
+                    <p className="mt-5 flex items-center gap-2 text-ink-dim text-sm">
+                      <FcGoogle aria-hidden className="size-4 shrink-0" />
+                      {t("reviewsNewest")}
                     </p>
-                    <blockquote className="mt-4 flex-1 text-ink-dim">
-                      “{review.quote}”
-                    </blockquote>
-                    <figcaption className="mt-6 flex items-center gap-3">
-                      <span
-                        aria-hidden
-                        className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-sm font-black text-accent-ink"
-                      >
-                        {review.author.slice(0, 1).toUpperCase()}
-                      </span>
-                      <span className="text-xs font-black uppercase tracking-[0.14em]">
-                        {review.author}
-                        <span className="block font-normal normal-case tracking-normal text-ink-dim">
-                          {[review.source, review.reviewedAt]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </span>
-                      </span>
-                    </figcaption>
-                  </figure>
-                ))}
+                  ) : null}
+                  <a
+                    className="cta mt-6 w-full"
+                    href={GOOGLE_REVIEWS_URL}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {t("readAllReviews")}
+                  </a>
+                </aside>
+
+                <ol className="border-ink border-y-2">
+                  {reviews.map((review, index) => (
+                    <li
+                      key={review.id}
+                      className="border-hairline border-b py-7 last:border-b-0"
+                      data-reveal
+                      style={{ "--i": index } as React.CSSProperties}
+                    >
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <p className="text-accent text-sm leading-none">
+                          <span aria-hidden>{"★".repeat(review.rating)}</span>
+                          <span className="sr-only">
+                            {t("starsLabel", { rating: review.rating })}
+                          </span>
+                        </p>
+                        {review.reviewedAt ? (
+                          <p className="text-ink-dim text-xs">
+                            {review.reviewedAt}
+                          </p>
+                        ) : null}
+                      </div>
+                      <blockquote className="mt-3 whitespace-pre-line text-(length:--text-lead) leading-snug">
+                        “{review.quote}”
+                      </blockquote>
+                      <p className="mt-4 font-black text-xs uppercase tracking-[0.14em]">
+                        {"— "}
+                        {"authorUrl" in review && review.authorUrl ? (
+                          <a
+                            className="underline decoration-hairline underline-offset-4 hover:decoration-current"
+                            href={review.authorUrl}
+                            rel="noreferrer"
+                            target="_blank"
+                          >
+                            {review.author}
+                          </a>
+                        ) : (
+                          review.author
+                        )}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
               </div>
             </Reveal>
           </div>

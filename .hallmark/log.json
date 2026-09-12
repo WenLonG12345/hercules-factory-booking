@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-09-12",
+    "macrostructure": "component-scope — homepage reviews section",
+    "theme": "Sport (locked brand system — not rotated)",
+    "theme_axes": "light / display-condensed / warm-red",
+    "enrichment": "none — FcGoogle brand mark on the rating plate",
+    "nav": "n/a (component-scope)",
+    "footer": "n/a (component-scope)",
+    "brief": "Reviews: 3-col rounded cards with initial-disc avatars + hover lift -> rating plate (T4 stat: live Google rating as --text-price display figure, stars, 'From N Google reviews', read-all link; sticky on md+) beside a ruled ledger of the five newest reviews (stars + relative date on one baseline, quote at --text-lead, author linked to their Google profile). Data: src/lib/google-reviews.ts reads Places API (New) — rating, userRatingCount, five newest reviews, per locale, fetch-cached a day; CMS testimonials rows remain the fallback when no key. Google caps the review list at five, so the count on the plate is the only live total. Pre-emit critique: P4 H5 E4 S5 R5 V4."
+  },
+  {
     "date": "2026-09-11",
     "macrostructure": "Workbench (route-scoped: /admin/invoices/new)",
     "theme": "admin system (preserved: stone ground, white cards, red-700 primary)",
