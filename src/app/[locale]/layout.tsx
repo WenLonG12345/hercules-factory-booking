@@ -77,8 +77,15 @@ export async function generateMetadata({
       description: t("ogDescription"),
       url: locale === routing.defaultLocale ? "/" : `/${locale}`,
       siteName: "Hercules Factory",
-      // og:image comes from `opengraph-image.tsx` in this segment — the file
-      // convention outranks anything set here, so don't set it twice.
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1730,
+          height: 909,
+          alt: "Hercules Factory — Muay Thai for everyone in Cheras.",
+          type: "image/png",
+        },
+      ],
       locale: locale === "zh" ? "zh_MY" : "en_MY",
       type: "website",
     },
@@ -86,6 +93,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title: t("ogTitle"),
       description: t("ogDescription"),
+      images: ["/og-image.png"],
     },
     icons: {
       icon: [
