@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { PACKAGE_TYPE_LABEL } from "@/app/admin/(portal)/admin-format";
 import { formatDate, whatsappLink } from "@/lib/utils";
 import { getPublicInvoice } from "@/server/services/queries";
 import { DownloadPDFButton } from "./download-pdf-button";
@@ -61,15 +60,6 @@ export default async function InvoicePage({
 
   const { invoice, whatsappPhone } = data;
   const status = STATUS[invoice.status];
-  const description =
-    invoice.description ??
-    (invoice.package
-      ? `${PACKAGE_TYPE_LABEL[invoice.package.type]} package`
-      : "Membership");
-  // A linked package carries the real dates; a hand-written invoice carries
-  // its own validity window instead.
-  const validFrom = invoice.package?.startDate ?? invoice.validFrom;
-  const validUntil = invoice.package?.expiryDate ?? invoice.validUntil;
   // The figure never stands alone — the line beside it says what it means.
   const qualifier =
     invoice.status === "paid"
@@ -135,10 +125,14 @@ export default async function InvoicePage({
               invoiceNumber: invoice.invoiceNumber,
               invoiceDate: invoice.issueDate,
               totalCents: invoice.totalCents,
-              description,
+              discountCents: invoice.discountCents,
+              items: invoice.items.map((item) => ({
+                description: item.description,
+                amountCents: item.amountCents,
+                startDate: item.package?.startDate,
+                expiryDate: item.package?.expiryDate,
+              })),
               paid: invoice.status === "paid",
-              startDate: validFrom ?? undefined,
-              expiryDate: validUntil ?? undefined,
             }}
           />
           {whatsappPhone ? (
@@ -191,19 +185,22 @@ export default async function InvoicePage({
             </tr>
           </thead>
           <tbody>
-            <tr className="border-hairline border-b">
-              <td className="py-5 pr-6 align-top">
-                {description}
-                {validFrom && validUntil ? (
-                  <span className="mt-1 block text-ink-dim text-sm tabular-nums">
-                    Valid {formatDate(validFrom)} – {formatDate(validUntil)}
-                  </span>
-                ) : null}
-              </td>
-              <td className="py-5 text-right align-top tabular-nums">
-                {money(invoice.subtotalCents)}
-              </td>
-            </tr>
+            {invoice.items.map((item) => (
+              <tr className="border-hairline border-b" key={item.id}>
+                <td className="py-5 pr-6 align-top">
+                  {item.description}
+                  {item.package ? (
+                    <span className="mt-1 block text-ink-dim text-sm tabular-nums">
+                      Valid {formatDate(item.package.startDate)} –{" "}
+                      {formatDate(item.package.expiryDate)}
+                    </span>
+                  ) : null}
+                </td>
+                <td className="py-5 text-right align-top tabular-nums">
+                  {money(item.amountCents)}
+                </td>
+              </tr>
+            ))}
             {invoice.discountCents > 0 ? (
               <tr className="border-hairline border-b text-ink-dim">
                 <td className="py-5 pr-6">Discount</td>

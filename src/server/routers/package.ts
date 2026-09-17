@@ -1,6 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import {
   customerPackages,
+  invoiceItems,
   invoices,
   packagePlans,
   sessionAttendees,
@@ -80,8 +81,6 @@ export const packageRouter = createTRPCRouter({
           .values({
             invoiceNumber: await nextInvoiceNumber(ctx.db),
             customerId: input.customerId,
-            packageId: pkg.id,
-            description: plan?.name ?? `${input.type} package`,
             subtotalCents,
             discountCents,
             totalCents: input.amountPaidCents,
@@ -91,6 +90,12 @@ export const packageRouter = createTRPCRouter({
             paidDate: markInvoicePaid ? input.startDate : null,
           })
           .returning();
+        await ctx.db.insert(invoiceItems).values({
+          invoiceId: invoice.id,
+          description: plan?.name ?? `${input.type} package`,
+          amountCents: subtotalCents,
+          packageId: pkg.id,
+        });
 
         // A paid invoice books one income row — the ledger is the only place
         // money is counted, so the sale must not write the invoice alone.

@@ -288,17 +288,35 @@ async function main() {
   const [paidOnCreate] = await invoiceApi.invoice.create({
     // A name instead of an id: the account is opened by this same call.
     newCustomer: { name: "Walk-in Wendy", phone: "0123456789" },
-    packageType: "credit",
-    totalCredits: 10,
-    description: "10 credit package",
-    subtotalCents: 30000,
+    items: [
+      {
+        description: "10 credit package",
+        amountCents: 25000,
+        package: {
+          type: "credit",
+          totalCredits: 10,
+          validFrom: today,
+          validUntil: future,
+        },
+      },
+      // Money only — no package opens for a pair of gloves.
+      { description: "Gloves", amountCents: 5000 },
+    ],
     discountCents: 5000,
     issueDate: today,
-    validFrom: today,
-    validUntil: future,
     paymentMethod: "cash",
     paidDate: today,
   });
+
+  const wendyPackages = await db
+    .select()
+    .from(schema.customerPackages)
+    .where(eq(schema.customerPackages.customerId, paidOnCreate.customerId));
+  assert.equal(
+    wendyPackages.length,
+    1,
+    "only the package line opens a package; the goods line does not",
+  );
 
   assert.equal(
     paidOnCreate.status,
@@ -333,15 +351,63 @@ async function main() {
     "a typed name opens the customer account with the invoice",
   );
 
-  const [pendingOnCreate] = await invoiceApi.invoice.create({
-    customerId: customer.id,
-    packageType: "credit",
-    totalCredits: 10,
-    subtotalCents: 20000,
+  // Editing the lines re-syncs the packages: the credit line goes (its
+  // untouched package with it), the gloves line becomes a PT package.
+  const wendyLines = await db
+    .select()
+    .from(schema.invoiceItems)
+    .where(eq(schema.invoiceItems.invoiceId, paidOnCreate.id));
+  const glovesLine = wendyLines.find((line) => line.description === "Gloves");
+  const [edited] = await invoiceApi.invoice.update({
+    id: paidOnCreate.id,
+    items: [
+      {
+        id: glovesLine?.id,
+        description: "4 PT sessions",
+        amountCents: 40000,
+        package: {
+          type: "pt",
+          totalCredits: 4,
+          validFrom: today,
+          validUntil: future,
+        },
+      },
+    ],
     discountCents: 0,
     issueDate: today,
-    validFrom: today,
-    validUntil: future,
+  });
+  const afterEdit = await db
+    .select()
+    .from(schema.customerPackages)
+    .where(eq(schema.customerPackages.customerId, paidOnCreate.customerId));
+  assert.deepEqual(
+    afterEdit.map((pkg) => pkg.type),
+    ["pt"],
+    "editing lines removes the dropped package and opens the new one",
+  );
+  assert.equal(edited.totalCents, 40000, "the edited total is the new sum");
+  assert.equal(
+    (await ledgerRowsFor(paidOnCreate.id))[0]?.amountCents,
+    40000,
+    "a paid invoice re-books its ledger row on edit",
+  );
+
+  const [pendingOnCreate] = await invoiceApi.invoice.create({
+    customerId: customer.id,
+    items: [
+      {
+        description: "10 credit package",
+        amountCents: 20000,
+        package: {
+          type: "credit",
+          totalCredits: 10,
+          validFrom: today,
+          validUntil: future,
+        },
+      },
+    ],
+    discountCents: 0,
+    issueDate: today,
   });
 
   assert.equal(
@@ -360,13 +426,9 @@ async function main() {
       invoiceApi.invoice.create({
         customerId: customer.id,
         newCustomer: { name: "Both At Once" },
-        packageType: "credit",
-        totalCredits: 10,
-        subtotalCents: 10000,
+        items: [{ description: "Gloves", amountCents: 10000 }],
         discountCents: 0,
         issueDate: today,
-        validFrom: today,
-        validUntil: future,
       }),
     /existing customer or give a name/,
     "an invoice takes a customer id or a new name, never both",

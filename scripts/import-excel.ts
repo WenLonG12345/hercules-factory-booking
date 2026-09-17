@@ -25,6 +25,7 @@ import {
   CUSTOMER_SOURCES,
   customerPackages,
   customers,
+  invoiceItems,
   invoices,
   ledgerCategories,
   ledgerEntries,
@@ -284,17 +285,24 @@ async function main() {
         : "pending";
 
     if (!dryRun) {
-      await db.insert(invoices).values({
-        invoiceNumber: number,
-        customerId,
-        description: row.description || undefined,
-        subtotalCents,
-        discountCents,
-        totalCents: subtotalCents - discountCents,
-        status,
-        paymentMethod: matchEnum(row.payment_method ?? "", PAYMENT_METHODS),
-        issueDate,
-        paidDate: status === "paid" ? (paidDate ?? issueDate) : null,
+      const [invoice] = await db
+        .insert(invoices)
+        .values({
+          invoiceNumber: number,
+          customerId,
+          subtotalCents,
+          discountCents,
+          totalCents: subtotalCents - discountCents,
+          status,
+          paymentMethod: matchEnum(row.payment_method ?? "", PAYMENT_METHODS),
+          issueDate,
+          paidDate: status === "paid" ? (paidDate ?? issueDate) : null,
+        })
+        .returning();
+      await db.insert(invoiceItems).values({
+        invoiceId: invoice.id,
+        description: row.description || "Membership",
+        amountCents: subtotalCents,
       });
     }
     existingNumbers.add(number);

@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { columnHelper, DataTable } from "@/components/ui/data-table";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/trpc";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
 import {
@@ -15,7 +17,48 @@ import {
   PAYMENT_METHOD_LABEL,
   remaining,
 } from "../../admin-format";
-import { InvoiceActions } from "../invoice-actions";
+import { type Invoice, InvoiceActions } from "../invoice-actions";
+
+type Line = Invoice["items"][number];
+
+const line = columnHelper<Line>();
+const lineColumns = [
+  line.accessor("description", {
+    header: "Description",
+    cell: ({ row }) => (
+      <div>
+        <p className="font-semibold text-stone-900">
+          {row.original.description}
+        </p>
+        {row.original.package ? (
+          <p className="text-xs text-stone-500">
+            {row.original.package.startDate} → {row.original.package.expiryDate}
+          </p>
+        ) : null}
+      </div>
+    ),
+  }),
+  line.display({
+    id: "package",
+    header: "Package",
+    cell: ({ row }) => {
+      const pkg = row.original.package;
+      if (!pkg) return <span className="text-stone-400">—</span>;
+      const left = remaining(pkg);
+      return `${PACKAGE_TYPE_LABEL[pkg.type]} · ${
+        left === null ? "Unlimited" : `${left} of ${pkg.totalCredits} left`
+      }`;
+    },
+  }),
+  line.accessor("amountCents", {
+    header: () => <span className="block text-right">Amount</span>,
+    cell: ({ getValue }) => (
+      <span className="block text-right tabular-nums">
+        {formatCurrency(getValue())}
+      </span>
+    ),
+  }),
+];
 
 const statusTone = {
   paid: "green",
@@ -84,12 +127,10 @@ export default function InvoicePage({
     );
   }
 
-  const { customer, package: pkg } = invoice;
-  const left = pkg ? remaining(pkg) : null;
-  // A linked package carries the real dates; the invoice's own window is the
-  // fallback for one written by hand.
-  const validFrom = pkg?.startDate ?? invoice.validFrom;
-  const validUntil = pkg?.expiryDate ?? invoice.validUntil;
+  const { customer } = invoice;
+  const packages = invoice.items.flatMap((item) =>
+    item.package ? [item.package] : [],
+  );
 
   return (
     <>
@@ -150,29 +191,38 @@ export default function InvoicePage({
                   : "—"
               }
             />
-            <Row
-              label="Description"
-              value={invoice.description ?? "Membership"}
-            />
-            <Row
-              label="Valid"
-              value={
-                validFrom && validUntil ? `${validFrom} → ${validUntil}` : "—"
-              }
-            />
-            <Row
-              label="Subtotal"
-              value={formatCurrency(invoice.subtotalCents)}
-            />
-            <Row
-              label="Discount"
-              value={formatCurrency(invoice.discountCents)}
-            />
           </dl>
 
-          <p className="mt-6 border-t border-stone-100 pt-4 text-3xl font-black tracking-tight">
-            {formatCurrency(invoice.totalCents)}
-          </p>
+          <div className="mt-6">
+            <DataTable
+              columns={lineColumns}
+              data={invoice.items}
+              dense
+              footer={
+                <>
+                  {invoice.discountCents > 0 ? (
+                    <TableRow>
+                      <TableCell className="text-stone-500" colSpan={2}>
+                        Discount
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-stone-500">
+                        −{formatCurrency(invoice.discountCents)}
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                  <TableRow>
+                    <TableCell className="font-black" colSpan={2}>
+                      Total
+                    </TableCell>
+                    <TableCell className="text-right text-2xl font-black tabular-nums tracking-tight">
+                      {formatCurrency(invoice.totalCents)}
+                    </TableCell>
+                  </TableRow>
+                </>
+              }
+              getRowId={(row) => row.id}
+            />
+          </div>
 
           {invoice.notes ? (
             <p className="mt-4 border-t border-stone-100 pt-4 text-sm text-stone-600">
@@ -216,26 +266,35 @@ export default function InvoicePage({
 
           <div className="mt-5 border-t border-stone-100 pt-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-              Package
+              {packages.length === 1 ? "Package" : "Packages"}
             </p>
-            {pkg ? (
-              <dl className="mt-2 grid gap-2 text-sm">
-                <Row label="Type" value={PACKAGE_TYPE_LABEL[pkg.type]} />
-                <Row
-                  label="Runs"
-                  value={`${pkg.startDate} → ${pkg.expiryDate}`}
-                />
-                <Row
-                  label="Credits"
-                  value={
-                    left === null
-                      ? "Unlimited"
-                      : `${left} of ${pkg.totalCredits} left`
-                  }
-                />
-              </dl>
+            {packages.length === 0 ? (
+              <p className="mt-1 text-sm text-stone-600">
+                Nothing on this invoice opened a package.
+              </p>
             ) : (
-              <p className="mt-1 text-sm text-stone-600">Not linked</p>
+              <div className="mt-2 grid gap-4">
+                {packages.map((pkg) => {
+                  const left = remaining(pkg);
+                  return (
+                    <dl className="grid gap-2 text-sm" key={pkg.id}>
+                      <Row label="Type" value={PACKAGE_TYPE_LABEL[pkg.type]} />
+                      <Row
+                        label="Runs"
+                        value={`${pkg.startDate} → ${pkg.expiryDate}`}
+                      />
+                      <Row
+                        label="Credits"
+                        value={
+                          left === null
+                            ? "Unlimited"
+                            : `${left} of ${pkg.totalCredits} left`
+                        }
+                      />
+                    </dl>
+                  );
+                })}
+              </div>
             )}
           </div>
         </Card>

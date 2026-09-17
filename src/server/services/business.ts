@@ -2,6 +2,7 @@ import { and, count, eq, ne, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
   customerPackages,
+  invoiceItems,
   invoices,
   LEDGER_SYSTEM_CATEGORIES,
   ledgerCategories,
@@ -259,7 +260,6 @@ export async function bookInvoiceIncome(
     totalCents: number;
     paidDate: string | null;
     invoiceNumber: string;
-    description: string | null;
   },
 ) {
   const categoryId = await systemCategoryId(
@@ -276,7 +276,7 @@ export async function bookInvoiceIncome(
     amountCents: invoice.totalCents,
     customerId: invoice.customerId,
     invoiceId: invoice.id,
-    notes: invoice.description ?? invoice.invoiceNumber,
+    notes: invoice.invoiceNumber,
   };
 
   await db
@@ -295,6 +295,124 @@ export async function bookInvoiceIncome(
 
 export async function unbookInvoiceIncome(db: Db, invoiceId: string) {
   await db.delete(ledgerEntries).where(eq(ledgerEntries.invoiceId, invoiceId));
+}
+
+/** A line as the create and edit forms send it. */
+export type InvoiceLine = {
+  id?: string;
+  description: string;
+  amountCents: number;
+  package?: {
+    type: (typeof customerPackages.$inferInsert)["type"];
+    totalCredits?: number;
+    validFrom: string;
+    validUntil: string;
+  };
+};
+
+/** A line as it sits in the database, with the package it sold. */
+type StoredLine = typeof invoiceItems.$inferSelect & {
+  package: typeof customerPackages.$inferSelect | null;
+};
+
+/**
+ * A package is only ever removed while untouched. Once attendance has been
+ * marked against it, it stays standing and the line simply lets go of it.
+ */
+async function releasePackage(
+  db: Db,
+  pkg: typeof customerPackages.$inferSelect | null,
+) {
+  if (pkg && pkg.usedCredits === 0) {
+    await db.delete(customerPackages).where(eq(customerPackages.id, pkg.id));
+  }
+}
+
+/**
+ * Bring an invoice's lines in step with what the form sent. Selling a package
+ * is writing a line — every package line opens (or re-dates) a package row
+ * for the customer, and a line that stops being a package lets its package go.
+ * Lines missing from `lines` are removed; their packages go too while unused.
+ */
+export async function writeInvoiceLines(
+  db: Db,
+  invoice: {
+    id: string;
+    customerId: string;
+    notes: string | null;
+    paymentMethod: (typeof customerPackages.$inferInsert)["paymentMethod"];
+    paid: boolean;
+  },
+  lines: InvoiceLine[],
+  existing: StoredLine[],
+) {
+  const kept = new Set(lines.map((line) => line.id).filter(Boolean));
+  for (const old of existing) {
+    if (kept.has(old.id)) continue;
+    await db.delete(invoiceItems).where(eq(invoiceItems.id, old.id));
+    await releasePackage(db, old.package);
+  }
+
+  for (const [sortOrder, line] of lines.entries()) {
+    const prev = existing.find((old) => old.id === line.id);
+    let packageId: string | null = null;
+
+    if (line.package) {
+      const totalCredits =
+        line.package.type === "unlimited"
+          ? null
+          : (line.package.totalCredits ?? null);
+      if (
+        prev?.package &&
+        totalCredits !== null &&
+        totalCredits < prev.package.usedCredits
+      ) {
+        throw new BusinessRuleError(
+          `"${line.description}" already has ${prev.package.usedCredits} credits used — it cannot drop below that.`,
+        );
+      }
+      const values = {
+        customerId: invoice.customerId,
+        type: line.package.type,
+        startDate: line.package.validFrom,
+        expiryDate: line.package.validUntil,
+        totalCredits,
+        amountPaidCents: invoice.paid ? line.amountCents : 0,
+        paymentMethod: invoice.paymentMethod ?? null,
+        notes: invoice.notes,
+      };
+      if (prev?.package) {
+        await db
+          .update(customerPackages)
+          .set({ ...values, updatedAt: new Date() })
+          .where(eq(customerPackages.id, prev.package.id));
+        packageId = prev.package.id;
+      } else {
+        packageId = (
+          await db.insert(customerPackages).values(values).returning()
+        )[0].id;
+      }
+    } else if (prev?.package) {
+      await releasePackage(db, prev.package);
+    }
+
+    const values = {
+      description: line.description,
+      amountCents: line.amountCents,
+      sortOrder,
+      packageId,
+    };
+    if (prev) {
+      await db
+        .update(invoiceItems)
+        .set({ ...values, updatedAt: new Date() })
+        .where(eq(invoiceItems.id, prev.id));
+    } else {
+      await db
+        .insert(invoiceItems)
+        .values({ ...values, invoiceId: invoice.id });
+    }
+  }
 }
 
 /**

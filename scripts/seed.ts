@@ -16,6 +16,7 @@ import {
   DEFAULT_LEDGER_CATEGORIES,
   faqItems,
   galleryImages,
+  invoiceItems,
   invoices,
   landingPageContent,
   ledgerCategories,
@@ -244,8 +245,6 @@ async function main() {
       {
         invoiceNumber: `HF-${year}-0001`,
         customerId: insertedCustomers[0].id,
-        packageId: unlimited.id,
-        description: "Unlimited package",
         subtotalCents: 35000,
         discountCents: 0,
         totalCents: 35000,
@@ -257,8 +256,6 @@ async function main() {
       {
         invoiceNumber: `HF-${year}-0002`,
         customerId: insertedCustomers[1].id,
-        packageId: credit.id,
-        description: "10 credit package",
         subtotalCents: 32000,
         discountCents: 2000,
         totalCents: 30000,
@@ -270,7 +267,6 @@ async function main() {
       {
         invoiceNumber: `HF-${year}-0003`,
         customerId: insertedCustomers[2].id,
-        description: "Trial follow-up package",
         subtotalCents: 30000,
         discountCents: 0,
         totalCents: 30000,
@@ -279,6 +275,27 @@ async function main() {
       },
     ])
     .returning();
+
+  // One line each — the first two sold the packages seeded above.
+  await db.insert(invoiceItems).values([
+    {
+      invoiceId: insertedInvoices[0].id,
+      description: "Unlimited package",
+      amountCents: 35000,
+      packageId: unlimited.id,
+    },
+    {
+      invoiceId: insertedInvoices[1].id,
+      description: "10 credit package",
+      amountCents: 32000,
+      packageId: credit.id,
+    },
+    {
+      invoiceId: insertedInvoices[2].id,
+      description: "Trial follow-up package",
+      amountCents: 30000,
+    },
+  ]);
 
   // The migration already planted the defaults; this only fills gaps.
   await db
@@ -312,7 +329,7 @@ async function main() {
         amountCents: invoice.totalCents,
         customerId: invoice.customerId,
         invoiceId: invoice.id,
-        notes: invoice.description ?? invoice.invoiceNumber,
+        notes: invoice.invoiceNumber,
       })),
   );
 

@@ -154,7 +154,6 @@ function DailyTab() {
   const refresh = () => {
     utils.ledger.list.invalidate();
     utils.report.dashboard.invalidate();
-    utils.report.monthly.invalidate();
     utils.report.annual.invalidate();
   };
 

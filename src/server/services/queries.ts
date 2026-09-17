@@ -113,7 +113,13 @@ export async function getPublicInvoice(id: string) {
 
   const invoice = await db.query.invoices.findFirst({
     where: (row, { eq }) => eq(row.id, id),
-    with: { customer: true, package: true },
+    with: {
+      customer: true,
+      items: {
+        with: { package: true },
+        orderBy: (item, { asc }) => asc(item.sortOrder),
+      },
+    },
   });
   if (!invoice) return null;
 

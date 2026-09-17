@@ -6,10 +6,14 @@ export type InvoicePDFData = {
   invoiceNumber: string;
   invoiceDate: string;
   totalCents: number;
-  description: string;
-  /** Package validity window, printed under the line item when linked. */
-  startDate?: string;
-  expiryDate?: string;
+  discountCents?: number;
+  items: {
+    description: string;
+    amountCents: number;
+    /** Package validity window, printed under the line when it sold one. */
+    startDate?: string;
+    expiryDate?: string;
+  }[];
   /** Stamps the sheet the way the paper invoices are stamped. */
   paid?: boolean;
 };
@@ -48,8 +52,9 @@ const RIGHT = W - MARGIN;
 /** The rubber stamp: a tilted outlined box with PAID inside it. jsPDF has no
  *  rotated rect, so the four corners are rotated by hand. */
 function drawPaidStamp(doc: jsPDF) {
-  const cx = 105;
-  const cy = 151;
+  // Bottom right of the sheet, above the terms — never over a figure.
+  const cx = RIGHT - 42;
+  const cy = 226;
   const halfW = 39;
   const halfH = 17;
   const angle = (-7 * Math.PI) / 180;
@@ -117,31 +122,50 @@ export async function exportInvoicePDF(data: InvoicePDFData): Promise<void> {
   doc.setLineWidth(0.6);
   doc.line(MARGIN, 82, RIGHT, 82);
 
-  // Invoice Total (large)
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(26);
-  doc.text("Invoice Total", MARGIN, 96.5);
-  doc.text(fmtRM(data.totalCents), RIGHT, 96.5, { align: "right" });
-
-  // Separator 2
-  doc.line(MARGIN, 105.5, RIGHT, 105.5);
-
   // Description table header
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
-  doc.text("DESCRIPTION", MARGIN, 118);
-  doc.text("AMOUNT", RIGHT, 118, { align: "right" });
+  doc.text("DESCRIPTION", MARGIN, 94);
+  doc.text("AMOUNT", RIGHT, 94, { align: "right" });
 
-  // Line item — printed as written, the way the paper invoices read.
+  // Lines — printed as written, the way the paper invoices read. A long
+  // description wraps short of the amount column, the way the preview does;
+  // each text row takes 5mm, with a 3mm gap before the next line.
   doc.setFont("helvetica", "normal");
-  doc.text(data.description, MARGIN, 127);
-  if (data.startDate && data.expiryDate) {
-    doc.text(
-      `${fmtDate(data.startDate)} to ${fmtDate(data.expiryDate)}`,
-      MARGIN,
-      132,
-    );
+  const descriptionWidth = RIGHT - MARGIN - 40;
+  let y = 103;
+  for (const item of data.items) {
+    const rows = doc.splitTextToSize(
+      item.description,
+      descriptionWidth,
+    ) as string[];
+    doc.text(fmtRM(item.amountCents), RIGHT, y, { align: "right" });
+    for (const row of rows) {
+      doc.text(row, MARGIN, y);
+      y += 5;
+    }
+    if (item.startDate && item.expiryDate) {
+      doc.text(
+        `${fmtDate(item.startDate)} to ${fmtDate(item.expiryDate)}`,
+        MARGIN,
+        y,
+      );
+      y += 5;
+    }
+    y += 3;
   }
-  doc.text(fmtRM(data.totalCents), RIGHT, 127, { align: "right" });
+  if (data.discountCents) {
+    doc.text("Discount", MARGIN, y);
+    doc.text(`-${fmtRM(data.discountCents)}`, RIGHT, y, { align: "right" });
+    y += 8;
+  }
+
+  // Invoice Total — closes the lines, rule above it, same as the preview.
+  doc.line(MARGIN, y, RIGHT, y);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Invoice Total", MARGIN, y + 9);
+  doc.text(fmtRM(data.totalCents), RIGHT, y + 9, { align: "right" });
 
   if (data.paid) drawPaidStamp(doc);
 

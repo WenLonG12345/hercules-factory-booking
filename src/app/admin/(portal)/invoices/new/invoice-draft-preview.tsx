@@ -6,14 +6,19 @@ import Image from "next/image";
  */
 const DOC_NAVY = "#12244c";
 
+/** One printed line — a package line carries its window under the words. */
+export type InvoiceLine = {
+  description: string;
+  amountCents: number;
+  validFrom?: string;
+  validUntil?: string;
+};
+
 /** What the admin has typed so far, in the shape the sheet prints it. */
 export type InvoiceDraft = {
   customerName: string;
   customerPhone: string;
-  description: string;
-  validFrom: string;
-  validUntil: string;
-  subtotalCents: number;
+  items: InvoiceLine[];
   discountCents: number;
   issueDate: string;
   paid: boolean;
@@ -40,7 +45,11 @@ const fmtRM = (cents: number) => `RM ${(cents / 100).toFixed(2)}`;
  * on insert.
  */
 export function InvoiceDraftPreview({ draft }: { draft: InvoiceDraft }) {
-  const totalCents = Math.max(0, draft.subtotalCents - draft.discountCents);
+  const subtotalCents = draft.items.reduce(
+    (sum, item) => sum + item.amountCents,
+    0,
+  );
+  const totalCents = Math.max(0, subtotalCents - draft.discountCents);
 
   return (
     <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
@@ -93,56 +102,67 @@ export function InvoiceDraftPreview({ draft }: { draft: InvoiceDraft }) {
           </div>
         </div>
 
-        {/* Rule · total band · rule — the figure is the loudest thing here. */}
+        {/* Line item table. */}
+        <div className="mt-5 border-t-2 border-stone-950 pt-5">
+          <div className="flex items-baseline justify-between gap-3 text-[0.8125rem] font-bold uppercase text-stone-950">
+            <span>Description</span>
+            <span>Amount</span>
+          </div>
+          <div className="mt-3 grid gap-3 text-[0.8125rem] text-stone-950">
+            {draft.items.map((item, index) => (
+              <div
+                className="flex items-start justify-between gap-3"
+                // Lines have no identity of their own on the sheet; the
+                // position is what the document prints.
+                key={`${index}-${item.description}`}
+              >
+                <div className="min-w-0">
+                  <p className="break-words">{item.description || "—"}</p>
+                  {item.validFrom && item.validUntil ? (
+                    <p className="tabular-nums">
+                      {fmtDate(item.validFrom)} to {fmtDate(item.validUntil)}
+                    </p>
+                  ) : null}
+                </div>
+                <p className="shrink-0 tabular-nums">
+                  {fmtRM(item.amountCents)}
+                </p>
+              </div>
+            ))}
+            {draft.discountCents > 0 ? (
+              <div className="flex items-start justify-between gap-3 text-stone-500">
+                <p>Discount</p>
+                <p className="shrink-0 tabular-nums">
+                  -{fmtRM(draft.discountCents)}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Rule · total band — the figure closes the lines, ahead of the terms. */}
         <div className="mt-5 border-t-2 border-stone-950 pt-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-[1.375rem] font-bold tracking-tight text-stone-950 sm:text-2xl">
+            <p className="text-base font-bold tracking-tight text-stone-950 sm:text-lg">
               Invoice Total
             </p>
-            <p className="text-[1.375rem] font-bold tabular-nums tracking-tight text-stone-950 sm:text-2xl">
+            <p className="text-base font-bold tabular-nums tracking-tight text-stone-950 sm:text-lg">
               {fmtRM(totalCents)}
             </p>
           </div>
         </div>
 
-        {/* Line item table. */}
-        <div className="relative mt-4 border-t-2 border-stone-950 pt-5">
-          <div className="flex items-baseline justify-between gap-3 text-[0.8125rem] font-bold uppercase text-stone-950">
-            <span>Description</span>
-            <span>Amount</span>
-          </div>
-          <div className="mt-3 flex items-start justify-between gap-3 text-[0.8125rem] text-stone-950">
-            <div className="min-w-0">
-              <p className="break-words">{draft.description || "—"}</p>
-              {draft.validFrom && draft.validUntil ? (
-                <p className="tabular-nums">
-                  {fmtDate(draft.validFrom)} to {fmtDate(draft.validUntil)}
-                </p>
-              ) : null}
-              {/* Not on the PDF — it prints the total and nothing else. Kept on
-                  screen so a discount is never applied invisibly. */}
-              {draft.discountCents > 0 ? (
-                <p className="mt-1 text-xs text-stone-500">
-                  {fmtRM(draft.subtotalCents)} less {fmtRM(draft.discountCents)}{" "}
-                  discount
-                </p>
-              ) : null}
-            </div>
-            <p className="shrink-0 tabular-nums">{fmtRM(totalCents)}</p>
-          </div>
-
-          {/* The rubber stamp: tilted, outlined, sitting on the sheet. */}
+        {/* The empty middle of the paper sheet — the stamp sits in its bottom
+            right corner, clear of every figure above. */}
+        <div className="flex h-24 items-end justify-end">
           {draft.paid ? (
             <p
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-16 mx-auto w-fit -rotate-6 select-none border-4 border-red-600 px-6 py-1.5 text-3xl font-bold uppercase tracking-wide text-red-600"
+              className="pointer-events-none mr-2 mb-1 w-fit -rotate-6 select-none border-4 border-red-600 px-6 py-1.5 text-3xl font-bold uppercase tracking-wide text-red-600"
             >
               Paid
             </p>
           ) : null}
-
-          {/* The empty middle of the paper sheet. */}
-          <div className="h-24" />
         </div>
 
         {/* Terms — the bank details the customer pays into. */}

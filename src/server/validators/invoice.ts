@@ -6,22 +6,53 @@ import {
   paymentMethodSchema,
 } from "./common";
 
+/**
+ * A package sold on one line. The window is the package window; credits are
+ * required for every type but unlimited.
+ */
+const itemPackage = z
+  .object({
+    type: packageTypeSchema,
+    totalCredits: z.coerce.number().int().min(1).max(500).optional(),
+    validFrom: dateString,
+    validUntil: dateString,
+  })
+  .refine((v) => v.validUntil >= v.validFrom, {
+    message: "Expiry date cannot be before the start date.",
+    path: ["validUntil"],
+  })
+  .refine((v) => v.type === "unlimited" || v.totalCredits !== undefined, {
+    message: "Credit, PT and kid packages need a credit total.",
+    path: ["totalCredits"],
+  });
+
+/** One line: what it says, what it costs, and the package it sells if any. */
+export const invoiceItemInput = z.object({
+  /** Set when editing — an existing line keeps its row (and its package). */
+  id: z.uuid().optional(),
+  description: z.string().trim().min(1, "Every line needs a description."),
+  amountCents: z.coerce.number().int().min(0),
+  package: itemPackage.optional(),
+});
+
+export type InvoiceItemInput = z.infer<typeof invoiceItemInput>;
+
 const invoiceFields = z.object({
   customerId: z.uuid(),
-  description: z.string().optional(),
-  subtotalCents: z.coerce.number().int().min(0),
+  items: z.array(invoiceItemInput).min(1, "Add at least one line."),
   discountCents: z.coerce.number().int().min(0).default(0),
   issueDate: dateString,
   dueDate: dateString.optional(),
-  validFrom: dateString.optional(),
-  validUntil: dateString.optional(),
   notes: z.string().optional(),
 });
 
+export const itemsSubtotal = (items: { amountCents: number }[]) =>
+  items.reduce((sum, item) => sum + item.amountCents, 0);
+
 const discountFitsSubtotal = (v: {
   discountCents: number;
-  subtotalCents: number;
-}) => v.discountCents <= v.subtotalCents;
+  items: { amountCents: number }[];
+}) => v.discountCents <= itemsSubtotal(v.items);
 
 const discountError = {
   message: "Discount cannot be larger than the subtotal.",
@@ -29,9 +60,8 @@ const discountError = {
 };
 
 /**
- * Creating an invoice IS selling the package — the two were always one act, so
- * one form does both. `validFrom`/`validUntil` are the package window, which is
- * why they stop being optional here.
+ * Creating an invoice IS selling what is on it — every package line opens a
+ * package for the customer in the same call.
  *
  * Two more things the create page folds in, so the admin never leaves it:
  * - the customer, either an existing id or a name to open an account under
@@ -49,11 +79,6 @@ export const invoiceInput = invoiceFields
         phone: z.string().min(8).optional(),
       })
       .optional(),
-    planId: z.uuid().optional(),
-    packageType: packageTypeSchema,
-    totalCredits: z.coerce.number().int().min(1).max(500).optional(),
-    validFrom: dateString,
-    validUntil: dateString,
     /** Set together, and only when the money has already changed hands. */
     paymentMethod: paymentMethodSchema.optional(),
     paidDate: dateString.optional(),
@@ -63,23 +88,13 @@ export const invoiceInput = invoiceFields
     path: ["customerId"],
   })
   .refine(discountFitsSubtotal, discountError)
-  .refine((v) => v.validUntil >= v.validFrom, {
-    message: "Expiry date cannot be before the start date.",
-    path: ["validUntil"],
-  })
-  .refine(
-    (v) => v.packageType === "unlimited" || v.totalCredits !== undefined,
-    {
-      message: "Credit and PT packages need a credit total.",
-      path: ["totalCredits"],
-    },
-  )
   .refine((v) => !v.paidDate || !!v.paymentMethod, {
     message: "A paid date needs the payment method it was paid by.",
     path: ["paymentMethod"],
   });
 
 export const updateInvoiceInput = invoiceFields
+  .omit({ customerId: true })
   .extend({ id: z.uuid() })
   .refine(discountFitsSubtotal, discountError);
 

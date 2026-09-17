@@ -20,11 +20,18 @@ import { api, type RouterOutputs } from "@/lib/trpc";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
 import {
   centsToRinggit,
-  PACKAGE_TYPE_LABEL,
   PAYMENT_METHOD_LABEL,
   ringgitToCents,
   today,
 } from "../admin-format";
+import {
+  InvoiceLinesEditor,
+  type LineDraft,
+  linesBlocker,
+  linesFromItems,
+  linesSubtotalCents,
+  lineToInput,
+} from "./invoice-lines-editor";
 
 export type Invoice = RouterOutputs["invoice"]["list"][number];
 
@@ -117,9 +124,10 @@ export function MarkPaidDialog({
 }
 
 /**
- * Edit an issued invoice. Not the customer and not the package — an invoice is
- * the sale of one package to one customer, so getting either wrong means
- * deleting it and issuing a new one. Status moves through MarkPaidDialog.
+ * Edit an issued invoice, lines and all. Not the customer — an invoice is a
+ * sale to one person, so the wrong name means deleting it and issuing a new
+ * one. Status moves through MarkPaidDialog. Package lines re-date their
+ * package; one with credits already used cannot drop below what was burned.
  */
 export function EditInvoiceDialog({
   invoice,
@@ -129,6 +137,10 @@ export function EditInvoiceDialog({
   onSuccess?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  // Seeded when the dialog opens; Radix unmounts the content on close, so
+  // the next open starts from the invoice again.
+  const [lines, setLines] = useState<LineDraft[]>([]);
+  const [discount, setDiscount] = useState("0");
 
   const update = api.invoice.update.useMutation({
     onSuccess: () => {
@@ -139,8 +151,25 @@ export function EditInvoiceDialog({
     onError: (error) => toast.error(error.message),
   });
 
+  const subtotalCents = linesSubtotalCents(lines);
+  const discountCents = ringgitToCents(discount);
+  const problem =
+    linesBlocker(lines) ??
+    (discountCents > subtotalCents
+      ? "The discount is bigger than the subtotal."
+      : null);
+
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog
+      onOpenChange={(next) => {
+        if (next) {
+          setLines(linesFromItems(invoice.items));
+          setDiscount(centsToRinggit(invoice.discountCents));
+        }
+        setOpen(next);
+      }}
+      open={open}
+    >
       <DialogTrigger asChild>
         <button
           className="inline-flex items-center gap-1 text-sm font-semibold text-stone-600"
@@ -150,7 +179,7 @@ export function EditInvoiceDialog({
           Edit
         </button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit invoice</DialogTitle>
           <DialogDescription>
@@ -161,49 +190,33 @@ export function EditInvoiceDialog({
           </DialogDescription>
         </DialogHeader>
         <form
-          className="grid gap-4"
+          className="grid gap-5"
           onSubmit={(e) => {
             e.preventDefault();
+            if (problem) {
+              toast.error(problem);
+              return;
+            }
             const fd = new FormData(e.currentTarget);
             update.mutate({
               id: invoice.id,
-              customerId: invoice.customerId,
-              description: String(fd.get("description") ?? "") || undefined,
-              subtotalCents: ringgitToCents(fd.get("subtotal")),
-              discountCents: ringgitToCents(fd.get("discount")),
+              items: lines.map(lineToInput),
+              discountCents,
               issueDate: String(fd.get("issueDate")),
               dueDate: String(fd.get("dueDate") ?? "") || undefined,
-              validFrom: String(fd.get("validFrom") ?? "") || undefined,
-              validUntil: String(fd.get("validUntil") ?? "") || undefined,
               notes: String(fd.get("notes") ?? "") || undefined,
             });
           }}
         >
-          <Field label="Description">
-            <Input
-              defaultValue={invoice.description ?? ""}
-              name="description"
-              placeholder="10 credit package"
-            />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Subtotal (RM)">
-              <Input
-                defaultValue={centsToRinggit(invoice.subtotalCents)}
-                inputMode="decimal"
-                name="subtotal"
-                required
-              />
-            </Field>
+          <InvoiceLinesEditor lines={lines} onChange={setLines} />
+          <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Discount (RM)">
               <Input
-                defaultValue={centsToRinggit(invoice.discountCents)}
                 inputMode="decimal"
-                name="discount"
+                onChange={(e) => setDiscount(e.target.value)}
+                value={discount}
               />
             </Field>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Issue date">
               <Input
                 defaultValue={invoice.issueDate}
@@ -220,30 +233,20 @@ export function EditInvoiceDialog({
               />
             </Field>
           </div>
-          {/* A linked package prints its own window; these two only matter for
-              a hand-written invoice. */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Valid from">
-              <Input
-                defaultValue={invoice.validFrom ?? ""}
-                name="validFrom"
-                type="date"
-              />
-            </Field>
-            <Field label="Valid until">
-              <Input
-                defaultValue={invoice.validUntil ?? ""}
-                name="validUntil"
-                type="date"
-              />
-            </Field>
-          </div>
           <Field label="Notes">
             <Textarea defaultValue={invoice.notes ?? ""} name="notes" />
           </Field>
-          <Button disabled={update.isPending} type="submit">
-            {update.isPending ? "Saving…" : "Save changes"}
-          </Button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-stone-600">
+              Total{" "}
+              <span className="font-black tabular-nums text-stone-950">
+                {formatCurrency(Math.max(0, subtotalCents - discountCents))}
+              </span>
+            </p>
+            <Button disabled={update.isPending} type="submit">
+              {update.isPending ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
@@ -251,8 +254,8 @@ export function EditInvoiceDialog({
 }
 
 /**
- * Deleting an invoice unwinds the sale: the ledger row goes with it, so does
- * the package it sold while no credits have been burned, and its number goes
+ * Deleting an invoice unwinds the sale: the ledger row goes with it, so do
+ * the packages it sold while no credits have been burned, and its number goes
  * back in the pot — the next invoice created takes it again.
  */
 export function DeleteInvoiceDialog({
@@ -263,6 +266,11 @@ export function DeleteInvoiceDialog({
   onDeleted?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+
+  const packages = invoice.items.flatMap((item) =>
+    item.package ? [item.package] : [],
+  );
+  const untouched = packages.filter((pkg) => pkg.usedCredits === 0).length;
 
   const remove = api.invoice.delete.useMutation({
     onSuccess: () => {
@@ -292,11 +300,15 @@ export function DeleteInvoiceDialog({
             {invoice.status === "paid"
               ? " The income row it booked is removed from the daily ledger."
               : ""}
-            {invoice.package
-              ? invoice.package.usedCredits === 0
-                ? " The package it sold is removed too."
-                : " The package it sold is kept — credits have already been used on it."
-              : ""}{" "}
+            {packages.length === 0
+              ? ""
+              : untouched === packages.length
+                ? packages.length === 1
+                  ? " The package it sold is removed too."
+                  : " The packages it sold are removed too."
+                : untouched === 0
+                  ? " The packages it sold are kept — credits have already been used on them."
+                  : ` ${untouched} of its ${packages.length} packages are removed; the rest are kept because credits have been used on them.`}{" "}
             Number {invoice.invoiceNumber} becomes free again for the next
             invoice.
           </DialogDescription>
@@ -370,16 +382,14 @@ export function InvoiceActions({
             invoiceNumber: invoice.invoiceNumber,
             invoiceDate: invoice.issueDate,
             totalCents: invoice.totalCents,
-            description:
-              invoice.description ??
-              (invoice.package
-                ? `${PACKAGE_TYPE_LABEL[invoice.package.type]} package`
-                : "Membership"),
+            discountCents: invoice.discountCents,
+            items: invoice.items.map((item) => ({
+              description: item.description,
+              amountCents: item.amountCents,
+              startDate: item.package?.startDate,
+              expiryDate: item.package?.expiryDate,
+            })),
             paid: invoice.status === "paid",
-            startDate:
-              invoice.package?.startDate ?? invoice.validFrom ?? undefined,
-            expiryDate:
-              invoice.package?.expiryDate ?? invoice.validUntil ?? undefined,
           })
         }
         type="button"

@@ -25,7 +25,12 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import type { Db } from "@/db";
 import * as schema from "@/db/schema";
-import { customerPackages, customers, invoices } from "@/db/schema";
+import {
+  customerPackages,
+  customers,
+  invoiceItems,
+  invoices,
+} from "@/db/schema";
 import { bookInvoiceIncome } from "@/server/services/business";
 
 const dryRun = process.argv.includes("--dry-run");
@@ -389,8 +394,6 @@ async function main() {
       .values({
         invoiceNumber: number,
         customerId: row.customerId,
-        packageId,
-        description: term?.label ?? SPECIAL,
         subtotalCents: row.listCents,
         discountCents: row.listCents - row.paidCents,
         totalCents: row.paidCents,
@@ -398,11 +401,15 @@ async function main() {
         paymentMethod: "cash",
         issueDate: row.issueDate,
         paidDate: row.paidDate,
-        validFrom: expiry ? row.paidDate : null,
-        validUntil: expiry,
         notes: `Imported from InvoiceHome #${row.number}`,
       })
       .returning();
+    await db.insert(invoiceItems).values({
+      invoiceId: invoice.id,
+      description: term?.label ?? SPECIAL,
+      amountCents: row.listCents,
+      packageId,
+    });
 
     await bookInvoiceIncome(db, invoice);
     imported++;

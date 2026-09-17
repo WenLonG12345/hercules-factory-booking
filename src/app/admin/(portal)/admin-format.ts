@@ -2,8 +2,9 @@
 
 export const PACKAGE_TYPE_LABEL = {
   unlimited: "Unlimited",
-  credit: "10 Credits",
-  pt: "PT",
+  credit: "Credit",
+  pt: "Personal Training (PT)",
+  kid: "Kid Class",
 } as const;
 
 export const PAYMENT_METHOD_LABEL = {
@@ -44,10 +45,10 @@ export function currentMonth() {
   return today().slice(0, 7);
 }
 
-/** Default expiry: one month out for unlimited, three months for credit/PT. */
+/** Default expiry: three months out for PT, one month for everything else. */
 export function defaultExpiry(start: string, type: string) {
   const date = new Date(`${start}T00:00:00`);
-  date.setMonth(date.getMonth() + (type === "unlimited" ? 1 : 3));
+  date.setMonth(date.getMonth() + (type === "pt" ? 3 : 1));
   return isoDate(date);
 }
 

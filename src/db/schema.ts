@@ -7,7 +7,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
-export const PACKAGE_TYPES = ["unlimited", "credit", "pt"] as const;
+export const PACKAGE_TYPES = ["unlimited", "credit", "pt", "kid"] as const;
 export const PAYMENT_METHODS = [
   "cash",
   "bank_transfer",
@@ -309,10 +309,8 @@ export const invoices = sqliteTable(
     customerId: text("customer_id")
       .references(() => customers.id, { onDelete: "cascade" })
       .notNull(),
-    packageId: text("package_id").references(() => customerPackages.id, {
-      onDelete: "set null",
-    }),
-    description: text("description"),
+    /** Sum of the item amounts — kept so the list and the ledger never
+     *  have to add rows up. */
     subtotalCents: integer("subtotal_cents").notNull(),
     discountCents: integer("discount_cents").default(0).notNull(),
     totalCents: integer("total_cents").notNull(),
@@ -323,10 +321,6 @@ export const invoices = sqliteTable(
     issueDate: text("issue_date").notNull(),
     dueDate: text("due_date"),
     paidDate: text("paid_date"),
-    /** Validity window for an invoice written by hand — a linked package
-     *  carries its own dates and wins over these. */
-    validFrom: text("valid_from"),
-    validUntil: text("valid_until"),
     notes: text("notes"),
     ...timestamps,
   },
@@ -334,6 +328,32 @@ export const invoices = sqliteTable(
     index("invoices_customer_idx").on(table.customerId),
     index("invoices_paid_date_idx").on(table.paidDate),
     index("invoices_status_idx").on(table.status),
+  ],
+);
+
+/**
+ * One line on an invoice. A line that sells a package points at the package
+ * row it created — the package carries its own type, credits and window. A
+ * line with no package is money only: gloves, wraps, a one-off fee.
+ */
+export const invoiceItems = sqliteTable(
+  "invoice_items",
+  {
+    id: id(),
+    invoiceId: text("invoice_id")
+      .references(() => invoices.id, { onDelete: "cascade" })
+      .notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    description: text("description").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    packageId: text("package_id").references(() => customerPackages.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (table) => [
+    index("invoice_items_invoice_idx").on(table.invoiceId),
+    index("invoice_items_package_idx").on(table.packageId),
   ],
 );
 
@@ -563,7 +583,7 @@ export const customerPackagesRelations = relations(
       fields: [customerPackages.planId],
       references: [packagePlans.id],
     }),
-    invoices: many(invoices),
+    invoiceItems: many(invoiceItems),
     attendees: many(sessionAttendees),
   }),
 );
@@ -598,7 +618,7 @@ export const sessionAttendeesRelations = relations(
   }),
 );
 
-export const invoicesRelations = relations(invoices, ({ one }) => ({
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   ledgerEntry: one(ledgerEntries, {
     fields: [invoices.id],
     references: [ledgerEntries.invoiceId],
@@ -607,8 +627,16 @@ export const invoicesRelations = relations(invoices, ({ one }) => ({
     fields: [invoices.customerId],
     references: [customers.id],
   }),
+  items: many(invoiceItems),
+}));
+
+export const invoiceItemsRelations = relations(invoiceItems, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [invoiceItems.invoiceId],
+    references: [invoices.id],
+  }),
   package: one(customerPackages, {
-    fields: [invoices.packageId],
+    fields: [invoiceItems.packageId],
     references: [customerPackages.id],
   }),
 }));
@@ -646,6 +674,7 @@ export type PackagePlan = typeof packagePlans.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type SessionAttendee = typeof sessionAttendees.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
+export type InvoiceItem = typeof invoiceItems.$inferSelect;
 export type LedgerCategory = typeof ledgerCategories.$inferSelect;
 export type LedgerEntry = typeof ledgerEntries.$inferSelect;
 export type PackageType = (typeof PACKAGE_TYPES)[number];
