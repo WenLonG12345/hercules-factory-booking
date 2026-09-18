@@ -51,7 +51,7 @@ const expiringColumns = expiring.columns([
     header: "Expiry",
     cell: ({ row }) => (
       <Badge tone={packageStatus(row.original) === "expired" ? "red" : "amber"}>
-        {row.original.expiryDate}
+        {row.original.expiryDate ?? "No expiry"}
       </Badge>
     ),
   }),

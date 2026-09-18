@@ -13,7 +13,14 @@ import { CreateCustomerDialog } from "@/components/admin/create-customer-dialog"
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { columnHelper, DataTable } from "@/components/ui/data-table";
-import { Input, Select } from "@/components/ui/form";
+import { Input } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { api } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
 import { type Invoice, InvoiceActions } from "./invoice-actions";
@@ -151,18 +158,23 @@ export default function InvoicesPage() {
             value={search}
           />
           <Select
-            onChange={(e) =>
+            onValueChange={(next) =>
               setFilters({
-                status: e.target.value as (typeof STATUSES)[number],
+                status: next as (typeof STATUSES)[number],
                 page: null,
               })
             }
             value={status}
           >
-            <option value="all">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-            <option value="cancelled">Cancelled</option>
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
           </Select>
           <CreateCustomerDialog onSuccess={invalidate} />
           <ButtonLink href="/admin/invoices/new">Create invoice</ButtonLink>

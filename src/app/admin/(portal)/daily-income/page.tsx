@@ -15,7 +15,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { columnHelper, DataTable } from "@/components/ui/data-table";
-import { Input, Select } from "@/components/ui/form";
+import { Input } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { api, type RouterOutputs } from "@/lib/trpc";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -324,17 +331,18 @@ function DailyTab() {
             options={DIRECTION_FILTERS}
             value={direction}
           />
-          <Select
-            aria-label="Category"
-            onChange={(e) => setCategory(e.target.value)}
-            value={category}
-          >
-            <option value="all">All categories</option>
-            {categories.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.direction === "income" ? "In" : "Out"} · {option.name}
-              </option>
-            ))}
+          <Select onValueChange={setCategory} value={category}>
+            <SelectTrigger aria-label="Category" className="w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {categories.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  {option.direction === "income" ? "In" : "Out"} · {option.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
           <span className="ml-auto flex flex-wrap items-center gap-2">
             <CategoryManagerDialog
@@ -647,15 +655,19 @@ function SummaryTab() {
     <>
       <Card className="mb-4 flex flex-wrap items-center gap-2 p-3">
         <Select
-          aria-label="Year"
-          onChange={(e) => setYear(Number(e.target.value))}
-          value={year}
+          onValueChange={(next) => setYear(Number(next))}
+          value={String(year)}
         >
-          {yearOptions().map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
+          <SelectTrigger aria-label="Year" className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {yearOptions().map((value) => (
+              <SelectItem key={value} value={String(value)}>
+                {value}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
         <Button
           className="ml-auto"

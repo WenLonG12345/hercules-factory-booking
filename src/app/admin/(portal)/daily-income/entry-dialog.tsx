@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/components/ui/form";
+import { Field, Input, Textarea } from "@/components/ui/form";
+import {
+  readSelect,
+  SELECT_NONE,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { LedgerCategory, LedgerDirection } from "@/db/schema";
 import { api } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -76,7 +86,7 @@ export function AddEntryDialog({
               direction,
               categoryId,
               amountCents: ringgitToCents(fd.get("amount")),
-              coachId: String(fd.get("coachId") ?? "") || undefined,
+              coachId: readSelect(fd.get("coachId")),
               vendor: String(fd.get("vendor") ?? "") || undefined,
               notes: String(fd.get("notes") ?? "") || undefined,
             });
@@ -102,7 +112,7 @@ export function AddEntryDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Date">
-              <Input defaultValue={today()} name="date" required type="date" />
+              <DatePicker defaultValue={today()} name="date" />
             </Field>
             <Field label="Amount (RM)">
               <Input inputMode="decimal" name="amount" required />
@@ -110,29 +120,34 @@ export function AddEntryDialog({
           </div>
 
           <Field label="Category">
-            <Select
-              onChange={(e) => setCategoryId(e.target.value)}
-              required
-              value={categoryId}
-            >
-              <option value="">Select a category</option>
-              {options.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
+            <Select onValueChange={setCategoryId} required value={categoryId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </Field>
 
           {isSalary ? (
             <Field label="Coach">
-              <Select defaultValue="" name="coachId">
-                <option value="">Not set</option>
-                {coaches.map((coach) => (
-                  <option key={coach.id} value={coach.id}>
-                    {coach.name}
-                  </option>
-                ))}
+              <Select defaultValue={SELECT_NONE} name="coachId">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SELECT_NONE}>Not set</SelectItem>
+                  {coaches.map((coach) => (
+                    <SelectItem key={coach.id} value={coach.id}>
+                      {coach.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
           ) : null}

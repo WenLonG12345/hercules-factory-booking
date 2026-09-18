@@ -6,12 +6,15 @@ import Image from "next/image";
  */
 const DOC_NAVY = "#12244c";
 
-/** One printed line — a package line carries its window under the words. */
+/**
+ * One printed line — a package line carries its window under the words. The
+ * window is there whenever the line sells a package, even with both ends still
+ * unsettled; an end that is not set yet prints as TBC.
+ */
 export type InvoiceLine = {
   description: string;
   amountCents: number;
-  validFrom?: string;
-  validUntil?: string;
+  window?: { from: string | null; until: string | null };
 };
 
 /** What the admin has typed so far, in the shape the sheet prints it. */
@@ -29,6 +32,10 @@ const fmtDate = (date: string) => {
   const [year, month, day] = date.split("-");
   return `${Number(day)}/${Number(month)}/${year}`;
 };
+
+/** `11/9/2026 to 10/10/2026`, with TBC for an end not settled yet. */
+const fmtWindow = (w: { from: string | null; until: string | null }) =>
+  `${w.from ? fmtDate(w.from) : "TBC"} to ${w.until ? fmtDate(w.until) : "TBC"}`;
 
 /** `RM 150.00` — the PDF's money, sen always shown. */
 const fmtRM = (cents: number) => `RM ${(cents / 100).toFixed(2)}`;
@@ -118,10 +125,8 @@ export function InvoiceDraftPreview({ draft }: { draft: InvoiceDraft }) {
               >
                 <div className="min-w-0">
                   <p className="break-words">{item.description || "—"}</p>
-                  {item.validFrom && item.validUntil ? (
-                    <p className="tabular-nums">
-                      {fmtDate(item.validFrom)} to {fmtDate(item.validUntil)}
-                    </p>
+                  {item.window ? (
+                    <p className="tabular-nums">{fmtWindow(item.window)}</p>
                   ) : null}
                 </div>
                 <p className="shrink-0 tabular-nums">

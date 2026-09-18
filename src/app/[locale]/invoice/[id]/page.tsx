@@ -129,8 +129,12 @@ export default async function InvoicePage({
               items: invoice.items.map((item) => ({
                 description: item.description,
                 amountCents: item.amountCents,
-                startDate: item.package?.startDate,
-                expiryDate: item.package?.expiryDate,
+                window: item.package
+                  ? {
+                      from: item.package.startDate,
+                      until: item.package.expiryDate,
+                    }
+                  : undefined,
               })),
               paid: invoice.status === "paid",
             }}
@@ -191,8 +195,14 @@ export default async function InvoicePage({
                   {item.description}
                   {item.package ? (
                     <span className="mt-1 block text-ink-dim text-sm tabular-nums">
-                      Valid {formatDate(item.package.startDate)} –{" "}
-                      {formatDate(item.package.expiryDate)}
+                      Valid{" "}
+                      {item.package.startDate
+                        ? formatDate(item.package.startDate)
+                        : "TBC"}{" "}
+                      –{" "}
+                      {item.package.expiryDate
+                        ? formatDate(item.package.expiryDate)
+                        : "TBC"}
                     </span>
                   ) : null}
                 </td>

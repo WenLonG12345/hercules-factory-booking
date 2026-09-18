@@ -5,6 +5,7 @@ import { useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/components/ui/form";
+import { Field, Input, Textarea } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PAYMENT_METHODS } from "@/db/schema";
 import { exportInvoicePDF } from "@/lib/invoice-pdf";
 import { api, type RouterOutputs } from "@/lib/trpc";
@@ -99,20 +107,20 @@ export function MarkPaidDialog({
         >
           <Field label="Payment method">
             <Select defaultValue="cash" name="paymentMethod">
-              {PAYMENT_METHODS.map((value) => (
-                <option key={value} value={value}>
-                  {PAYMENT_METHOD_LABEL[value]}
-                </option>
-              ))}
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {PAYMENT_METHOD_LABEL[value]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </Field>
           <Field label="Paid date">
-            <Input
-              defaultValue={today()}
-              name="paidDate"
-              required
-              type="date"
-            />
+            <DatePicker defaultValue={today()} name="paidDate" />
           </Field>
           <Button disabled={updateStatus.isPending} type="submit">
             {updateStatus.isPending ? "Saving…" : "Mark as paid"}
@@ -218,18 +226,14 @@ export function EditInvoiceDialog({
               />
             </Field>
             <Field label="Issue date">
-              <Input
-                defaultValue={invoice.issueDate}
-                name="issueDate"
-                required
-                type="date"
-              />
+              <DatePicker defaultValue={invoice.issueDate} name="issueDate" />
             </Field>
             <Field label="Due date">
-              <Input
+              <DatePicker
+                clearable
                 defaultValue={invoice.dueDate ?? ""}
                 name="dueDate"
-                type="date"
+                placeholder="No due date"
               />
             </Field>
           </div>
@@ -386,8 +390,12 @@ export function InvoiceActions({
             items: invoice.items.map((item) => ({
               description: item.description,
               amountCents: item.amountCents,
-              startDate: item.package?.startDate,
-              expiryDate: item.package?.expiryDate,
+              window: item.package
+                ? {
+                    from: item.package.startDate,
+                    until: item.package.expiryDate,
+                  }
+                : undefined,
             })),
             paid: invoice.status === "paid",
           })

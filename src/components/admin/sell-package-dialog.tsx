@@ -13,6 +13,7 @@ import {
 } from "@/app/admin/(portal)/admin-format";
 import { PlanSummary } from "@/components/admin/plan-summary";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/components/ui/form";
+import { Field, Input, Textarea } from "@/components/ui/form";
+import {
+  SELECT_NONE,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PACKAGE_TYPES, PAYMENT_METHODS } from "@/db/schema";
 import { api } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
@@ -42,6 +51,9 @@ export function SellPackageDialog({
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<string>("credit");
   const [startDate, setStartDate] = useState(today());
+  const [expiryDate, setExpiryDate] = useState(() =>
+    defaultExpiry(today(), "credit"),
+  );
   const [planId, setPlanId] = useState("");
 
   const { data: customers = [] } = api.customer.list.useQuery(undefined, {
@@ -53,6 +65,32 @@ export function SellPackageDialog({
 
   const sellable = plans.filter((item) => item.isActive);
   const plan = plans.find((item) => item.id === planId);
+
+  /** The expiry the plan (or the type) works out to. Empty when TBC. */
+  const derivedExpiry = (
+    start: string,
+    kind: string,
+    from?: (typeof plans)[number],
+  ) => {
+    if (!start) return "";
+    return from
+      ? shiftDays(start, from.validityDays)
+      : defaultExpiry(start, kind);
+  };
+
+  /**
+   * Moving the start date, the type or the plan re-derives the expiry — but a
+   * cleared expiry is the admin saying it is TBC, and that survives the change.
+   */
+  const reprice = (
+    start: string,
+    kind: string,
+    from?: (typeof plans)[number],
+  ) => {
+    setStartDate(start);
+    setType(kind);
+    if (expiryDate) setExpiryDate(derivedExpiry(start, kind, from));
+  };
 
   const sell = api.package.create.useMutation({
     onSuccess: () => {
@@ -92,8 +130,10 @@ export function SellPackageDialog({
               customerId: customerId ?? String(fd.get("customerId")),
               planId: planId || undefined,
               type: packageType,
-              startDate: String(fd.get("startDate")),
-              expiryDate: String(fd.get("expiryDate")),
+              // Blank on either end means "not settled yet" — the invoice
+              // reads TBC and the date gets filled in later.
+              startDate: String(fd.get("startDate") ?? "") || undefined,
+              expiryDate: String(fd.get("expiryDate") ?? "") || undefined,
               totalCredits:
                 packageType === "unlimited"
                   ? undefined
@@ -115,12 +155,16 @@ export function SellPackageDialog({
           {customerId ? null : (
             <Field label="Customer">
               <Select name="customerId" required>
-                <option value="">Select a customer…</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name} — {customer.phone ?? customer.ic ?? "—"}
-                  </option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a customer…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.name} — {customer.phone ?? customer.ic ?? "—"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
           )}
@@ -128,22 +172,30 @@ export function SellPackageDialog({
               fields only appear for a one-off custom sale. */}
           <Field label="Plan">
             <Select
-              onChange={(e) => {
-                const next = plans.find((item) => item.id === e.target.value);
-                setPlanId(e.target.value);
-                if (next) setType(next.type);
+              onValueChange={(picked) => {
+                const id = picked === SELECT_NONE ? "" : picked;
+                const next = plans.find((item) => item.id === id);
+                setPlanId(id);
+                reprice(startDate, next?.type ?? type, next);
               }}
-              value={planId}
+              value={planId || SELECT_NONE}
             >
-              <option value="">Custom — set everything by hand</option>
-              {sellable.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} — {formatCurrency(item.priceCents)}
-                  {item.totalCredits === null
-                    ? ""
-                    : ` · ${item.totalCredits} credits`}
-                </option>
-              ))}
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SELECT_NONE}>
+                  Custom — set everything by hand
+                </SelectItem>
+                {sellable.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.name} — {formatCurrency(item.priceCents)}
+                    {item.totalCredits === null
+                      ? ""
+                      : ` · ${item.totalCredits} credits`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </Field>
           {plan ? (
@@ -152,39 +204,43 @@ export function SellPackageDialog({
             <Field label="Package type">
               <Select
                 name="type"
+                onValueChange={(next) => reprice(startDate, next, plan)}
                 value={type}
-                onChange={(e) => setType(e.target.value)}
               >
-                {PACKAGE_TYPES.map((value) => (
-                  <option key={value} value={value}>
-                    {PACKAGE_TYPE_LABEL[value]}
-                  </option>
-                ))}
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PACKAGE_TYPES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {PACKAGE_TYPE_LABEL[value]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
           )}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Start date">
-              <Input
+              <DatePicker
+                clearable
                 name="startDate"
-                type="date"
+                onValueChange={(next) => reprice(next, type, plan)}
+                placeholder="TBC"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
               />
             </Field>
             <Field label="Expiry date">
-              <Input
+              <DatePicker
+                clearable
                 name="expiryDate"
-                type="date"
-                defaultValue={
-                  plan
-                    ? shiftDays(startDate, plan.validityDays)
-                    : defaultExpiry(startDate, type)
-                }
-                key={`${startDate}-${type}-${planId}`}
-                required
+                onValueChange={setExpiryDate}
+                placeholder="TBC"
+                value={expiryDate}
               />
+              <span className="text-xs font-normal text-stone-500">
+                Clear either date (×) to leave it TBC.
+              </span>
             </Field>
           </div>
           {plan || type === "unlimited" ? null : (
@@ -210,12 +266,17 @@ export function SellPackageDialog({
               />
             </Field>
             <Field label="Payment method">
-              <Select name="paymentMethod" defaultValue="cash">
-                {PAYMENT_METHODS.map((value) => (
-                  <option key={value} value={value}>
-                    {PAYMENT_METHOD_LABEL[value]}
-                  </option>
-                ))}
+              <Select defaultValue="cash" name="paymentMethod">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_METHODS.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {PAYMENT_METHOD_LABEL[value]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
           </div>

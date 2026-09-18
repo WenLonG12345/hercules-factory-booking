@@ -10,9 +10,11 @@ export type InvoicePDFData = {
   items: {
     description: string;
     amountCents: number;
-    /** Package validity window, printed under the line when it sold one. */
-    startDate?: string;
-    expiryDate?: string;
+    /**
+     * Package validity window, printed under the line when it sold one. An end
+     * that is not settled yet is null and prints as TBC.
+     */
+    window?: { from: string | null; until: string | null };
   }[];
   /** Stamps the sheet the way the paper invoices are stamped. */
   paid?: boolean;
@@ -144,9 +146,10 @@ export async function exportInvoicePDF(data: InvoicePDFData): Promise<void> {
       doc.text(row, MARGIN, y);
       y += 5;
     }
-    if (item.startDate && item.expiryDate) {
+    if (item.window) {
+      const { from, until } = item.window;
       doc.text(
-        `${fmtDate(item.startDate)} to ${fmtDate(item.expiryDate)}`,
+        `${from ? fmtDate(from) : "TBC"} to ${until ? fmtDate(until) : "TBC"}`,
         MARGIN,
         y,
       );

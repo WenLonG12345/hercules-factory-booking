@@ -24,10 +24,16 @@ export function remainingCredits(pkg: {
 }
 
 export function packageStatus(
-  pkg: { totalCredits: number | null; usedCredits: number; expiryDate: string },
+  pkg: {
+    totalCredits: number | null;
+    usedCredits: number;
+    /** Null: no end date was agreed, so the package never expires by date. */
+    expiryDate: string | null;
+  },
   today = toDateInputValue(new Date()),
 ) {
-  if (pkg.expiryDate < today) return "expired" as const;
+  if (pkg.expiryDate !== null && pkg.expiryDate < today)
+    return "expired" as const;
   const left = remainingCredits(pkg);
   if (left !== null && left <= 0) return "expired" as const;
   return "active" as const;
@@ -138,6 +144,10 @@ export async function assertSessionHasCapacity(db: Db, sessionId: string) {
   return session;
 }
 
+/** Sorts a package with no expiry behind every dated one. */
+const expirySortKey = (pkg: { expiryDate: string | null }) =>
+  pkg.expiryDate ?? "9999-12-31";
+
 /** The customer's package to burn a credit against, or null for a trial. */
 export async function activePackageFor(db: Db, customerId: string) {
   const rows = await db
@@ -149,7 +159,8 @@ export async function activePackageFor(db: Db, customerId: string) {
   return (
     rows
       .filter((pkg) => packageStatus(pkg, today) === "active")
-      .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate))[0] ?? null
+      .sort((a, b) => expirySortKey(a).localeCompare(expirySortKey(b)))[0] ??
+    null
   );
 }
 
@@ -188,7 +199,7 @@ export async function setAttendance(
   if (status === "attended" && pkg) {
     if (packageStatus(pkg) === "expired") {
       throw new BusinessRuleError(
-        pkg.expiryDate < toDateInputValue(new Date())
+        pkg.expiryDate !== null && pkg.expiryDate < toDateInputValue(new Date())
           ? `Package expired on ${pkg.expiryDate}. Sell a renewal first.`
           : "No credits left on this package. Sell a renewal first.",
       );
@@ -305,8 +316,9 @@ export type InvoiceLine = {
   package?: {
     type: (typeof customerPackages.$inferInsert)["type"];
     totalCredits?: number;
-    validFrom: string;
-    validUntil: string;
+    /** Both omitted when the dates are not settled yet — filled in later. */
+    validFrom?: string;
+    validUntil?: string;
   };
 };
 
@@ -374,8 +386,8 @@ export async function writeInvoiceLines(
       const values = {
         customerId: invoice.customerId,
         type: line.package.type,
-        startDate: line.package.validFrom,
-        expiryDate: line.package.validUntil,
+        startDate: line.package.validFrom ?? null,
+        expiryDate: line.package.validUntil ?? null,
         totalCredits,
         amountPaidCents: invoice.paid ? line.amountCents : 0,
         paymentMethod: invoice.paymentMethod ?? null,

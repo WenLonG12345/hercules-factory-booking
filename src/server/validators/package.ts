@@ -40,8 +40,9 @@ export const packageInput = z
     customerId: z.uuid(),
     planId: z.uuid().optional(),
     type: packageTypeSchema,
-    startDate: dateString,
-    expiryDate: dateString,
+    /** Both left off when the window is not agreed yet — set them later. */
+    startDate: dateString.optional(),
+    expiryDate: dateString.optional(),
     totalCredits: z.coerce.number().int().min(1).max(500).optional(),
     amountPaidCents: z.coerce.number().int().min(0),
     paymentMethod: paymentMethodSchema,
@@ -52,7 +53,7 @@ export const packageInput = z
     discountCents: z.coerce.number().int().min(0).default(0),
     markInvoicePaid: z.boolean().default(true),
   })
-  .refine((v) => v.expiryDate >= v.startDate, {
+  .refine((v) => !v.startDate || !v.expiryDate || v.expiryDate >= v.startDate, {
     message: "Expiry date cannot be before the start date.",
     path: ["expiryDate"],
   })
@@ -63,8 +64,8 @@ export const packageInput = z
 
 export const updatePackageInput = z.object({
   id: z.uuid(),
-  startDate: dateString,
-  expiryDate: dateString,
+  startDate: dateString.optional(),
+  expiryDate: dateString.optional(),
   totalCredits: z.coerce.number().int().min(1).max(500).optional(),
   usedCredits: z.coerce.number().int().min(0),
   amountPaidCents: z.coerce.number().int().min(0),

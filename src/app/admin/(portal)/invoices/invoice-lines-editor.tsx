@@ -1,7 +1,15 @@
 "use client";
 
 import { Plus, X } from "lucide-react";
-import { Field, Input, Select } from "@/components/ui/form";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Field, Input } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PACKAGE_TYPES, type PackageType } from "@/db/schema";
 import { formatCurrency } from "@/lib/utils";
 import type { InvoiceItemInput } from "@/server/validators/invoice";
@@ -26,9 +34,10 @@ export type LineDraft = {
   description: string;
   amount: string;
   credits: string;
+  /** Empty means the start date is not settled yet — it reads TBC. */
   validFrom: string;
-  /** Empty means "whatever the type works out to from the start date". */
-  expiryOverride: string;
+  /** Empty means no end date — it reads TBC and expiry never closes it. */
+  validUntil: string;
   /** Credits already burned on the package this line sold, if any. */
   usedCredits?: number;
 };
@@ -40,11 +49,8 @@ export const newLine = (kind: LineKind = "credit"): LineDraft => ({
   amount: "",
   credits: "10",
   validFrom: today(),
-  expiryOverride: "",
+  validUntil: defaultExpiry(today(), kind),
 });
-
-export const lineValidUntil = (line: LineDraft) =>
-  line.expiryOverride || defaultExpiry(line.validFrom, line.kind);
 
 export const lineAmountCents = (line: LineDraft) => ringgitToCents(line.amount);
 
@@ -59,7 +65,7 @@ export function linesBlocker(lines: LineDraft[]) {
     if (line.kind !== "other") {
       if (line.kind !== "unlimited" && !(Number(line.credits) >= 1))
         return `Line ${n} needs at least 1 credit.`;
-      if (lineValidUntil(line) < line.validFrom)
+      if (line.validFrom && line.validUntil && line.validUntil < line.validFrom)
         return `Line ${n} ends before it starts. Check the dates.`;
     }
   }
@@ -79,8 +85,8 @@ export const lineToInput = (line: LineDraft): InvoiceItemInput => ({
           type: line.kind,
           totalCredits:
             line.kind === "unlimited" ? undefined : Number(line.credits),
-          validFrom: line.validFrom,
-          validUntil: lineValidUntil(line),
+          validFrom: line.validFrom || undefined,
+          validUntil: line.validUntil || undefined,
         },
 });
 
@@ -94,8 +100,8 @@ export const linesFromItems = (
       type: PackageType;
       totalCredits: number | null;
       usedCredits: number;
-      startDate: string;
-      expiryDate: string;
+      startDate: string | null;
+      expiryDate: string | null;
     } | null;
   }[],
 ): LineDraft[] =>
@@ -106,8 +112,8 @@ export const linesFromItems = (
     description: item.description,
     amount: centsToRinggit(item.amountCents),
     credits: String(item.package?.totalCredits ?? 10),
-    validFrom: item.package?.startDate ?? today(),
-    expiryOverride: item.package?.expiryDate ?? "",
+    validFrom: item.package?.startDate ?? "",
+    validUntil: item.package?.expiryDate ?? "",
     usedCredits: item.package?.usedCredits,
   }));
 
@@ -128,6 +134,22 @@ export function InvoiceLinesEditor({
     onChange(
       lines.map((line) => (line.key === key ? { ...line, ...values } : line)),
     );
+
+  /**
+   * Moving the start date or the type re-derives the expiry off the new
+   * values — but only while both ends are still filled in. A blank date is the
+   * admin saying it is not settled yet, and that survives the edit.
+   */
+  const patchWindow = (line: LineDraft, values: Partial<LineDraft>) => {
+    const next = { ...line, ...values };
+    patch(line.key, {
+      ...values,
+      validUntil:
+        line.validUntil && next.validFrom
+          ? defaultExpiry(next.validFrom, next.kind)
+          : line.validUntil,
+    });
+  };
 
   return (
     <div className="grid gap-3">
@@ -157,17 +179,22 @@ export function InvoiceLinesEditor({
           <div className="grid gap-4 sm:grid-cols-[11rem_minmax(0,1fr)_8rem]">
             <Field label="Type">
               <Select
-                onChange={(e) =>
-                  patch(line.key, { kind: e.target.value as LineKind })
+                onValueChange={(kind) =>
+                  patchWindow(line, { kind: kind as LineKind })
                 }
                 value={line.kind}
               >
-                {PACKAGE_TYPES.map((value) => (
-                  <option key={value} value={value}>
-                    {PACKAGE_TYPE_LABEL[value]}
-                  </option>
-                ))}
-                <option value="other">Other</option>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PACKAGE_TYPES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {PACKAGE_TYPE_LABEL[value]}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
               </Select>
             </Field>
             <Field label="Description">
@@ -215,23 +242,30 @@ export function InvoiceLinesEditor({
                 </Field>
               )}
               <Field label="Starts on">
-                <Input
-                  onChange={(e) =>
-                    patch(line.key, { validFrom: e.target.value })
+                <DatePicker
+                  clearable
+                  onValueChange={(validFrom) =>
+                    patchWindow(line, { validFrom })
                   }
-                  type="date"
+                  placeholder="TBC"
                   value={line.validFrom}
                 />
               </Field>
               <Field label="Ends on">
-                <Input
-                  onChange={(e) =>
-                    patch(line.key, { expiryOverride: e.target.value })
+                <DatePicker
+                  clearable
+                  onValueChange={(validUntil) =>
+                    patch(line.key, { validUntil })
                   }
-                  type="date"
-                  value={lineValidUntil(line)}
+                  placeholder="TBC"
+                  value={line.validUntil}
                 />
               </Field>
+              <p className="text-xs text-stone-500 sm:col-span-3">
+                {line.validFrom && line.validUntil
+                  ? "Clear either date (×) to leave it TBC — you can set it on the invoice later."
+                  : "TBC on the invoice. Credits still work; with no end date, expiry never blocks check-in."}
+              </p>
             </div>
           )}
         </div>

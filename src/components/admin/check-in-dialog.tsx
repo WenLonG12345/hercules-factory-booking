@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { SESSION_TYPE_LABEL, today } from "@/app/admin/(portal)/admin-format";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, Input } from "@/components/ui/form";
+import { Field } from "@/components/ui/form";
 import { api } from "@/lib/trpc";
 
 /**
@@ -104,11 +105,7 @@ export function CheckInDialog({
           </DialogDescription>
         </DialogHeader>
         <Field label="Date">
-          <Input
-            onChange={(e) => setDate(e.target.value)}
-            type="date"
-            value={date}
-          />
+          <DatePicker onValueChange={setDate} value={date} />
         </Field>
         {isLoading ? (
           <div className="h-24 animate-pulse rounded-md bg-stone-200" />

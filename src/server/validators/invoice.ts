@@ -8,16 +8,17 @@ import {
 
 /**
  * A package sold on one line. The window is the package window; credits are
- * required for every type but unlimited.
+ * required for every type but unlimited. Both dates are optional — the invoice
+ * can be raised before the window is agreed and the dates filled in later.
  */
 const itemPackage = z
   .object({
     type: packageTypeSchema,
     totalCredits: z.coerce.number().int().min(1).max(500).optional(),
-    validFrom: dateString,
-    validUntil: dateString,
+    validFrom: dateString.optional(),
+    validUntil: dateString.optional(),
   })
-  .refine((v) => v.validUntil >= v.validFrom, {
+  .refine((v) => !v.validFrom || !v.validUntil || v.validUntil >= v.validFrom, {
     message: "Expiry date cannot be before the start date.",
     path: ["validUntil"],
   })

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Field, Input, Textarea } from "@/components/ui/form";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/db/schema";
 import { api } from "@/lib/trpc";
@@ -23,7 +24,6 @@ import {
   linesBlocker,
   linesSubtotalCents,
   lineToInput,
-  lineValidUntil,
   newLine,
 } from "../invoice-lines-editor";
 import { InvoiceDraftPreview } from "./invoice-draft-preview";
@@ -266,11 +266,7 @@ export default function NewInvoicePage() {
           <Step done={paidDateDone} index={3} title="Dates">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Invoice date">
-                <Input
-                  onChange={(e) => setIssueDate(e.target.value)}
-                  type="date"
-                  value={issueDate}
-                />
+                <DatePicker onValueChange={setIssueDate} value={issueDate} />
               </Field>
               {payment === "unpaid" ? (
                 <p className="self-end pb-3 text-sm text-stone-500">
@@ -278,11 +274,7 @@ export default function NewInvoicePage() {
                 </p>
               ) : (
                 <Field label="Date paid">
-                  <Input
-                    onChange={(e) => setPaidDate(e.target.value)}
-                    type="date"
-                    value={paidDate}
-                  />
+                  <DatePicker onValueChange={setPaidDate} value={paidDate} />
                 </Field>
               )}
             </div>
@@ -343,9 +335,13 @@ export default function NewInvoicePage() {
               items: lines.map((line) => ({
                 description: line.description,
                 amountCents: lineAmountCents(line),
-                validFrom: line.kind === "other" ? undefined : line.validFrom,
-                validUntil:
-                  line.kind === "other" ? undefined : lineValidUntil(line),
+                window:
+                  line.kind === "other"
+                    ? undefined
+                    : {
+                        from: line.validFrom || null,
+                        until: line.validUntil || null,
+                      },
               })),
               discountCents,
               issueDate,

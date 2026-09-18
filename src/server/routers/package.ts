@@ -6,6 +6,7 @@ import {
   packagePlans,
   sessionAttendees,
 } from "@/db/schema";
+import { toDateInputValue } from "@/lib/utils";
 import {
   bookInvoiceIncome,
   nextInvoiceNumber,
@@ -46,10 +47,14 @@ export const packageRouter = createTRPCRouter({
         ...values
       } = input;
 
+      const today = toDateInputValue(new Date());
+
       const [pkg] = await ctx.db
         .insert(customerPackages)
         .values({
           ...values,
+          startDate: values.startDate ?? null,
+          expiryDate: values.expiryDate ?? null,
           totalCredits:
             values.type === "unlimited" ? null : values.totalCredits,
           convertedFromSessionId: convertedFromSessionId ?? null,
@@ -86,8 +91,9 @@ export const packageRouter = createTRPCRouter({
             totalCents: input.amountPaidCents,
             status: markInvoicePaid ? "paid" : "pending",
             paymentMethod: markInvoicePaid ? input.paymentMethod : null,
-            issueDate: input.startDate,
-            paidDate: markInvoicePaid ? input.startDate : null,
+            // The invoice is dated even when the package window is not.
+            issueDate: input.startDate ?? today,
+            paidDate: markInvoicePaid ? (input.startDate ?? today) : null,
           })
           .returning();
         await ctx.db.insert(invoiceItems).values({
@@ -108,11 +114,20 @@ export const packageRouter = createTRPCRouter({
     .input(updatePackageInput)
     .mutation(({ ctx, input }) => {
       const { id, ...values } = input;
-      return ctx.db
-        .update(customerPackages)
-        .set({ ...values, updatedAt: new Date() })
-        .where(eq(customerPackages.id, id))
-        .returning();
+      return (
+        ctx.db
+          .update(customerPackages)
+          // `?? null` so clearing a date writes NULL instead of being
+          // dropped from the SET clause as an undefined.
+          .set({
+            ...values,
+            startDate: values.startDate ?? null,
+            expiryDate: values.expiryDate ?? null,
+            updatedAt: new Date(),
+          })
+          .where(eq(customerPackages.id, id))
+          .returning()
+      );
     }),
   delete: adminProcedure
     .input(idSchema)

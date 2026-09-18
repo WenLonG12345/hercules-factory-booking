@@ -72,15 +72,18 @@ export function remaining(pkg: {
 export function packageStatus(pkg: {
   totalCredits: number | null;
   usedCredits: number;
-  expiryDate: string;
+  /** Null: no end date was agreed, so only the credit count can run it out. */
+  expiryDate: string | null;
 }) {
   const left = remaining(pkg);
-  if (pkg.expiryDate < today()) return "expired" as const;
+  if (pkg.expiryDate !== null && pkg.expiryDate < today())
+    return "expired" as const;
   if (left !== null && left <= 0) return "expired" as const;
   if (left !== null && left <= 2) return "expiring" as const;
   const inTwoWeeks = new Date();
   inTwoWeeks.setDate(inTwoWeeks.getDate() + 14);
-  if (pkg.expiryDate <= isoDate(inTwoWeeks)) return "expiring" as const;
+  if (pkg.expiryDate !== null && pkg.expiryDate <= isoDate(inTwoWeeks))
+    return "expiring" as const;
   return "active" as const;
 }
 

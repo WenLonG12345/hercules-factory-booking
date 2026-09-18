@@ -1,7 +1,17 @@
 "use client";
 
 import { today } from "@/app/admin/(portal)/admin-format";
-import { Field, Input, Select } from "@/components/ui/form";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Field, Input } from "@/components/ui/form";
+import {
+  readSelect,
+  SELECT_NONE,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { api } from "@/lib/trpc";
 
 /**
@@ -16,7 +26,7 @@ export function TrialFields() {
     <>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Trial date">
-          <Input defaultValue={today()} name="trialDate" required type="date" />
+          <DatePicker defaultValue={today()} name="trialDate" />
         </Field>
         <Field label="Start">
           <Input defaultValue="19:00" name="trialStart" required type="time" />
@@ -26,13 +36,18 @@ export function TrialFields() {
         </Field>
       </div>
       <Field label="Coach">
-        <Select defaultValue="" name="trialCoachId">
-          <option value="">Not assigned</option>
-          {coaches.map((coach) => (
-            <option key={coach.id} value={coach.id}>
-              {coach.name}
-            </option>
-          ))}
+        <Select defaultValue={SELECT_NONE} name="trialCoachId">
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={SELECT_NONE}>Not assigned</SelectItem>
+            {coaches.map((coach) => (
+              <SelectItem key={coach.id} value={coach.id}>
+                {coach.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </Field>
     </>
@@ -45,7 +60,7 @@ export function readTrialFields(fd: FormData) {
     date: String(fd.get("trialDate")),
     startTime: String(fd.get("trialStart")),
     endTime: String(fd.get("trialEnd")),
-    coachId: String(fd.get("trialCoachId") ?? "") || undefined,
+    coachId: readSelect(fd.get("trialCoachId")),
     notes: String(fd.get("trialNotes") ?? "") || undefined,
   };
 }

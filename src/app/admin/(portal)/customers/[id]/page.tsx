@@ -30,8 +30,14 @@ const packageColumns = pkg.columns([
     header: "Type",
     cell: ({ row }) => PACKAGE_TYPE_LABEL[row.original.type],
   }),
-  pkg.accessor("startDate", { header: "Start" }),
-  pkg.accessor("expiryDate", { header: "Expiry" }),
+  pkg.accessor("startDate", {
+    header: "Start",
+    cell: ({ getValue }) => getValue() ?? "TBC",
+  }),
+  pkg.accessor("expiryDate", {
+    header: "Expiry",
+    cell: ({ getValue }) => getValue() ?? "TBC",
+  }),
   pkg.display({
     id: "credits",
     header: "Credits",
@@ -128,7 +134,12 @@ export default function CustomerProfilePage({
   // the same pick `activePackageFor` makes server-side.
   const active = packages
     .filter((row) => packageStatus(row) !== "expired")
-    .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate))[0];
+    // A package with no expiry sorts last, the way `activePackageFor` does.
+    .sort((a, b) =>
+      (a.expiryDate ?? "9999-12-31").localeCompare(
+        b.expiryDate ?? "9999-12-31",
+      ),
+    )[0];
   const invalidate = () => {
     utils.customer.profile.invalidate({ id });
     utils.package.list.invalidate();

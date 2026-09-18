@@ -56,6 +56,16 @@ async function main() {
     "expired",
     "past expiry means expired",
   );
+  assert.equal(
+    packageStatus({ totalCredits: 10, usedCredits: 1, expiryDate: null }),
+    "active",
+    "no expiry date means expiry never runs the package out",
+  );
+  assert.equal(
+    packageStatus({ totalCredits: 10, usedCredits: 10, expiryDate: null }),
+    "expired",
+    "credits still run out on a package with no expiry",
+  );
 
   // --- recurring sessions -----------------------------------------------------
   // 2026-08-03 is a Monday.
@@ -178,6 +188,25 @@ async function main() {
     "an expired package cannot be checked in",
   );
   assert.equal(await usedCredits(), 0, "a refused check-in burns nothing");
+
+  // --- a package whose window is still TBC checks in --------------------------
+  // The invoice is raised before the dates are agreed, so both ends are null.
+  await db
+    .update(schema.customerPackages)
+    .set({ startDate: null, expiryDate: null })
+    .where(eq(schema.customerPackages.id, pkg.id));
+
+  await setAttendance(anyDb, attendee.id, "attended");
+  assert.equal(
+    await usedCredits(),
+    1,
+    "a package with no dates set still checks in and burns its credit",
+  );
+  await setAttendance(anyDb, attendee.id, "booked");
+  await db
+    .update(schema.customerPackages)
+    .set({ startDate: today, expiryDate: future })
+    .where(eq(schema.customerPackages.id, pkg.id));
 
   // --- invoice numbering ------------------------------------------------------
   const year = new Date().getFullYear();

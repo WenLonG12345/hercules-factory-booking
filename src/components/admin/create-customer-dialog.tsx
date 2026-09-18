@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { SOURCE_LABEL, today } from "@/app/admin/(portal)/admin-format";
 import { readTrialFields, TrialFields } from "@/components/admin/trial-fields";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/components/ui/form";
+import { Field, Input, Textarea } from "@/components/ui/form";
+import {
+  readSelect,
+  SELECT_NONE,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CUSTOMER_SOURCES, GENDERS } from "@/db/schema";
 import { api } from "@/lib/trpc";
 
@@ -66,16 +76,15 @@ export function CreateCustomerDialog({
               phone: String(fd.get("phone") ?? "") || undefined,
               ic: String(fd.get("ic") ?? "") || undefined,
               age: age ? Number(age) : undefined,
-              gender:
-                (String(fd.get("gender")) as (typeof GENDERS)[number] | "") ||
-                undefined,
+              gender: readSelect(fd.get("gender")) as
+                | (typeof GENDERS)[number]
+                | undefined,
               emergencyContact:
                 String(fd.get("emergencyContact") ?? "") || undefined,
               dateJoined: String(fd.get("dateJoined")),
-              source:
-                (String(fd.get("source")) as
-                  | (typeof CUSTOMER_SOURCES)[number]
-                  | "") || undefined,
+              source: readSelect(fd.get("source")) as
+                | (typeof CUSTOMER_SOURCES)[number]
+                | undefined,
               notes: String(fd.get("notes") ?? "") || undefined,
               trial: withTrial ? readTrialFields(fd) : undefined,
             });
@@ -97,36 +106,41 @@ export function CreateCustomerDialog({
               <Input max={100} min={3} name="age" type="number" />
             </Field>
             <Field label="Gender">
-              <Select defaultValue="" name="gender">
-                <option value="">Not set</option>
-                {GENDERS.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
+              <Select defaultValue={SELECT_NONE} name="gender">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SELECT_NONE}>Not set</SelectItem>
+                  {GENDERS.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Date joined">
-              <Input
-                defaultValue={today()}
-                name="dateJoined"
-                required
-                type="date"
-              />
+              <DatePicker defaultValue={today()} name="dateJoined" />
             </Field>
             <Field label="Emergency contact">
               <Input name="emergencyContact" />
             </Field>
             <Field label="Source">
-              <Select defaultValue="" name="source">
-                <option value="">Not set</option>
-                {CUSTOMER_SOURCES.map((value) => (
-                  <option key={value} value={value}>
-                    {SOURCE_LABEL[value]}
-                  </option>
-                ))}
+              <Select defaultValue={SELECT_NONE} name="source">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SELECT_NONE}>Not set</SelectItem>
+                  {CUSTOMER_SOURCES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {SOURCE_LABEL[value]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
           </div>

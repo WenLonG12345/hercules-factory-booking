@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@/db";
 import {
@@ -82,7 +82,8 @@ export const reportRouter = createTRPCRouter({
             where ${customers.dateJoined} between ${from} and ${to}) as "monthNewCustomers",
           (select count(*) from ${customers}) as "totalCustomers",
           (select count(*) from ${customerPackages}
-            where ${customerPackages.expiryDate} >= ${today}
+            where (${customerPackages.expiryDate} is null
+                or ${customerPackages.expiryDate} >= ${today})
               and (${customerPackages.totalCredits} is null
                 or ${customerPackages.usedCredits} < ${customerPackages.totalCredits})) as "activePackages",
           (select count(*) from ${coaches}
@@ -104,9 +105,14 @@ export const reportRouter = createTRPCRouter({
               and ${ledgerEntries.date} between ${from} and ${to}) as "monthExpenseCents"
       `),
       ctx.db.query.customerPackages.findMany({
-        where: and(
-          gte(customerPackages.expiryDate, today),
-          lte(customerPackages.expiryDate, soon),
+        // A package with no expiry still belongs here when its credits are
+        // nearly gone, so pull those rows in and let the filter below decide.
+        where: or(
+          isNull(customerPackages.expiryDate),
+          and(
+            gte(customerPackages.expiryDate, today),
+            lte(customerPackages.expiryDate, soon),
+          ),
         ),
         with: { customer: true },
         orderBy: asc(customerPackages.expiryDate),
@@ -147,7 +153,7 @@ export const reportRouter = createTRPCRouter({
         (pkg) =>
           pkg.totalCredits === null ||
           pkg.totalCredits - pkg.usedCredits <= 2 ||
-          pkg.expiryDate <= soon,
+          (pkg.expiryDate !== null && pkg.expiryDate <= soon),
       ),
       unpaid,
       unpaidTotalCents: unpaid.reduce((sum, inv) => sum + inv.totalCents, 0),

@@ -32,7 +32,8 @@ const lineColumns = [
         </p>
         {row.original.package ? (
           <p className="text-xs text-stone-500">
-            {row.original.package.startDate} → {row.original.package.expiryDate}
+            {row.original.package.startDate ?? "TBC"} →{" "}
+            {row.original.package.expiryDate ?? "TBC"}
           </p>
         ) : null}
       </div>
@@ -281,7 +282,7 @@ export default function InvoicePage({
                       <Row label="Type" value={PACKAGE_TYPE_LABEL[pkg.type]} />
                       <Row
                         label="Runs"
-                        value={`${pkg.startDate} → ${pkg.expiryDate}`}
+                        value={`${pkg.startDate ?? "TBC"} → ${pkg.expiryDate ?? "TBC"}`}
                       />
                       <Row
                         label="Credits"

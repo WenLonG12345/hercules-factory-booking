@@ -220,8 +220,12 @@ export const customerPackages = sqliteTable(
       onDelete: "set null",
     }),
     type: text("type", { enum: PACKAGE_TYPES }).notNull(),
-    startDate: text("start_date").notNull(),
-    expiryDate: text("expiry_date").notNull(),
+    // Both null when the dates are not settled yet — the invoice is raised
+    // first and the window filled in later. No rule reads the start date;
+    // a null expiry means expiry never closes the package, so only the credit
+    // count can run it out.
+    startDate: text("start_date"),
+    expiryDate: text("expiry_date"),
     // null only for unlimited packages
     totalCredits: integer("total_credits"),
     usedCredits: integer("used_credits").default(0).notNull(),
