@@ -35,14 +35,17 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 gap-5 overflow-y-auto rounded-lg border border-stone-200 bg-white p-6 text-stone-950 shadow-2xl outline-none sm:p-7",
+          // Phones get a bottom sheet (full width, thumb reach); sm+ gets the centred card.
+          "fixed z-50 grid gap-5 overflow-y-auto border border-stone-200 bg-white p-6 text-stone-950 shadow-2xl outline-none",
+          "max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[90dvh] max-sm:rounded-t-xl",
+          "sm:left-1/2 sm:top-1/2 sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%-2rem)] sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:p-7",
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-1 text-stone-500 transition hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700">
-          <X className="size-4" />
+        <DialogPrimitive.Close className="absolute right-3 top-3 grid size-10 place-items-center rounded-md text-stone-500 transition hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700">
+          <X className="size-5" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>

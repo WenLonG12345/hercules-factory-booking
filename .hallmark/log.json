@@ -1,77 +1,88 @@
 [
   {
+    "date": "2026-09-20",
+    "scope": "app",
+    "macrostructure": "Day Sheet (Stat-Led, app family) \u2014 dashboard; rail/sidebar/drawer shell",
+    "theme": "admin system (preserved: stone ground, white cards, red-700 primary, Archivo + Inter Tight)",
+    "theme_axes": "light / grotesk-sans / warm-red",
+    "enrichment": "none \u2014 app surface",
+    "nav": "icon rail (md) / full sidebar (lg) / Sheet drawer (<md); sign-out lives in the nav",
+    "footer": "n/a",
+    "brief": "Tablet-first redesign of the admin portal for an Android tablet (800\u00d71280). Dashboard: date eyebrow, two money cards (today / month: income big, spent + net), 2x2 \u2192 4-across tiles, then 'Needs action' (unpaid + expiring as 56px tappable rows) beside 'Upcoming trials'. Shell: <details> menu replaced by shadcn Sheet; portrait tablet gets an icon rail instead of the phone layout. Primitives: Button size=sm (40px) for row actions, dialogs become bottom sheets under sm, table floor 640px, icon buttons size-10. Rules recorded in CLAUDE.md \u00a7 Tablet-First Admin (no design.md \u2014 one source of truth). Pre-emit critique: P4 H5 E4 S4 R5 V4."
+  },
+  {
     "date": "2026-09-12",
-    "macrostructure": "component-scope — homepage reviews section",
-    "theme": "Sport (locked brand system — not rotated)",
+    "macrostructure": "component-scope \u2014 homepage reviews section",
+    "theme": "Sport (locked brand system \u2014 not rotated)",
     "theme_axes": "light / display-condensed / warm-red",
-    "enrichment": "none — FcGoogle brand mark on the rating plate",
+    "enrichment": "none \u2014 FcGoogle brand mark on the rating plate",
     "nav": "n/a (component-scope)",
     "footer": "n/a (component-scope)",
-    "brief": "Reviews: 3-col rounded cards with initial-disc avatars + hover lift -> rating plate (T4 stat: live Google rating as --text-price display figure, stars, 'From N Google reviews', read-all link; sticky on md+) beside a ruled ledger of the five newest reviews (stars + relative date on one baseline, quote at --text-lead, author linked to their Google profile). Data: src/lib/google-reviews.ts reads Places API (New) — rating, userRatingCount, five newest reviews, per locale, fetch-cached a day; CMS testimonials rows remain the fallback when no key. Google caps the review list at five, so the count on the plate is the only live total. Pre-emit critique: P4 H5 E4 S5 R5 V4."
+    "brief": "Reviews: 3-col rounded cards with initial-disc avatars + hover lift -> rating plate (T4 stat: live Google rating as --text-price display figure, stars, 'From N Google reviews', read-all link; sticky on md+) beside a ruled ledger of the five newest reviews (stars + relative date on one baseline, quote at --text-lead, author linked to their Google profile). Data: src/lib/google-reviews.ts reads Places API (New) \u2014 rating, userRatingCount, five newest reviews, per locale, fetch-cached a day; CMS testimonials rows remain the fallback when no key. Google caps the review list at five, so the count on the plate is the only live total. Pre-emit critique: P4 H5 E4 S5 R5 V4."
   },
   {
     "date": "2026-09-11",
     "macrostructure": "Workbench (route-scoped: /admin/invoices/new)",
     "theme": "admin system (preserved: stone ground, white cards, red-700 primary)",
     "theme_axes": "light / grotesk-sans / warm-red",
-    "enrichment": "none — app surface, function carries the page",
-    "nav": "n/a — AdminShell owns the app nav",
+    "enrichment": "none \u2014 app surface, function carries the page",
+    "nav": "n/a \u2014 AdminShell owns the app nav",
     "footer": "n/a",
     "brief": "Create invoice moved out of the Invoices-list dialog onto its own route, at the admin's request. Workbench: left column is a four-rung ledger (customer -> what they are paying for -> payment method -> paid date), each rung ticked once answered; right column is a sticky invoice sheet drawn from the draft (masthead, bill-to, amount-as-hero, line item, totals, rotated PAID stamp) with the Create button under it. On phones the sheet stacks below the rungs, so her read-then-create order holds at every width. Rejected a 5-screen wizard: she issues many invoices and a wizard hides the preview until the end. Server side, create now opens the customer account from a typed name and, given a payment method, issues the invoice paid and books its ledger row in the same call."
   },
   {
     "date": "2026-09-08",
-    "macrostructure": "component-scope — homepage gallery grid",
-    "theme": "Sport (locked brand system — not rotated)",
+    "macrostructure": "component-scope \u2014 homepage gallery grid",
+    "theme": "Sport (locked brand system \u2014 not rotated)",
     "theme_axes": "light / display-condensed / warm-red",
-    "enrichment": "none — the gym's own photographs",
+    "enrichment": "none \u2014 the gym's own photographs",
     "nav": "n/a (component-scope)",
     "footer": "n/a (component-scope)",
-    "brief": "Gallery rows were ragged: auto-fit columns with the tile aspect ratio chosen by index (4/5 on every third, square otherwise), so each row was as tall as whichever ratio landed in it. Regridded to uniform square cells on a fixed 2/3/4-column dense grid, with the rhythm carried by one deliberate 2x2 feature tile (first photo, sm: and up only — on a two-column phone grid a 2x2 spans the full width and its rows have no single-unit sibling to size them). next/image sizes split for the feature vs the rest; Instagram card padding and mark step down at one square unit on phones. No new CSS."
+    "brief": "Gallery rows were ragged: auto-fit columns with the tile aspect ratio chosen by index (4/5 on every third, square otherwise), so each row was as tall as whichever ratio landed in it. Regridded to uniform square cells on a fixed 2/3/4-column dense grid, with the rhythm carried by one deliberate 2x2 feature tile (first photo, sm: and up only \u2014 on a two-column phone grid a 2x2 spans the full width and its rows have no single-unit sibling to size them). next/image sizes split for the feature vs the rest; Instagram card padding and mark step down at one square unit on phones. No new CSS."
   },
   {
     "date": "2026-09-08",
-    "macrostructure": "component-scope — SiteFab trigger cluster + gallery Instagram tile",
-    "theme": "Sport (locked brand system — not rotated)",
+    "macrostructure": "component-scope \u2014 SiteFab trigger cluster + gallery Instagram tile",
+    "theme": "Sport (locked brand system \u2014 not rotated)",
     "theme_axes": "light / display-condensed / warm-red",
-    "enrichment": "none — WhatsApp and Instagram brand marks (react-icons)",
+    "enrichment": "none \u2014 WhatsApp and Instagram brand marks (react-icons)",
     "nav": "n/a (component-scope)",
     "footer": "n/a (component-scope)",
-    "brief": "WhatsApp was the third item inside a closed speed dial — the gym's only booking path, two taps deep. Pulled out as its own always-visible control — an icon-only green disc, no label; the dial went quiet (paper + ink ring) and gained Instagram as its third action. Per the gym's call the WhatsApp control carries WhatsApp green (--color-whatsapp token). The glyph stays dark ink: with the label removed it is the only thing carrying the control's meaning, and white on this green is ~1.9:1 rather than the site accent, and the two triggers stack vertically with WhatsApp on the bottom rung, nearest the thumb. Also: accent Instagram tile closing the homepage gallery grid (handle derived from the CMS social row), and /llms.txt reading classes + prices live from the CMS."
+    "brief": "WhatsApp was the third item inside a closed speed dial \u2014 the gym's only booking path, two taps deep. Pulled out as its own always-visible control \u2014 an icon-only green disc, no label; the dial went quiet (paper + ink ring) and gained Instagram as its third action. Per the gym's call the WhatsApp control carries WhatsApp green (--color-whatsapp token). The glyph stays dark ink: with the label removed it is the only thing carrying the control's meaning, and white on this green is ~1.9:1 rather than the site accent, and the two triggers stack vertically with WhatsApp on the bottom rung, nearest the thumb. Also: accent Instagram tile closing the homepage gallery grid (handle derived from the CMS social row), and /llms.txt reading classes + prices live from the CMS."
   },
   {
     "date": "2026-09-08",
     "macrostructure": "Split Studio (route-scoped: /[slug] search-landing pages)",
-    "theme": "Sport (locked brand system — not rotated)",
+    "theme": "Sport (locked brand system \u2014 not rotated)",
     "theme_axes": "light / display-condensed / warm-red",
-    "enrichment": "none — proof panels use the gym's own CMS photographs",
+    "enrichment": "none \u2014 proof panels use the gym's own CMS photographs",
     "nav": "N5 floating pill (shared chrome, unchanged)",
     "footer": "Ft5 statement (shared chrome, unchanged) + landing-page link row",
     "brief": "Four SEO landing pages read as a flat h2+paragraph wall -> Split Studio: H2 split-diptych hero (words left, gallery photo right), prose rows alternating against real proof panels (photo / fact table / tick list), one full-measure section per page as the rhythm break, T3 single huge quote from a live CMS review, pricing+FAQ paired in one row, address-vs-map closing diptych. Added .plate / .photo-plate / .fact-row / .tick-list and --text-h1-page to globals.css; LandingPageAside union added to landing-pages.ts. Prose word count rose 725 -> 820, SEO structure unchanged."
   },
   {
     "date": "2026-09-04",
-    "macrostructure": "component-scope — social card (1200×630 opengraph-image)",
-    "theme": "Sport (locked brand system — not rotated)",
+    "macrostructure": "component-scope \u2014 social card (1200\u00d7630 opengraph-image)",
+    "theme": "Sport (locked brand system \u2014 not rotated)",
     "theme_axes": "dark (.on-dark) / display-condensed / warm-red",
     "enrichment": "user-owned crest on a hard-edged plate (accent top slab)",
     "nav": "n/a (component-scope)",
     "footer": "n/a (component-scope)",
-    "brief": "OG image was /logo.png (512² square, wrong for summary_large_image) -> next/og card at src/app/[locale]/opengraph-image.tsx: masthead rule, MUAY THAI / FOR EVERYONE marquee, crest plate, closing band, ring-rope foot; Satori tokens are the sRGB fall of globals.css; SSG per locale via re-exported generateStaticParams"
+    "brief": "OG image was /logo.png (512\u00b2 square, wrong for summary_large_image) -> next/og card at src/app/[locale]/opengraph-image.tsx: masthead rule, MUAY THAI / FOR EVERYONE marquee, crest plate, closing band, ring-rope foot; Satori tokens are the sRGB fall of globals.css; SSG per locale via re-exported generateStaticParams"
   },
   {
     "date": "2026-08-28",
-    "macrostructure": "component-scope — SiteFab speed-dial action",
-    "theme": "Sport (locked brand system — not rotated)",
+    "macrostructure": "component-scope \u2014 SiteFab speed-dial action",
+    "theme": "Sport (locked brand system \u2014 not rotated)",
     "theme_axes": "light / display-condensed / warm-red",
-    "enrichment": "none — FcGoogle brand mark on a paper disc",
+    "enrichment": "none \u2014 FcGoogle brand mark on a paper disc",
     "nav": "n/a (component-scope)",
     "footer": "n/a (component-scope)",
     "brief": "Google review CTA moved out of the reviews section (stray outline pill) into the FAB speed dial as a third action, ranked between Share photo and WhatsApp; the three pills now share one ACTION class with whitespace-nowrap + active:translate-y-0"
   },
   {
     "date": "2026-08-28",
-    "macrostructure": "component-scope — CMS Media tile controls",
+    "macrostructure": "component-scope \u2014 CMS Media tile controls",
     "theme": "admin system (preserved: stone ground, white cards, red-700 primary)",
     "theme_axes": "light / grotesk-sans / warm-red",
     "enrichment": "none",
@@ -82,51 +93,51 @@
   {
     "date": "2026-08-22",
     "macrostructure": "Stat-Led (route-scoped: public /invoice/[id])",
-    "theme": "Sport (locked brand system — not rotated)",
+    "theme": "Sport (locked brand system \u2014 not rotated)",
     "theme_axes": "light / display-condensed / warm-red",
     "enrichment": "none",
-    "nav": "none — standalone document",
+    "nav": "none \u2014 standalone document",
     "footer": "colophon single line (Ft2)",
     "brief": "Public invoice page redesigned as a paper document: ruled masthead, amount-as-hero + rubber stamp, parties grid, line-item ledger, bank terms, print styles"
   },
   {
     "date": "2026-08-17",
-    "macrostructure": "n/a — admin app surface, not a marketing page",
+    "macrostructure": "n/a \u2014 admin app surface, not a marketing page",
     "theme": "admin system (preserved: stone ground, white cards, red-700 primary)",
     "theme_axes": "light / grotesk-sans / warm-red",
     "enrichment": "none",
-    "nav": "tab strip (4 hash-routed workspaces) — shell owns the app nav",
+    "nav": "tab strip (4 hash-routed workspaces) \u2014 shell owns the app nav",
     "footer": "n/a",
     "brief": "Admin CMS page: 11 stacked sections + anchor-chip row -> Site / Offering / Media / Words workspaces, one panel mounted at a time; page.tsx split into four panel files + shared cms-ui"
   },
   {
     "date": "2026-08-15",
-    "macrostructure": "component-scope — Why section marks",
+    "macrostructure": "component-scope \u2014 Why section marks",
     "theme": "Sport",
     "theme_axes": "light / display-condensed / warm-red",
     "enrichment": "Game Icons silhouettes (react-icons/gi), emoji-keyed, accent-filled",
     "nav": "n/a (component-scope)",
     "footer": "n/a (component-scope)",
-    "brief": "Why section: Game Icons marks keyed off the CMS emoji column, then flat ruled rows → hard-edged plate cards (square corners, 2px ink, accent top slab) to stay distinct from the rounded Classes grid"
+    "brief": "Why section: Game Icons marks keyed off the CMS emoji column, then flat ruled rows \u2192 hard-edged plate cards (square corners, 2px ink, accent top slab) to stay distinct from the rounded Classes grid"
   },
   {
     "date": "2026-08-15",
-    "macrostructure": "Marquee Hero (banded) — section-scope redesign",
+    "macrostructure": "Marquee Hero (banded) \u2014 section-scope redesign",
     "theme": "Sport",
     "theme_axes": "light / display-condensed / warm-red",
     "enrichment": "none",
     "nav": "unchanged (N5)",
     "footer": "unchanged (Ft5)",
-    "brief": "Why section: emoji-disc card grid → F-index-rows ruled ordinal ledger; also fixed text-(--text-*) → text-(length:--text-*) page-wide"
+    "brief": "Why section: emoji-disc card grid \u2192 F-index-rows ruled ordinal ledger; also fixed text-(--text-*) \u2192 text-(length:--text-*) page-wide"
   },
   {
     "date": "2026-08-15",
     "macrostructure": "Marquee Hero (banded)",
     "theme": "Sport",
     "theme_axes": "light / display-condensed / warm-red",
-    "enrichment": "none — user-owned hero photograph",
+    "enrichment": "none \u2014 user-owned hero photograph",
     "nav": "N5 floating pill (dark, persistent)",
     "footer": "Ft5 statement (statement moved into the closing CTA band)",
-    "brief": "Hercules Factory · Muay Thai gym landing — lift off the all-dark theme, keep hero photo, enlarge CTA type"
+    "brief": "Hercules Factory \u00b7 Muay Thai gym landing \u2014 lift off the all-dark theme, keep hero photo, enlarge CTA type"
   }
 ]

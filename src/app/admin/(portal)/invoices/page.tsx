@@ -23,7 +23,11 @@ import {
 } from "@/components/ui/select";
 import { api } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
-import { type Invoice, InvoiceActions } from "./invoice-actions";
+import {
+  EditCustomerDialog,
+  type Invoice,
+  InvoiceActions,
+} from "./invoice-actions";
 
 const helper = columnHelper<Invoice>();
 
@@ -96,12 +100,18 @@ export default function InvoicesPage() {
       cell: ({ row }) =>
         row.original.customer ? (
           <>
-            <Link
-              className="font-semibold"
-              href={`/admin/customers/${row.original.customer.id}`}
-            >
-              {row.original.customer.name}
-            </Link>
+            <span className="inline-flex items-center gap-1.5">
+              <Link
+                className="font-semibold"
+                href={`/admin/customers/${row.original.customer.id}`}
+              >
+                {row.original.customer.name}
+              </Link>
+              <EditCustomerDialog
+                customer={row.original.customer}
+                onSuccess={invalidate}
+              />
+            </span>
             <p className="mt-0.5 text-xs text-stone-500">
               {row.original.customer.phone ?? "—"}
             </p>
@@ -113,10 +123,6 @@ export default function InvoicesPage() {
     helper.accessor("issueDate", { header: "Issued" }),
     helper.accessor("subtotalCents", {
       header: "Subtotal",
-      cell: (info) => formatCurrency(info.getValue()),
-    }),
-    helper.accessor("discountCents", {
-      header: "Discount",
       cell: (info) => formatCurrency(info.getValue()),
     }),
     helper.accessor("totalCents", {

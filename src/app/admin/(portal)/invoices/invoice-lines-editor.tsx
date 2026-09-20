@@ -165,7 +165,7 @@ export function InvoiceLinesEditor({
             {lines.length > 1 ? (
               <button
                 aria-label={`Remove line ${index + 1}`}
-                className="grid size-8 place-items-center rounded-md text-stone-500 transition hover:bg-stone-200 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+                className="grid size-10 place-items-center rounded-md text-stone-500 transition hover:bg-stone-200 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
                 onClick={() =>
                   onChange(lines.filter((item) => item.key !== line.key))
                 }

@@ -1,8 +1,15 @@
 "use client";
 
-import { FileText, LayoutDashboard, Wallet, WalletCards } from "lucide-react";
+import {
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  Wallet,
+  WalletCards,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSignOut } from "@/components/admin/use-sign-out";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -19,13 +26,35 @@ type NavItem = {
   exact?: boolean;
 };
 
+/**
+ * `rail` is the sidebar: icon-only on a portrait tablet (md), labels from lg,
+ * and `collapsed` forces icon-only at lg too. The phone drawer passes neither
+ * and always shows labels. Every item clears the 44px touch floor.
+ */
+type Mode = { rail?: boolean; collapsed?: boolean };
+
+export const navItemClass = ({ rail, collapsed }: Mode, active = false) =>
+  cn(
+    "flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
+    rail &&
+      (collapsed
+        ? "justify-center px-0"
+        : "justify-center px-0 lg:justify-start lg:px-3"),
+    active
+      ? "bg-white/15 text-white"
+      : "text-stone-300 hover:bg-white/10 hover:text-white",
+  );
+
+export const navLabelClass = ({ rail, collapsed }: Mode) =>
+  rail ? (collapsed ? "hidden" : "hidden lg:inline") : undefined;
+
 function NavLink({
   item,
-  collapsed,
+  mode,
   pathname,
 }: {
   item: NavItem;
-  collapsed: boolean;
+  mode: Mode;
   pathname: string;
 }) {
   const active = item.exact
@@ -34,31 +63,36 @@ function NavLink({
 
   return (
     <Link
-      className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition",
-        collapsed && "justify-center px-0",
-        active
-          ? "bg-white/15 text-white"
-          : "text-stone-300 hover:bg-white/10 hover:text-white",
-      )}
+      aria-current={active ? "page" : undefined}
+      className={navItemClass(mode, active)}
       href={item.href}
-      title={collapsed ? item.label : undefined}
+      title={mode.rail ? item.label : undefined}
     >
-      <item.icon className="size-4 shrink-0" />
-      {collapsed ? null : item.label}
+      <item.icon className="size-5 shrink-0" />
+      <span className={navLabelClass(mode)}>{item.label}</span>
     </Link>
   );
 }
 
-export function AdminNav({ collapsed = false }: { collapsed?: boolean }) {
+export function AdminNav({ rail, collapsed }: Mode) {
   const pathname = usePathname();
+  const signOut = useSignOut();
+  const mode = { rail, collapsed };
 
-  return items.map((item) => (
-    <NavLink
-      collapsed={collapsed}
-      item={item}
-      key={item.href}
-      pathname={pathname}
-    />
-  ));
+  return (
+    <>
+      {items.map((item) => (
+        <NavLink item={item} key={item.href} mode={mode} pathname={pathname} />
+      ))}
+      <button
+        className={cn(navItemClass(mode), "mt-2")}
+        onClick={signOut}
+        title={rail ? "Sign out" : undefined}
+        type="button"
+      >
+        <LogOut className="size-5 shrink-0" />
+        <span className={navLabelClass(mode)}>Sign out</span>
+      </button>
+    </>
+  );
 }

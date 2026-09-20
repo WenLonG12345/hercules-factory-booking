@@ -133,7 +133,7 @@ function CategoryList({
             </div>
             {category.slug ? null : (
               <button
-                className="rounded p-1.5 text-red-700 hover:bg-red-50"
+                className="grid size-10 place-items-center rounded-md text-red-700 hover:bg-red-50"
                 onClick={() => remove.mutate({ id: category.id })}
                 title="Delete"
                 type="button"

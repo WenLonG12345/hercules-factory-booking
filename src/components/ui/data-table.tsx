@@ -78,7 +78,7 @@ export type DataTableProps<TData extends RowData> = {
   /** Controlled page, 0-based — pass both when the page lives in the URL. */
   pageIndex?: number;
   onPageChange?: (pageIndex: number) => void;
-  /** Drop the 760px floor — for the narrow tables that sit in a grid column. */
+  /** Drop the 640px floor — for the narrow tables that sit in a grid column. */
   dense?: boolean;
   className?: string;
   rowClassName?: (row: TData) => string | undefined;
@@ -220,7 +220,7 @@ export function DataTable<TData extends RowData>({
           <div className="flex items-center gap-1">
             <button
               aria-label="Previous page"
-              className="inline-flex size-8 items-center justify-center rounded-md border border-stone-200 text-stone-600 transition hover:bg-stone-100 disabled:opacity-40 disabled:hover:bg-transparent"
+              className="inline-flex size-10 items-center justify-center rounded-md border border-stone-200 text-stone-600 transition hover:bg-stone-100 disabled:opacity-40 disabled:hover:bg-transparent"
               disabled={pageIndex === 0}
               onClick={() => setPage(pageIndex - 1)}
               type="button"
@@ -232,7 +232,7 @@ export function DataTable<TData extends RowData>({
             </span>
             <button
               aria-label="Next page"
-              className="inline-flex size-8 items-center justify-center rounded-md border border-stone-200 text-stone-600 transition hover:bg-stone-100 disabled:opacity-40 disabled:hover:bg-transparent"
+              className="inline-flex size-10 items-center justify-center rounded-md border border-stone-200 text-stone-600 transition hover:bg-stone-100 disabled:opacity-40 disabled:hover:bg-transparent"
               disabled={pageIndex >= lastPage}
               onClick={() => setPage(pageIndex + 1)}
               type="button"

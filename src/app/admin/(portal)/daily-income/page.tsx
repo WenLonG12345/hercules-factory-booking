@@ -112,7 +112,7 @@ function Segmented<T extends string>({
         <button
           aria-selected={value === option.key}
           className={cn(
-            "rounded px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600",
+            "min-h-10 rounded px-3 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600",
             value === option.key
               ? "bg-white text-stone-950 shadow-sm"
               : "text-stone-500 hover:text-stone-900",
@@ -280,31 +280,33 @@ function DailyTab() {
             Locked
           </span>
         ) : confirmId === row.original.id ? (
-          <span className="flex items-center gap-2 text-sm">
-            <button
-              className="font-semibold text-red-700 hover:underline disabled:opacity-50"
+          <span className="flex items-center gap-1.5">
+            <Button
+              className="text-red-700"
               disabled={remove.isPending}
               onClick={() => remove.mutate({ id: row.original.id })}
-              type="button"
+              size="sm"
+              variant="quiet"
             >
               Confirm
-            </button>
-            <button
-              className="text-stone-500 hover:text-stone-900"
+            </Button>
+            <Button
               onClick={() => setConfirmId(null)}
-              type="button"
+              size="sm"
+              variant="quiet"
             >
               Cancel
-            </button>
+            </Button>
           </span>
         ) : (
-          <button
-            className="text-sm font-semibold text-stone-500 hover:text-red-700"
+          <Button
+            className="text-stone-500"
             onClick={() => setConfirmId(row.original.id)}
-            type="button"
+            size="sm"
+            variant="quiet"
           >
             Delete
-          </button>
+          </Button>
         ),
     }),
   ]);

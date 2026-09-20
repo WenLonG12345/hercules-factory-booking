@@ -88,13 +88,14 @@ export function CheckInDialog({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <button
-          className="text-sm font-semibold text-red-700"
+        <Button
+          className="text-red-700"
           disabled={left !== null && left <= 0}
-          type="button"
+          size="sm"
+          variant="quiet"
         >
           Check in
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

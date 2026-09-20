@@ -85,7 +85,7 @@ export function DeleteButton({
         // `transition-colors`, not `transition` — the latter covers box-shadow,
         // which would fade the focus ring in and leave a keyboard user with no
         // indicator for the first 150ms.
-        "inline-flex h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors",
+        "inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition-colors",
         // The soft red halo is the house style, but at 20% alpha it carries no
         // contrast on its own — the solid outline is the indicator that passes.
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 focus-visible:ring-4 focus-visible:ring-red-600/20",

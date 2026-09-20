@@ -75,14 +75,11 @@ export function MarkPaidDialog({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <button
-          className="text-sm font-semibold text-emerald-700"
-          type="button"
-        >
+        <Button className="text-emerald-700" size="sm" variant="quiet">
           Mark paid
-        </button>
+        </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Mark as paid</DialogTitle>
           <DialogDescription>
@@ -124,6 +121,79 @@ export function MarkPaidDialog({
           </Field>
           <Button disabled={updateStatus.isPending} type="submit">
             {updateStatus.isPending ? "Saving…" : "Mark as paid"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Fix a typo in the name or phone straight from the invoice row — the
+ *  customer stays the same person, so this edits the customer, not the
+ *  invoice. */
+export function EditCustomerDialog({
+  customer,
+  onSuccess,
+}: {
+  customer: NonNullable<Invoice["customer"]>;
+  onSuccess?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const update = api.customer.update.useMutation({
+    onSuccess: () => {
+      toast.success("Customer updated.");
+      setOpen(false);
+      onSuccess?.();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger asChild>
+        <button
+          aria-label="Edit customer"
+          className="grid size-10 place-items-center rounded-md text-stone-400 transition hover:bg-stone-100 hover:text-red-700 active:bg-stone-100"
+          title="Edit name or phone"
+          type="button"
+        >
+          <Pencil className="size-4" />
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Edit customer</DialogTitle>
+          <DialogDescription>
+            Changes apply to every invoice for this customer.
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          className="grid gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            update.mutate({
+              id: customer.id,
+              name: String(fd.get("name")).trim(),
+              phone: String(fd.get("phone")).trim() || undefined,
+              dateJoined: customer.dateJoined,
+            });
+          }}
+        >
+          <Field label="Name">
+            <Input defaultValue={customer.name} name="name" required />
+          </Field>
+          <Field label="Phone">
+            <Input
+              defaultValue={customer.phone ?? ""}
+              name="phone"
+              placeholder="0123456789"
+              type="tel"
+            />
+          </Field>
+          <Button disabled={update.isPending} type="submit">
+            {update.isPending ? "Saving…" : "Save"}
           </Button>
         </form>
       </DialogContent>
@@ -179,13 +249,10 @@ export function EditInvoiceDialog({
       open={open}
     >
       <DialogTrigger asChild>
-        <button
-          className="inline-flex items-center gap-1 text-sm font-semibold text-stone-600"
-          type="button"
-        >
+        <Button size="sm" variant="quiet">
           <Pencil className="size-4" />
           Edit
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
@@ -288,13 +355,10 @@ export function DeleteInvoiceDialog({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <button
-          className="inline-flex items-center gap-1 text-sm font-semibold text-red-700"
-          type="button"
-        >
+        <Button className="text-red-700" size="sm" variant="quiet">
           <Trash2 className="size-4" />
           Delete
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -347,14 +411,16 @@ export function InvoiceActions({
   onSuccess?: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-1.5">
       {invoice.status === "pending" ? (
         <MarkPaidDialog invoice={invoice} onSuccess={onSuccess} />
       ) : null}
       <EditInvoiceDialog invoice={invoice} onSuccess={onSuccess} />
-      <button
-        className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 disabled:opacity-40"
+      <Button
+        className="text-emerald-700"
         disabled={!invoice.customer?.phone}
+        size="sm"
+        variant="quiet"
         onClick={() => {
           const phone = invoice.customer?.phone;
           if (!phone) return;
@@ -372,13 +438,13 @@ export function InvoiceActions({
             ? undefined
             : "This customer has no phone number"
         }
-        type="button"
       >
         <FaWhatsapp className="size-4" />
         Send
-      </button>
-      <button
-        className="inline-flex items-center gap-1 text-sm font-semibold text-stone-600"
+      </Button>
+      <Button
+        size="sm"
+        variant="quiet"
         onClick={() =>
           exportInvoicePDF({
             customerName: invoice.customer?.name ?? "",
@@ -400,11 +466,10 @@ export function InvoiceActions({
             paid: invoice.status === "paid",
           })
         }
-        type="button"
       >
         <FileDown className="size-4" />
         PDF
-      </button>
+      </Button>
       <DeleteInvoiceDialog
         invoice={invoice}
         onDeleted={onDeleted ?? onSuccess}

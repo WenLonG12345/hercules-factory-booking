@@ -92,8 +92,10 @@ When `TURSO_CONNECTION_URL` is not set, the landing page falls back to
 
 ### UI Components
 
-**Reach for a shadcn/ui component first.** Before hand-rolling any primitive —
-switch, tabs, popover, tooltip, dropdown, checkbox, radio — pull it in:
+**Always use a shadcn/ui component when one exists.** This is a hard rule, not
+a preference: before hand-rolling any primitive — switch, tabs, popover,
+tooltip, dropdown, checkbox, radio, sheet, skeleton, textarea, badge — pull it
+in:
 
 ```bash
 npx shadcn@latest add switch
@@ -115,10 +117,41 @@ registered) around the shadcn table primitives in `src/components/ui/table.tsx`.
 No page writes `<table>`/`<thead>`/`<tr>` by hand. Build columns with the
 pre-bound `columnHelper<Row>()` — `helper.accessor` for plain values (these are
 the ones that can sort), `helper.display` for JSX/action cells. Props cover what
-the hand-rolled tables used to do: `empty`, `sortable`, `dense` (drops the 760px
+the hand-rolled tables used to do: `empty`, `sortable`, `dense` (drops the 640px
 floor for tables sitting in a grid column), `rowClassName`, `renderSubRow` (the
 full-width inline edit row on Packages) and `footer` (raw `<TableRow>` totals,
 which carry their own `colSpan`). Pass `getRowId` so keys survive a re-sort.
+
+### Tablet-First Admin
+
+The admin runs the portal on an **Android tablet** (≈800×1280). Every admin
+screen must work at three widths, and the tablet is the primary one:
+
+| Width | Device | Shell |
+|---|---|---|
+| `<md` (<768px) | phone | top bar + `Sheet` drawer nav |
+| `md` (≥768px) | tablet portrait | 64px icon rail sidebar, no top bar |
+| `lg` (≥1024px) | tablet landscape / desktop | full 256px sidebar (collapsible to rail) |
+
+Rules, all enforced by the shared primitives — do not undo them per page:
+
+- **Touch floor.** Standalone controls are 44px (`h-11`, `size-11`, `Button`
+  default). Actions inside a table row use `<Button size="sm">` (40px). Icon
+  buttons are `size-10` minimum. Never a bare text `<button>` as a row action
+- **No hover-only affordances.** Anything revealed on `group-hover` is
+  invisible on touch. Chevrons, edit pencils and arrows are always visible;
+  use `active:` for press feedback
+- **Dialogs are bottom sheets under `sm`** (`ui/dialog.tsx` does this) and
+  centred cards from `sm` up. Per-dialog width overrides must be prefixed:
+  `className="sm:max-w-md"`, never `max-w-md`
+- **Tables** keep a 640px floor (fits portrait tablet minus rail and gutters)
+  and scroll sideways below that. Glanceable lists on the dashboard are
+  tappable `Row`s, not `DataTable`s
+- **Grids:** `grid-cols-2` on phone/portrait, `lg:grid-cols-4` on landscape.
+  Never `sm:grid-cols-3` — it lands on a 3-across at 800px portrait
+- **Main gutter** is `px-4 md:px-6 lg:px-8`; content width on portrait is
+  ~688px, design for that
+- Verify at 375 / 800 / 1280 px before calling a page done
 
 ### Adding New Admin Pages
 

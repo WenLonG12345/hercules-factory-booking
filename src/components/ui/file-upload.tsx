@@ -85,7 +85,7 @@ export function ImageFileUpload({
             </p>
             <div className="flex shrink-0 items-center gap-1">
               <button
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-stone-600 transition hover:bg-stone-100 disabled:opacity-50"
+                className="flex min-h-10 items-center gap-1 rounded-md px-3 text-xs font-semibold text-stone-600 transition hover:bg-stone-100 disabled:opacity-50"
                 disabled={preparing}
                 onClick={() => inputRef.current?.click()}
                 type="button"
@@ -94,7 +94,7 @@ export function ImageFileUpload({
                 {t("replace")}
               </button>
               <button
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50"
+                className="flex min-h-10 items-center gap-1 rounded-md px-3 text-xs font-semibold text-red-700 transition hover:bg-red-50"
                 onClick={clear}
                 type="button"
               >

@@ -1,141 +1,164 @@
 "use client";
 
+/* Hallmark · genre: modern-minimal · macrostructure: Day Sheet (Stat-Led, app
+ * family) · theme: admin system (stone · white cards · red-700) · nav: rail
+ * (AdminShell) · enrichment: none · designed-as-app · tablet-first
+ * pre-emit critique: P4 H5 E4 S4 R5 V4 */
+
 import {
   AlertTriangle,
-  ArrowUpRight,
   CalendarClock,
+  ChevronRight,
   FileText,
-  Receipt,
+  Package,
   Users,
-  Wallet,
   WalletCards,
 } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { PageHeader } from "@/components/admin/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { columnHelper, DataTable } from "@/components/ui/data-table";
-import { api, type RouterOutputs } from "@/lib/trpc";
+import { api } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
 import { PACKAGE_TYPE_LABEL, packageStatus, remaining } from "./admin-format";
 
-type Dashboard = RouterOutputs["report"]["dashboard"];
+const longDate = new Intl.DateTimeFormat("en-MY", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
 
-const expiring = columnHelper<Dashboard["expiring"][number]>();
-const unpaid = columnHelper<Dashboard["unpaid"][number]>();
-const trial = columnHelper<Dashboard["upcomingTrials"][number]>();
+/** A finger-sized list row: 56px tall, whole row is the tap target. */
+function Row({
+  href,
+  title,
+  meta,
+  right,
+}: {
+  href?: string;
+  title: ReactNode;
+  meta?: ReactNode;
+  right?: ReactNode;
+}) {
+  const body = (
+    <>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-semibold text-stone-950">
+          {title}
+        </span>
+        {meta ? (
+          <span className="block truncate text-xs text-stone-500">{meta}</span>
+        ) : null}
+      </span>
+      {right}
+      {href ? (
+        <ChevronRight className="size-4 shrink-0 text-stone-400" />
+      ) : null}
+    </>
+  );
+  const className =
+    "flex min-h-14 items-center gap-3 border-b border-stone-100 px-4 py-2 last:border-b-0";
+  return href ? (
+    <Link className={`${className} active:bg-stone-50`} href={href}>
+      {body}
+    </Link>
+  ) : (
+    <div className={className}>{body}</div>
+  );
+}
 
-const expiringColumns = expiring.columns([
-  expiring.display({
-    id: "customer",
-    header: "Customer",
-    cell: ({ row }) => (
-      <Link
-        className="font-semibold text-red-700"
-        href={`/admin/customers/${row.original.customerId}`}
-      >
-        {row.original.customer?.name}
-      </Link>
-    ),
-  }),
-  expiring.display({
-    id: "package",
-    header: "Package",
-    cell: ({ row }) => {
-      const left = remaining(row.original);
-      return `${PACKAGE_TYPE_LABEL[row.original.type]}${left === null ? "" : ` · ${left} left`}`;
-    },
-  }),
-  expiring.display({
-    id: "expiry",
-    header: "Expiry",
-    cell: ({ row }) => (
-      <Badge tone={packageStatus(row.original) === "expired" ? "red" : "amber"}>
-        {row.original.expiryDate ?? "No expiry"}
-      </Badge>
-    ),
-  }),
-]);
-
-const unpaidColumns = unpaid.columns([
-  unpaid.display({
-    id: "invoice",
-    header: "Invoice",
-    cell: ({ row }) => (
-      <Link className="font-semibold text-red-700" href="/admin/invoices">
-        {row.original.invoiceNumber}
-      </Link>
-    ),
-  }),
-  unpaid.display({
-    id: "customer",
-    header: "Customer",
-    cell: ({ row }) => row.original.customer?.name,
-  }),
-  unpaid.display({
-    id: "amount",
-    header: "Amount",
-    cell: ({ row }) => formatCurrency(row.original.totalCents),
-  }),
-]);
-
-const trialColumns = trial.columns([
-  trial.display({
-    id: "date",
-    header: "Date",
-    cell: ({ row }) => row.original.date,
-  }),
-  trial.display({
-    id: "time",
-    header: "Time",
-    cell: ({ row }) => row.original.startTime,
-  }),
-  trial.display({
-    id: "customer",
-    header: "Customer",
-    cell: ({ row }) => {
-      const attendee = row.original.attendees[0];
-      return attendee?.customer ? (
-        <Link
-          className="font-semibold text-red-700"
-          href={`/admin/customers/${attendee.customer.id}`}
-        >
-          {attendee.customer.name}
-        </Link>
+function ListCard({
+  icon,
+  title,
+  count,
+  empty,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  count: number;
+  empty: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="overflow-hidden p-0">
+      <h2 className="flex items-center gap-2 border-b border-stone-200 px-4 py-3 text-base font-black">
+        {icon}
+        {title}
+        <span className="ml-auto text-sm font-semibold text-stone-500">
+          {count}
+        </span>
+      </h2>
+      {count === 0 ? (
+        <p className="px-4 py-6 text-sm text-stone-500">{empty}</p>
       ) : (
-        "—"
-      );
-    },
-  }),
-]);
+        children
+      )}
+    </Card>
+  );
+}
+
+function MoneyCard({
+  label,
+  incomeCents,
+  expenseCents,
+}: {
+  label: string;
+  incomeCents: number;
+  expenseCents: number;
+}) {
+  return (
+    <Link className="block" href="/admin/daily-income">
+      <Card className="h-full p-5 active:bg-stone-50">
+        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+          {label}
+        </p>
+        <p className="mt-1 text-4xl font-black leading-none tracking-tight">
+          {formatCurrency(incomeCents)}
+        </p>
+        <p className="mt-2 text-sm text-stone-500">
+          Spent {formatCurrency(expenseCents)} · Net{" "}
+          <span className="font-semibold text-stone-950">
+            {formatCurrency(incomeCents - expenseCents)}
+          </span>
+        </p>
+      </Card>
+    </Link>
+  );
+}
 
 function DashboardSkeleton() {
   return (
-    <div className="animate-pulse space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {["a", "b", "c", "d", "e"].map((k) => (
+    <div className="animate-pulse space-y-4">
+      <div className="h-8 w-40 rounded bg-stone-200" />
+      <div className="grid gap-3 md:grid-cols-2">
+        {["a", "b"].map((k) => (
+          <div key={k} className="h-28 rounded-lg bg-stone-200" />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {["c", "d", "e", "f"].map((k) => (
           <div key={k} className="h-24 rounded-lg bg-stone-200" />
         ))}
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-        {["j", "k", "l"].map((k) => (
-          <div key={k} className="h-64 rounded-lg bg-stone-200" />
+      <div className="grid gap-4 lg:grid-cols-2">
+        {["g", "h"].map((k) => (
+          <div key={k} className="h-72 rounded-lg bg-stone-200" />
         ))}
       </div>
     </div>
   );
 }
 
+const MAX_ROWS = 8;
+
 export default function AdminDashboardPage() {
   const { data, isLoading } = api.report.dashboard.useQuery();
 
   if (isLoading || !data) return <DashboardSkeleton />;
 
-  /**
-   * One tile per sidebar destination, in sidebar order — the tile is the
-   * shortcut to that page, and its number is the thing the admin would open
-   * the page to check.
-   */
   const tiles = [
     {
       href: "/admin/invoices",
@@ -145,19 +168,20 @@ export default function AdminDashboardPage() {
       hint: `${data.newCustomers} new today · ${data.monthNewCustomers} this month`,
     },
     {
-      href: "/admin/invoices",
-      label: "Invoices",
+      href: "/admin/invoices?status=pending",
+      label: "Unpaid",
       icon: FileText,
       value: formatCurrency(data.unpaidTotalCents),
-      hint: `${data.unpaid.length} unpaid invoice${data.unpaid.length === 1 ? "" : "s"}`,
+      hint: `${data.unpaid.length} invoice${data.unpaid.length === 1 ? "" : "s"}`,
       accent: data.unpaid.length > 0,
     },
     {
-      href: "/admin/daily-income",
-      label: "Daily Income",
-      icon: Wallet,
-      value: formatCurrency(data.todayIncomeCents),
-      hint: `${formatCurrency(data.todayExpenseCents)} spent today`,
+      href: "/admin/invoices",
+      label: "Active packages",
+      icon: Package,
+      value: data.activePackages,
+      hint: `${data.expiring.length} expiring soon`,
+      accent: data.expiring.length > 0,
     },
     {
       href: "/admin/cms",
@@ -172,20 +196,36 @@ export default function AdminDashboardPage() {
     },
   ];
 
+  const actionCount = data.unpaid.length + data.expiring.length;
+  const unpaidRows = data.unpaid.slice(0, MAX_ROWS);
+  const expiringRows = data.expiring.slice(0, MAX_ROWS);
+  const hidden = actionCount - unpaidRows.length - expiringRows.length;
+
   return (
     <>
-      <PageHeader eyebrow="Command center" title="Dashboard" />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <PageHeader eyebrow={longDate.format(new Date())} title="Dashboard" />
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <MoneyCard
+          expenseCents={data.todayExpenseCents}
+          incomeCents={data.todayIncomeCents}
+          label="Today"
+        />
+        <MoneyCard
+          expenseCents={data.monthExpenseCents}
+          incomeCents={data.monthIncomeCents}
+          label="This month"
+        />
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {tiles.map((tile) => (
-          <Link key={tile.label} className="group block" href={tile.href}>
-            <Card className="h-full p-4 transition group-hover:border-red-200 group-hover:shadow-md">
-              <div className="flex items-center justify-between gap-2">
-                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  <tile.icon className="size-3.5 shrink-0 text-red-700" />
-                  {tile.label}
-                </p>
-                <ArrowUpRight className="size-3.5 shrink-0 text-red-700 opacity-0 transition group-hover:opacity-100" />
-              </div>
+          <Link key={tile.label} className="block" href={tile.href}>
+            <Card className="h-full p-4 active:bg-stone-50">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                <tile.icon className="size-4 shrink-0 text-red-700" />
+                {tile.label}
+              </p>
               <p
                 className={`mt-2 text-2xl font-black leading-tight tracking-tight ${
                   tile.accent ? "text-red-700" : ""
@@ -201,53 +241,67 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <section>
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-black">
-            <AlertTriangle className="size-4 text-amber-500" />
-            Expiring packages
-          </h2>
-          <DataTable
-            columns={expiringColumns}
-            data={data.expiring}
-            dense
-            empty="Nothing expiring soon."
-            getRowId={(pkg) => pkg.id}
-          />
-        </section>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <ListCard
+          count={actionCount}
+          empty="Nothing waiting — every invoice is paid, no package is running out."
+          icon={<AlertTriangle className="size-4 text-amber-500" />}
+          title="Needs action"
+        >
+          {unpaidRows.map((invoice) => (
+            <Row
+              href={`/admin/invoices/${invoice.id}`}
+              key={invoice.id}
+              meta={`${invoice.invoiceNumber} · issued ${invoice.issueDate}`}
+              right={
+                <Badge tone="amber">{formatCurrency(invoice.totalCents)}</Badge>
+              }
+              title={invoice.customer?.name ?? "—"}
+            />
+          ))}
+          {expiringRows.map((pkg) => {
+            const left = remaining(pkg);
+            return (
+              <Row
+                href={`/admin/customers/${pkg.customerId}`}
+                key={pkg.id}
+                meta={`${PACKAGE_TYPE_LABEL[pkg.type]}${left === null ? "" : ` · ${left} left`}`}
+                right={
+                  <Badge
+                    tone={packageStatus(pkg) === "expired" ? "red" : "amber"}
+                  >
+                    {pkg.expiryDate ?? "No expiry"}
+                  </Badge>
+                }
+                title={pkg.customer?.name ?? "—"}
+              />
+            );
+          })}
+          {hidden > 0 ? (
+            <p className="px-4 py-3 text-xs text-stone-500">
+              {hidden} more not shown.
+            </p>
+          ) : null}
+        </ListCard>
 
-        <section>
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-black">
-            <Receipt className="size-4 text-red-700" />
-            <Link className="hover:text-red-700" href="/admin/invoices">
-              Unpaid / outstanding
-            </Link>
-            <span className="text-sm font-semibold text-stone-500">
-              {formatCurrency(data.unpaidTotalCents)}
-            </span>
-          </h2>
-          <DataTable
-            columns={unpaidColumns}
-            data={data.unpaid}
-            dense
-            empty="Everything is paid."
-            getRowId={(invoice) => invoice.id}
-          />
-        </section>
-
-        <section>
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-black">
-            <CalendarClock className="size-4 text-red-700" />
-            Upcoming Trial
-          </h2>
-          <DataTable
-            columns={trialColumns}
-            data={data.upcomingTrials}
-            dense
-            empty="No trials booked."
-            getRowId={(session) => session.id}
-          />
-        </section>
+        <ListCard
+          count={data.upcomingTrials.length}
+          empty="No trials booked."
+          icon={<CalendarClock className="size-4 text-red-700" />}
+          title="Upcoming trials"
+        >
+          {data.upcomingTrials.map((session) => {
+            const customer = session.attendees[0]?.customer;
+            return (
+              <Row
+                href={customer ? `/admin/customers/${customer.id}` : undefined}
+                key={session.id}
+                meta={`${session.date} · ${session.startTime}`}
+                title={customer?.name ?? "—"}
+              />
+            );
+          })}
+        </ListCard>
       </div>
     </>
   );

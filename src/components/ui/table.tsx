@@ -23,7 +23,7 @@ export function TableWrap({
 }
 
 export const tableClass =
-  "w-full min-w-[760px] border-collapse text-left text-sm";
+  "w-full min-w-[640px] border-collapse text-left text-sm";
 export const thClass =
   "border-b border-stone-200 bg-stone-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-stone-500";
 export const tdClass = "border-b border-stone-100 px-4 py-3 text-stone-700";

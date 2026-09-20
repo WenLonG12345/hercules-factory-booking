@@ -12,15 +12,33 @@ const variants = {
 
 type Variant = keyof typeof variants;
 
+/** Touch floor: `md` is the 44px default; `sm` (40px) is for actions that sit
+ *  inside a table row, where 44px would bloat every line. Nothing smaller. */
+const sizes = {
+  md: "h-11 px-4",
+  sm: "h-10 px-3",
+};
+
+type Size = keyof typeof sizes;
+
+const base =
+  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300";
+
 export function Button({
   className,
   variant = "primary",
+  size = "md",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: Variant;
+  size?: Size;
+}) {
   return (
     <button
       className={cn(
-        "inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 disabled:pointer-events-none disabled:opacity-50",
+        base,
+        "disabled:pointer-events-none disabled:opacity-50",
+        sizes[size],
         variants[variant],
         className,
       )}
@@ -32,15 +50,15 @@ export function Button({
 export function ButtonLink({
   className,
   variant = "primary",
+  size = "md",
   ...props
-}: AnchorHTMLAttributes<HTMLAnchorElement> & { variant?: Variant }) {
+}: AnchorHTMLAttributes<HTMLAnchorElement> & {
+  variant?: Variant;
+  size?: Size;
+}) {
   return (
     <a
-      className={cn(
-        "inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300",
-        variants[variant],
-        className,
-      )}
+      className={cn(base, sizes[size], variants[variant], className)}
       {...props}
     />
   );
