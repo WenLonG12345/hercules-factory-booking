@@ -280,11 +280,14 @@ export function EditInvoiceDialog({
               issueDate: String(fd.get("issueDate")),
               dueDate: String(fd.get("dueDate") ?? "") || undefined,
               notes: String(fd.get("notes") ?? "") || undefined,
+              paidDate: String(fd.get("paidDate") ?? "") || undefined,
             });
           }}
         >
           <InvoiceLinesEditor lines={lines} onChange={setLines} />
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div
+            className={`grid gap-4 ${invoice.status === "paid" ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}
+          >
             <Field label="Discount (RM)">
               <Input
                 inputMode="decimal"
@@ -303,6 +306,14 @@ export function EditInvoiceDialog({
                 placeholder="No due date"
               />
             </Field>
+            {invoice.status === "paid" ? (
+              <Field label="Paid date">
+                <DatePicker
+                  defaultValue={invoice.paidDate ?? today()}
+                  name="paidDate"
+                />
+              </Field>
+            ) : null}
           </div>
           <Field label="Notes">
             <Textarea defaultValue={invoice.notes ?? ""} name="notes" />

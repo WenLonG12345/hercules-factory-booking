@@ -96,7 +96,8 @@ export const invoiceInput = invoiceFields
 
 export const updateInvoiceInput = invoiceFields
   .omit({ customerId: true })
-  .extend({ id: z.uuid() })
+  // paidDate only applies to an invoice that is already paid.
+  .extend({ id: z.uuid(), paidDate: dateString.optional() })
   .refine(discountFitsSubtotal, discountError);
 
 export const updateInvoiceStatusInput = z

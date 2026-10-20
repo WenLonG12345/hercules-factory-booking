@@ -130,7 +130,7 @@ export const invoiceRouter = createTRPCRouter({
   /**
    * Edit an issued invoice, lines included. The number and the status stay
    * put — status moves through updateStatus, which is what books the income.
-   * A paid invoice re-books so an edited total lands in the ledger too (the
+   * A paid invoice re-books so an edited total or paid date lands in the ledger too (the
    * unique invoice_id makes that an update, not a second row).
    */
   update: adminProcedure
@@ -152,6 +152,9 @@ export const invoiceRouter = createTRPCRouter({
           issueDate: input.issueDate,
           dueDate: input.dueDate ?? null,
           notes: input.notes ?? null,
+          ...(current.status === "paid" && input.paidDate
+            ? { paidDate: input.paidDate }
+            : {}),
           updatedAt: new Date(),
         })
         .where(eq(invoices.id, input.id))
