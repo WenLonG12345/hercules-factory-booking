@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import { cn } from "@/lib/utils";
 
@@ -26,13 +26,23 @@ export function Calendar({
         root: "relative",
         months: "flex flex-col gap-4 sm:flex-row",
         month: "grid gap-3",
-        nav: "absolute inset-x-0 top-0 flex items-center justify-between",
+        // The nav spans the caption row, so it lets taps through to the month
+        // and year dropdowns underneath; only its two buttons catch them.
+        nav: "pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between",
         button_previous:
-          "grid size-8 place-items-center rounded-md text-stone-500 transition hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 aria-disabled:opacity-40",
+          "pointer-events-auto grid size-8 place-items-center rounded-md text-stone-500 transition hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 aria-disabled:opacity-40",
         button_next:
-          "grid size-8 place-items-center rounded-md text-stone-500 transition hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 aria-disabled:opacity-40",
+          "pointer-events-auto grid size-8 place-items-center rounded-md text-stone-500 transition hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 aria-disabled:opacity-40",
         month_caption: "flex h-8 items-center justify-center",
-        caption_label: "text-sm font-semibold text-stone-950",
+        caption_label:
+          "flex items-center gap-0.5 text-sm font-semibold text-stone-950",
+        // captionLayout="dropdown": a native <select> laid invisibly over its
+        // label, as upstream's stylesheet does, so the tablet gets its own picker.
+        dropdowns: "relative inline-flex items-center gap-1",
+        dropdown_root:
+          "relative inline-flex h-8 items-center rounded-md px-1.5 transition hover:bg-stone-100 active:bg-stone-200 has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-red-600",
+        dropdown:
+          "absolute inset-0 z-10 w-full cursor-pointer appearance-none opacity-0",
         month_grid: "w-full border-collapse",
         weekdays: "flex",
         weekday:
@@ -57,6 +67,8 @@ export function Calendar({
         Chevron: ({ orientation, ...rest }) =>
           orientation === "left" ? (
             <ChevronLeft className="size-4" {...rest} />
+          ) : orientation === "down" ? (
+            <ChevronDown className="size-4" {...rest} />
           ) : (
             <ChevronRight className="size-4" {...rest} />
           ),
