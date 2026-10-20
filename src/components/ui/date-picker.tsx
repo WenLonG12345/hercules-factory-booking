@@ -95,10 +95,9 @@ export function DatePicker({
           </span>
         </PopoverTrigger>
         <PopoverContent>
-          {/* Month and year dropdowns: the admin's tablet closes the popover on
-              the ‹ arrow, so she jumps months here instead. The dropdown range
-              otherwise stops at December this year — five years ahead covers
-              due dates and package expiries. */}
+          {/* Month and year dropdowns for jumping far without tapping ‹ › over
+              and over. The year list otherwise stops at December this year —
+              five years ahead covers due dates and package expiries. */}
           <Calendar
             autoFocus
             captionLayout="dropdown"
